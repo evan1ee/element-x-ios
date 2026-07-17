@@ -12,6 +12,8 @@ import Foundation
 internal nonisolated enum UntranslatedL10n {
   /// Search
   internal static var screenHomeTabSearch: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_search") }
+  /// Sticker
+  internal static var screenRoomAttachmentSourceSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_room_attachment_source_sticker") }
   /// Search for chats and messages
   internal static var screenSearchEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_message") }
   /// Start searching...
@@ -24,6 +26,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
   /// Rooms
   internal static var screenSearchTabRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_rooms") }
+  /// Stickers
+  internal static var screenStickerPickerTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_title") }
   /// Clear all data currently stored on this device?
   /// Sign in again to access your account data and messages.
   internal static var softLogoutClearDataDialogContent: String { return UntranslatedL10n.tr("Untranslated", "soft_logout_clear_data_dialog_content") }

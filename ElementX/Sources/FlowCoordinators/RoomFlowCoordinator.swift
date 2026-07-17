@@ -456,6 +456,9 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                 }
                 presentPollForm(mode: mode, timelineController: timelineController)
                 
+            case (_, .presentStickerPicker(let threadRootEventID), .stickerPicker):
+                presentStickerPicker(threadRootEventID: threadRootEventID)
+                
             case (_, .presentResolveSendFailure(let failure, let sendHandle), .resolveSendFailure):
                 presentResolveSendFailure(failure: failure, sendHandle: sendHandle)
                 
@@ -717,6 +720,8 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                 case .presentPollForm(let mode):
                     stateMachine.tryEvent(.presentPollForm(mode: mode),
                                           userInfo: EventUserInfo(animated: animated, timelineController: timelineController))
+                case .presentStickerPicker:
+                    stateMachine.tryEvent(.presentStickerPicker(threadRootEventID: nil))
                 case .presentLocationViewer(let location):
                     stateMachine.tryEvent(.presentMapNavigator(interactionMode: .viewStatic(location)),
                                           userInfo: EventUserInfo(animated: animated,
@@ -829,6 +834,8 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
             case .presentPollForm(let mode):
                 stateMachine.tryEvent(.presentPollForm(mode: mode),
                                       userInfo: EventUserInfo(animated: animated, timelineController: timelineController))
+            case .presentStickerPicker:
+                stateMachine.tryEvent(.presentStickerPicker(threadRootEventID: threadRootEventID))
             case .presentLocationViewer(let location):
                 stateMachine.tryEvent(.presentMapNavigator(interactionMode: .viewStatic(location)),
                                       userInfo: EventUserInfo(animated: animated,
@@ -1229,6 +1236,30 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
         
         navigationStackCoordinator.setSheetCoordinator(stackCoordinator) { [weak self] in
             self?.stateMachine.tryEvent(.dismissPollForm)
+        }
+    }
+    
+    private func presentStickerPicker(threadRootEventID: String?) {
+        let stackCoordinator = NavigationStackCoordinator()
+        let coordinator = StickerPickerScreenCoordinator(parameters: .init(stickerService: StickerService(clientProxy: userSession.clientProxy),
+                                                                           roomProxy: roomProxy,
+                                                                           threadRootEventID: threadRootEventID,
+                                                                           userIndicatorController: flowParameters.userIndicatorController))
+        stackCoordinator.setRootCoordinator(coordinator)
+        
+        coordinator.actionsPublisher
+            .sink { [weak self] action in
+                guard let self else { return }
+                
+                switch action {
+                case .dismiss:
+                    navigationStackCoordinator.setSheetCoordinator(nil)
+                }
+            }
+            .store(in: &cancellables)
+        
+        navigationStackCoordinator.setSheetCoordinator(stackCoordinator) { [weak self] in
+            self?.stateMachine.tryEvent(.dismissStickerPicker)
         }
     }
     

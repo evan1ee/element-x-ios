@@ -73,6 +73,7 @@ extension RoomFlowCoordinator {
         case messageForwarding(forwardingItem: MessageForwardingItem, previousState: State)
         case reportContent(itemID: TimelineItemIdentifier, senderID: String, previousState: State)
         case pollForm(previousState: State)
+        case stickerPicker(previousState: State)
         case pollsHistory
         case pollsHistoryForm
         case rolesAndPermissions
@@ -157,6 +158,9 @@ extension RoomFlowCoordinator {
         case presentPollForm(mode: PollFormMode)
         case dismissPollForm
         
+        case presentStickerPicker(threadRootEventID: String?)
+        case dismissStickerPicker
+        
         case presentPollsHistory
         case dismissPollsHistory
         
@@ -230,6 +234,9 @@ extension RoomFlowCoordinator {
             case (.room, .presentPollForm):
                 return .pollForm(previousState: fromState)
                 
+            case (.room, .presentStickerPicker):
+                return .stickerPicker(previousState: fromState)
+                
             case (.room, .presentResolveSendFailure):
                 return .resolveSendFailure(previousState: fromState)
                 
@@ -277,6 +284,9 @@ extension RoomFlowCoordinator {
             case (.thread, .presentPollForm):
                 return .pollForm(previousState: fromState)
                 
+            case (.thread, .presentStickerPicker):
+                return .stickerPicker(previousState: fromState)
+                
             case (.thread, .presentResolveSendFailure):
                 return .resolveSendFailure(previousState: fromState)
                 
@@ -298,6 +308,9 @@ extension RoomFlowCoordinator {
                 return previousState
                 
             case (.pollForm(let previousState), .dismissPollForm):
+                return previousState
+                
+            case (.stickerPicker(let previousState), .dismissStickerPicker):
                 return previousState
                 
             case (.resolveSendFailure(let previousState), .dismissResolveSendFailure):

@@ -1279,6 +1279,13 @@ extension PreviewTests {
     }
 
     @Test
+    func stickerPickerScreen() async throws {
+        for (index, preview) in StickerPickerScreen_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func stickerRoomTimelineView() async throws {
         for (index, preview) in StickerRoomTimelineView_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)

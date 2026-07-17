@@ -20,6 +20,7 @@ enum TimelineViewModelAction {
     case displayLocationPicker
     case displayNewPollForm
     case displayEditPollForm(eventID: String, poll: Poll)
+    case displayStickerPicker
     case displayMediaUploadPreviewScreen(mediaURLs: [URL])
     case displaySenderDetails(userID: String)
     case displayMessageForwarding(forwardingItem: MessageForwardingItem)

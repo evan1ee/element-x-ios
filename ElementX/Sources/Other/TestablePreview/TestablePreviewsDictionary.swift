@@ -178,6 +178,7 @@ enum TestablePreviewsDictionary {
             "StartChatScreen_Previews" : StartChatScreen_Previews.self,
             "StateRoomTimelineView_Previews" : StateRoomTimelineView_Previews.self,
             "StaticLocationSheet_Previews" : StaticLocationSheet_Previews.self,
+            "StickerPickerScreen_Previews" : StickerPickerScreen_Previews.self,
             "StickerRoomTimelineView_Previews" : StickerRoomTimelineView_Previews.self,
             "SwipeRightAction_Previews" : SwipeRightAction_Previews.self,
             "SwipeToReplyView_Previews" : SwipeToReplyView_Previews.self,
