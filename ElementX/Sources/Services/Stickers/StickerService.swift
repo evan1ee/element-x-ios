@@ -9,54 +9,64 @@ import Foundation
 import ImageIO
 import MatrixRustSDK
 
-/// Sends stickers from the pack of images bundled with the app.
+/// Sends stickers and manages the user's own MSC2545 sticker pack.
 ///
-/// Stickers are uploaded to the homeserver the first time they're sent and the
-/// resulting `mxc://` URI is reused for subsequent sends.
+/// Bundled stickers are uploaded to the homeserver the first time they're sent
+/// and the resulting `mxc://` URI is reused for subsequent sends. User stickers
+/// live in the `im.ponies.user_emotes` account data and are uploaded when added.
 class StickerService: StickerServiceProtocol {
-    private static let mimeType = "image/png"
+    private static let bundledMimeType = "image/png"
     
     private let clientProxy: ClientProxyProtocol
+    private let mediaUploadingPreprocessor: MediaUploadingPreprocessor
     private let userDefaults: UserDefaults
     
-    let stickers: [BuiltInSticker]
+    let builtInStickers: [Sticker]
     
-    private var cacheKey: String {
+    private var uploadCacheKey: String {
         "stickerMediaURIs-\(clientProxy.userID)"
     }
     
     init(clientProxy: ClientProxyProtocol,
+         mediaUploadingPreprocessor: MediaUploadingPreprocessor,
          bundle: Bundle = Bundle(for: StickerService.self),
          userDefaults: UserDefaults = .standard) {
         self.clientProxy = clientProxy
+        self.mediaUploadingPreprocessor = mediaUploadingPreprocessor
         self.userDefaults = userDefaults
-        stickers = Self.loadStickers(from: bundle)
+        builtInStickers = Self.loadBuiltInStickers(from: bundle)
     }
     
-    func send(_ sticker: BuiltInSticker,
-              in roomProxy: JoinedRoomProxyProtocol,
-              threadRootEventID: String?) async -> Result<Void, StickerServiceError> {
+    func loadStickers() async -> StickerCollection {
+        await StickerCollection(userStickers: loadUserPack().stickers,
+                                builtInStickers: builtInStickers)
+    }
+    
+    func send(_ sticker: Sticker,
+              in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
         let mediaURI: String
-        switch await resolveMediaURI(for: sticker) {
-        case .success(let uri):
-            mediaURI = uri
-        case .failure(let error):
-            return .failure(error)
+        switch sticker.source {
+        case .media(let url):
+            mediaURI = url
+        case .bundle(let fileURL):
+            switch await resolveBundledMediaURI(for: sticker, fileURL: fileURL) {
+            case .success(let uri):
+                mediaURI = uri
+            case .failure(let error):
+                return .failure(error)
+            }
         }
         
-        let content = StickerContent(body: sticker.body,
-                                     url: mediaURI,
-                                     info: .init(w: sticker.width,
-                                                 h: sticker.height,
-                                                 size: sticker.fileSize,
-                                                 mimetype: Self.mimeType),
-                                     relatesTo: threadRootEventID.map { .init(relType: "m.thread", eventID: $0) })
+        let imageInfo = ImageInfo(height: sticker.height,
+                                  width: sticker.width,
+                                  mimetype: sticker.mimeType,
+                                  size: sticker.fileSize,
+                                  thumbnailInfo: nil,
+                                  thumbnailSource: nil,
+                                  blurhash: nil,
+                                  isAnimated: false)
         
-        guard let json = try? String(data: JSONEncoder().encode(content), encoding: .utf8) else {
-            return .failure(.encodingFailure)
-        }
-        
-        switch await roomProxy.sendRaw(eventType: "m.sticker", content: json) {
+        switch await timelineController.sendSticker(body: sticker.body, url: mediaURI, imageInfo: imageInfo) {
         case .success:
             return .success(())
         case .failure(let error):
@@ -65,10 +75,90 @@ class StickerService: StickerServiceProtocol {
         }
     }
     
-    // MARK: - Private
+    func addUserSticker(fromMediaAt url: URL) async -> Result<Void, StickerServiceError> {
+        guard case let .success(maxUploadSize) = await clientProxy.maxMediaUploadSize else {
+            return .failure(.processingFailed)
+        }
+        
+        guard case let .success(mediaInfo) = await mediaUploadingPreprocessor.processMedia(at: url, maxUploadSize: maxUploadSize),
+              case let .image(imageURL, _, imageInfo) = mediaInfo else {
+            MXLog.error("Failed processing the image to add as a sticker.")
+            return .failure(.processingFailed)
+        }
+        
+        guard case let .success(mediaURI) = await clientProxy.uploadMedia(.image(imageURL: imageURL,
+                                                                                 thumbnailURL: imageURL,
+                                                                                 imageInfo: imageInfo)) else {
+            return .failure(.uploadFailed)
+        }
+        
+        var pack = await loadUserPack()
+        
+        let body = url.deletingPathExtension().lastPathComponent
+        let shortcode = uniqueShortcode(for: body, in: pack)
+        pack.images[shortcode] = .init(url: mediaURI,
+                                       body: body,
+                                       info: .init(w: imageInfo.width,
+                                                   h: imageInfo.height,
+                                                   size: imageInfo.size,
+                                                   mimetype: imageInfo.mimetype),
+                                       usage: [UserStickerPack.stickerUsage])
+        
+        return await save(pack)
+    }
     
-    private func resolveMediaURI(for sticker: BuiltInSticker) async -> Result<String, StickerServiceError> {
-        var cachedURIs = userDefaults.dictionary(forKey: cacheKey) as? [String: String] ?? [:]
+    func removeUserSticker(id: String) async -> Result<Void, StickerServiceError> {
+        var pack = await loadUserPack()
+        
+        guard pack.images.removeValue(forKey: id) != nil else {
+            return .success(())
+        }
+        
+        return await save(pack)
+    }
+    
+    // MARK: - User pack
+    
+    private func loadUserPack() async -> UserStickerPack {
+        guard case let .success(content) = await clientProxy.accountData(eventType: UserStickerPack.eventType),
+              let content,
+              let pack = try? JSONDecoder().decode(UserStickerPack.self, from: Data(content.utf8)) else {
+            return UserStickerPack()
+        }
+        return pack
+    }
+    
+    private func save(_ pack: UserStickerPack) async -> Result<Void, StickerServiceError> {
+        guard let content = try? String(data: JSONEncoder().encode(pack), encoding: .utf8) else {
+            return .failure(.packUpdateFailed)
+        }
+        
+        switch await clientProxy.setAccountData(eventType: UserStickerPack.eventType, content: content) {
+        case .success:
+            return .success(())
+        case .failure(let error):
+            MXLog.error("Failed updating the user sticker pack with error: \(error)")
+            return .failure(.packUpdateFailed)
+        }
+    }
+    
+    private func uniqueShortcode(for body: String, in pack: UserStickerPack) -> String {
+        let base = body.lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+        let shortcode = base.isEmpty ? "sticker" : base
+        
+        guard pack.images[shortcode] != nil else {
+            return shortcode
+        }
+        
+        return "\(shortcode)_\(UUID().uuidString.prefix(8).lowercased())"
+    }
+    
+    // MARK: - Bundled stickers
+    
+    private func resolveBundledMediaURI(for sticker: Sticker, fileURL: URL) async -> Result<String, StickerServiceError> {
+        var cachedURIs = userDefaults.dictionary(forKey: uploadCacheKey) as? [String: String] ?? [:]
         
         if let cachedURI = cachedURIs[sticker.id] {
             return .success(cachedURI)
@@ -76,17 +166,17 @@ class StickerService: StickerServiceProtocol {
         
         let imageInfo = ImageInfo(height: sticker.height,
                                   width: sticker.width,
-                                  mimetype: Self.mimeType,
+                                  mimetype: sticker.mimeType,
                                   size: sticker.fileSize,
                                   thumbnailInfo: nil,
                                   thumbnailSource: nil,
                                   blurhash: nil,
                                   isAnimated: false)
         
-        switch await clientProxy.uploadMedia(.image(imageURL: sticker.fileURL, thumbnailURL: sticker.fileURL, imageInfo: imageInfo)) {
+        switch await clientProxy.uploadMedia(.image(imageURL: fileURL, thumbnailURL: fileURL, imageInfo: imageInfo)) {
         case .success(let mediaURI):
             cachedURIs[sticker.id] = mediaURI
-            userDefaults.set(cachedURIs, forKey: cacheKey)
+            userDefaults.set(cachedURIs, forKey: uploadCacheKey)
             return .success(mediaURI)
         case .failure(let error):
             MXLog.error("Failed uploading sticker \(sticker.id) with error: \(error)")
@@ -94,7 +184,7 @@ class StickerService: StickerServiceProtocol {
         }
     }
     
-    private static func loadStickers(from bundle: Bundle) -> [BuiltInSticker] {
+    private static func loadBuiltInStickers(from bundle: Bundle) -> [Sticker] {
         guard let manifestURL = bundle.url(forResource: "sticker_manifest", withExtension: "json"),
               let manifestData = try? Data(contentsOf: manifestURL),
               let entries = try? JSONDecoder().decode([ManifestEntry].self, from: manifestData) else {
@@ -102,7 +192,7 @@ class StickerService: StickerServiceProtocol {
             return []
         }
         
-        return entries.compactMap { entry -> BuiltInSticker? in
+        return entries.compactMap { entry -> Sticker? in
             let filename = entry.file as NSString
             guard let fileURL = bundle.url(forResource: filename.deletingPathExtension, withExtension: filename.pathExtension),
                   let properties = imageProperties(of: fileURL),
@@ -113,12 +203,13 @@ class StickerService: StickerServiceProtocol {
                 return nil
             }
             
-            return BuiltInSticker(id: entry.id,
-                                  body: entry.body,
-                                  fileURL: fileURL,
-                                  width: width,
-                                  height: height,
-                                  fileSize: UInt64(fileSize))
+            return Sticker(id: entry.id,
+                           body: entry.body,
+                           source: .bundle(fileURL),
+                           width: width,
+                           height: height,
+                           fileSize: UInt64(fileSize),
+                           mimeType: Self.bundledMimeType)
         }
     }
     
@@ -134,36 +225,4 @@ private struct ManifestEntry: Decodable {
     let id: String
     let body: String
     let file: String
-}
-
-/// https://spec.matrix.org/latest/client-server-api/#msticker
-private struct StickerContent: Encodable {
-    struct Info: Encodable {
-        let w: UInt64
-        let h: UInt64
-        let size: UInt64
-        let mimetype: String
-    }
-    
-    struct Relation: Encodable {
-        let relType: String
-        let eventID: String
-        
-        enum CodingKeys: String, CodingKey {
-            case relType = "rel_type"
-            case eventID = "event_id"
-        }
-    }
-    
-    let body: String
-    let url: String
-    let info: Info
-    let relatesTo: Relation?
-    
-    enum CodingKeys: String, CodingKey {
-        case body
-        case url
-        case info
-        case relatesTo = "m.relates_to"
-    }
 }

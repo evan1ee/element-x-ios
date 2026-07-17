@@ -12,7 +12,7 @@ import Testing
 @MainActor
 struct StickerPickerScreenViewModelTests {
     var stickerService: StickerServiceMock!
-    var roomProxy: JoinedRoomProxyMock!
+    var timelineController: TimelineControllerMock!
     var userIndicatorController: UserIndicatorControllerMock!
     
     var viewModel: StickerPickerScreenViewModel!
@@ -20,24 +20,43 @@ struct StickerPickerScreenViewModelTests {
         viewModel.context
     }
     
-    let sticker = BuiltInSticker(id: "smile",
+    let builtInSticker = Sticker(id: "smile",
                                  body: "Smiling face",
-                                 fileURL: URL(filePath: "/dev/null"),
+                                 source: .bundle(URL(filePath: "/dev/null")),
                                  width: 512,
                                  height: 512,
-                                 fileSize: 1024)
+                                 fileSize: 1024,
+                                 mimeType: "image/png")
+    
+    let userSticker = Sticker(id: "party",
+                              body: "Party",
+                              source: .media(url: "mxc://example.com/party"),
+                              width: 512,
+                              height: 512,
+                              fileSize: 1024,
+                              mimeType: "image/png")
+    
+    @Test
+    mutating func loadsUserStickersOnInit() async throws {
+        setupViewModel()
+        
+        let deferred = deferFulfillment(context.observe(\.viewState.userStickers)) { !$0.isEmpty }
+        try await deferred.fulfill()
+        
+        #expect(context.viewState.userStickers == [userSticker])
+        #expect(context.viewState.builtInStickers == [builtInSticker])
+    }
     
     @Test
     mutating func sendingSuccessDismisses() async throws {
         setupViewModel()
         
         let deferred = deferFulfillment(viewModel.actionsPublisher) { $0 == .dismiss }
-        context.send(viewAction: .send(sticker))
+        context.send(viewAction: .send(builtInSticker))
         try await deferred.fulfill()
         
-        let arguments = try #require(stickerService.sendInThreadRootEventIDReceivedArguments)
-        #expect(arguments.sticker == sticker)
-        #expect(arguments.threadRootEventID == "$thread-root")
+        let arguments = try #require(stickerService.sendInReceivedArguments)
+        #expect(arguments.sticker == builtInSticker)
     }
     
     @Test
@@ -45,8 +64,8 @@ struct StickerPickerScreenViewModelTests {
         setupViewModel(sendResult: .failure(.uploadFailed))
         
         let deferred = deferFulfillment(context.observe(\.viewState.sendingStickerID)) { $0 == nil }
-        context.send(viewAction: .send(sticker))
-        #expect(context.viewState.sendingStickerID == sticker.id)
+        context.send(viewAction: .send(builtInSticker))
+        #expect(context.viewState.sendingStickerID == builtInSticker.id)
         try await deferred.fulfill()
         
         #expect(userIndicatorController.submitIndicatorDelayCallsCount == 1)
@@ -55,19 +74,36 @@ struct StickerPickerScreenViewModelTests {
     @Test
     mutating func sendingIsIgnoredWhileAlreadySending() async {
         setupViewModel()
-        stickerService.sendInThreadRootEventIDClosure = { _, _, _ in
+        stickerService.sendInClosure = { _, _ in
             try? await Task.sleep(for: .seconds(10))
             return .success(())
         }
         
-        context.send(viewAction: .send(sticker))
-        #expect(context.viewState.sendingStickerID == sticker.id)
-        context.send(viewAction: .send(sticker))
+        context.send(viewAction: .send(builtInSticker))
+        #expect(context.viewState.sendingStickerID == builtInSticker.id)
+        context.send(viewAction: .send(builtInSticker))
         
-        while !stickerService.sendInThreadRootEventIDCalled {
+        while !stickerService.sendInCalled {
             await Task.yield()
         }
-        #expect(stickerService.sendInThreadRootEventIDCallsCount == 1)
+        #expect(stickerService.sendInCallsCount == 1)
+    }
+    
+    @Test
+    mutating func removingAStickerReloads() async throws {
+        setupViewModel()
+        
+        let loaded = deferFulfillment(context.observe(\.viewState.userStickers)) { !$0.isEmpty }
+        try await loaded.fulfill()
+        
+        stickerService.loadStickersReturnValue = StickerCollection(userStickers: [],
+                                                                   builtInStickers: [builtInSticker])
+        
+        let deferred = deferFulfillment(context.observe(\.viewState.userStickers)) { $0.isEmpty }
+        context.send(viewAction: .removeSticker(userSticker))
+        try await deferred.fulfill()
+        
+        #expect(stickerService.removeUserStickerIdReceivedId == userSticker.id)
     }
     
     @Test
@@ -83,15 +119,18 @@ struct StickerPickerScreenViewModelTests {
     
     private mutating func setupViewModel(sendResult: Result<Void, StickerServiceError> = .success(())) {
         stickerService = StickerServiceMock()
-        stickerService.stickers = [sticker]
-        stickerService.sendInThreadRootEventIDReturnValue = sendResult
+        stickerService.builtInStickers = [builtInSticker]
+        stickerService.loadStickersReturnValue = StickerCollection(userStickers: [userSticker],
+                                                                   builtInStickers: [builtInSticker])
+        stickerService.sendInReturnValue = sendResult
+        stickerService.removeUserStickerIdReturnValue = .success(())
         
-        roomProxy = JoinedRoomProxyMock(.init())
+        timelineController = TimelineControllerMock(.init())
         userIndicatorController = UserIndicatorControllerMock()
         
         viewModel = StickerPickerScreenViewModel(stickerService: stickerService,
-                                                 roomProxy: roomProxy,
-                                                 threadRootEventID: "$thread-root",
+                                                 timelineController: timelineController,
+                                                 mediaProvider: MediaProviderMock(.init()),
                                                  userIndicatorController: userIndicatorController)
     }
 }

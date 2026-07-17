@@ -12,94 +12,158 @@ import UIKit
 @MainActor
 struct StickerServiceTests {
     var clientProxy: ClientProxyMock!
-    var roomProxy: JoinedRoomProxyMock!
+    var timelineController: TimelineControllerMock!
     var userDefaults: UserDefaults!
     var service: StickerService!
     
     @Test
-    mutating func loadsStickersFromManifest() throws {
+    mutating func loadsBuiltInStickersFromManifest() throws {
         try setup()
         
-        #expect(service.stickers.count == 2)
+        #expect(service.builtInStickers.count == 2)
         
-        let sticker = try #require(service.stickers.first)
+        let sticker = try #require(service.builtInStickers.first)
         #expect(sticker.id == "one")
         #expect(sticker.body == "Sticker one")
         #expect(sticker.width == 2)
         #expect(sticker.height == 2)
-        #expect(sticker.fileSize > 0)
+        #expect(sticker.mimeType == "image/png")
     }
     
     @Test
-    mutating func sendBuildsExpectedContent() async throws {
+    mutating func loadsUserStickersFromAccountData() async throws {
         try setup()
-        let sticker = try #require(service.stickers.first)
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        {
+            "pack": { "display_name": "My pack" },
+            "images": {
+                "party": { "url": "mxc://example.com/party", "body": "Party", "usage": ["sticker"] },
+                "emote_only": { "url": "mxc://example.com/emote", "usage": ["emoticon"] },
+                "no_usage": { "url": "mxc://example.com/any" }
+            }
+        }
+        """)
         
-        let result = await service.send(sticker, in: roomProxy, threadRootEventID: nil)
+        let collection = await service.loadStickers()
+        
+        #expect(collection.builtInStickers.count == 2)
+        #expect(collection.userStickers.map(\.id) == ["no_usage", "party"])
+        #expect(collection.userStickers.last?.source == .media(url: "mxc://example.com/party"))
+    }
+    
+    @Test
+    mutating func sendingBuiltInStickerUploadsOnceAndCachesTheURI() async throws {
+        try setup()
+        let sticker = try #require(service.builtInStickers.first)
+        
+        _ = await service.send(sticker, in: timelineController)
+        _ = await service.send(sticker, in: timelineController)
+        
+        #expect(clientProxy.uploadMediaCallsCount == 1)
+        #expect(timelineController.sendStickerBodyUrlImageInfoCallsCount == 2)
+        
+        let arguments = try #require(timelineController.sendStickerBodyUrlImageInfoReceivedArguments)
+        #expect(arguments.body == "Sticker one")
+        #expect(arguments.url == "mxc://example.com/abc123")
+        #expect(arguments.imageInfo.mimetype == "image/png")
+    }
+    
+    @Test
+    mutating func sendingUserStickerDoesNotUpload() async throws {
+        try setup()
+        let sticker = Sticker(id: "party",
+                              body: "Party",
+                              source: .media(url: "mxc://example.com/party"),
+                              width: 512,
+                              height: 512,
+                              fileSize: 1000,
+                              mimeType: "image/png")
+        
+        let result = await service.send(sticker, in: timelineController)
         
         guard case .success = result else {
             Issue.record("Sending should succeed")
             return
         }
-        
-        let arguments = try #require(roomProxy.sendRawEventTypeContentReceivedArguments)
-        #expect(arguments.eventType == "m.sticker")
-        
-        let content = try #require(try JSONSerialization.jsonObject(with: Data(arguments.content.utf8)) as? [String: Any])
-        #expect(content["body"] as? String == "Sticker one")
-        #expect(content["url"] as? String == "mxc://example.com/abc123")
-        #expect(content["m.relates_to"] == nil)
-        
-        let info = try #require(content["info"] as? [String: Any])
-        #expect(info["w"] as? UInt64 == 2)
-        #expect(info["h"] as? UInt64 == 2)
-        #expect(info["mimetype"] as? String == "image/png")
-    }
-    
-    @Test
-    mutating func sendInThreadIncludesRelation() async throws {
-        try setup()
-        let sticker = try #require(service.stickers.first)
-        
-        _ = await service.send(sticker, in: roomProxy, threadRootEventID: "$thread-root")
-        
-        let arguments = try #require(roomProxy.sendRawEventTypeContentReceivedArguments)
-        let content = try #require(try JSONSerialization.jsonObject(with: Data(arguments.content.utf8)) as? [String: Any])
-        let relation = try #require(content["m.relates_to"] as? [String: Any])
-        #expect(relation["rel_type"] as? String == "m.thread")
-        #expect(relation["event_id"] as? String == "$thread-root")
-    }
-    
-    @Test
-    mutating func sendUploadsOnceAndCachesTheURI() async throws {
-        try setup()
-        let sticker = try #require(service.stickers.first)
-        
-        _ = await service.send(sticker, in: roomProxy, threadRootEventID: nil)
-        _ = await service.send(sticker, in: roomProxy, threadRootEventID: nil)
-        
-        #expect(clientProxy.uploadMediaCallsCount == 1)
-        #expect(roomProxy.sendRawEventTypeContentCallsCount == 2)
+        #expect(!clientProxy.uploadMediaCalled)
+        #expect(timelineController.sendStickerBodyUrlImageInfoReceivedArguments?.url == "mxc://example.com/party")
     }
     
     @Test
     mutating func uploadFailureIsSurfacedAndNothingIsSent() async throws {
         try setup()
         clientProxy.uploadMediaReturnValue = .failure(.invalidMedia)
-        let sticker = try #require(service.stickers.first)
+        let sticker = try #require(service.builtInStickers.first)
         
-        let result = await service.send(sticker, in: roomProxy, threadRootEventID: nil)
+        let result = await service.send(sticker, in: timelineController)
         
         guard case .failure(.uploadFailed) = result else {
             Issue.record("Sending should fail with an upload error")
             return
         }
-        #expect(!roomProxy.sendRawEventTypeContentCalled)
+        #expect(!timelineController.sendStickerBodyUrlImageInfoCalled)
         
         // A subsequent send shouldn't use a cached URI from the failed attempt.
         clientProxy.uploadMediaReturnValue = .success("mxc://example.com/abc123")
-        _ = await service.send(sticker, in: roomProxy, threadRootEventID: nil)
+        _ = await service.send(sticker, in: timelineController)
         #expect(clientProxy.uploadMediaCallsCount == 2)
+    }
+    
+    @Test
+    mutating func addingAStickerUploadsAndUpdatesThePack() async throws {
+        try setup()
+        let imageURL = try makeTestImageFile(named: "Fancy Cat")
+        
+        let result = await service.addUserSticker(fromMediaAt: imageURL)
+        
+        guard case .success = result else {
+            Issue.record("Adding should succeed")
+            return
+        }
+        
+        #expect(clientProxy.uploadMediaCallsCount == 1)
+        
+        let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
+        #expect(arguments.eventType == "im.ponies.user_emotes")
+        
+        let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
+        let image = try #require(pack.images["fancy_cat"])
+        #expect(image.url == "mxc://example.com/abc123")
+        #expect(image.body == "Fancy Cat")
+        #expect(image.usage == ["sticker"])
+        #expect(image.info?.mimetype != nil)
+    }
+    
+    @Test
+    mutating func removingAStickerUpdatesThePack() async throws {
+        try setup()
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        { "images": { "party": { "url": "mxc://example.com/party" } } }
+        """)
+        
+        let result = await service.removeUserSticker(id: "party")
+        
+        guard case .success = result else {
+            Issue.record("Removing should succeed")
+            return
+        }
+        
+        let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
+        let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
+        #expect(pack.images.isEmpty)
+    }
+    
+    @Test
+    mutating func removingAnUnknownStickerDoesNotWriteAccountData() async throws {
+        try setup()
+        
+        let result = await service.removeUserSticker(id: "missing")
+        
+        guard case .success = result else {
+            Issue.record("Removing a missing sticker should be a no-op success")
+            return
+        }
+        #expect(!clientProxy.setAccountDataEventTypeContentCalled)
     }
     
     // MARK: - Private
@@ -122,14 +186,29 @@ struct StickerServiceTests {
         
         clientProxy = ClientProxyMock(.init(userID: "@alice:example.com"))
         clientProxy.uploadMediaReturnValue = .success("mxc://example.com/abc123")
+        clientProxy.underlyingMaxMediaUploadSize = .success(100 * 1024 * 1024)
+        clientProxy.accountDataEventTypeReturnValue = .success(nil)
+        clientProxy.setAccountDataEventTypeContentReturnValue = .success(())
         
-        roomProxy = JoinedRoomProxyMock(.init())
+        timelineController = TimelineControllerMock(.init())
+        timelineController.sendStickerBodyUrlImageInfoReturnValue = .success(())
         
         userDefaults = try #require(UserDefaults(suiteName: bundleDirectory.lastPathComponent))
         userDefaults.removePersistentDomain(forName: bundleDirectory.lastPathComponent)
         
         let bundle = try #require(Bundle(path: bundleDirectory.path(percentEncoded: false)))
-        service = StickerService(clientProxy: clientProxy, bundle: bundle, userDefaults: userDefaults)
+        service = StickerService(clientProxy: clientProxy,
+                                 mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: AppSettings.volatile()),
+                                 bundle: bundle,
+                                 userDefaults: userDefaults)
+    }
+    
+    private func makeTestImageFile(named name: String) throws -> URL {
+        let directory = URL(filePath: NSTemporaryDirectory()).appending(path: "StickerServiceTests-media-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let fileURL = directory.appending(path: "\(name).png")
+        try makeTestImage().pngData()?.write(to: fileURL)
+        return fileURL
     }
     
     private func makeTestImage() -> UIImage {

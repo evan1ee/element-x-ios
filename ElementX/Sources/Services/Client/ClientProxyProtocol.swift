@@ -203,6 +203,12 @@ protocol ClientProxyProtocol: AnyObject {
     
     func uploadMedia(_ media: MediaInfo) async -> Result<String, ClientProxyError>
     
+    /// The raw JSON content of the global account data event with the given type, if any.
+    func accountData(eventType: String) async -> Result<String?, ClientProxyError>
+    
+    /// Sets the global account data event of the given type to the given raw JSON content.
+    func setAccountData(eventType: String, content: String) async -> Result<Void, ClientProxyError>
+    
     func roomForIdentifier(_ identifier: String) async -> RoomProxyType?
     
     func roomPreviewForIdentifier(_ identifier: String, via: [String]) async -> Result<RoomPreviewProxyProtocol, ClientProxyError>

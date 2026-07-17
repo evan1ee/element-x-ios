@@ -43,6 +43,7 @@ enum A11yIdentifiers {
     static let notificationSettingsEditScreen = NotificationSettingsEditScreen()
     static let pollFormScreen = PollFormScreen()
     static let roomPollsHistoryScreen = RoomPollsHistoryScreen()
+    static let stickerPickerScreen = StickerPickerScreen()
     static let roomMembersListScreen = RoomMembersListScreen()
     static let manageRoomMemberSheet = ManageRoomMemberSheet()
     static let spacesScreen = SpacesScreen()
@@ -293,6 +294,10 @@ enum A11yIdentifiers {
         let roomTopic = "create_room-room_topic"
         let mediaPicker = "create_room-media_picker"
         let filePicker = "create_room-file_picker"
+    }
+    
+    struct StickerPickerScreen {
+        let addSticker = "sticker_picker-add_sticker"
     }
     
     struct PollFormScreen {

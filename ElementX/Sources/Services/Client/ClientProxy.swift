@@ -635,6 +635,25 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
     
+    func accountData(eventType: String) async -> Result<String?, ClientProxyError> {
+        do {
+            return try await .success(client.accountData(eventType: eventType))
+        } catch {
+            MXLog.error("Failed fetching account data of type \(eventType) with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+    
+    func setAccountData(eventType: String, content: String) async -> Result<Void, ClientProxyError> {
+        do {
+            try await client.setAccountData(eventType: eventType, content: content)
+            return .success(())
+        } catch {
+            MXLog.error("Failed setting account data of type \(eventType) with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+    
     func roomForIdentifier(_ identifier: String) async -> RoomProxyType? {
         let shouldAwait = roomsToAwait.remove(identifier) != nil
         

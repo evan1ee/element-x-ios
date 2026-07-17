@@ -10,8 +10,8 @@ import SwiftUI
 
 struct StickerPickerScreenCoordinatorParameters {
     let stickerService: StickerServiceProtocol
-    let roomProxy: JoinedRoomProxyProtocol
-    let threadRootEventID: String?
+    let timelineController: TimelineControllerProtocol
+    let mediaProvider: MediaProviderProtocol
     let userIndicatorController: UserIndicatorControllerProtocol
 }
 
@@ -31,8 +31,8 @@ final class StickerPickerScreenCoordinator: CoordinatorProtocol {
     
     init(parameters: StickerPickerScreenCoordinatorParameters) {
         viewModel = StickerPickerScreenViewModel(stickerService: parameters.stickerService,
-                                                 roomProxy: parameters.roomProxy,
-                                                 threadRootEventID: parameters.threadRootEventID,
+                                                 timelineController: parameters.timelineController,
+                                                 mediaProvider: parameters.mediaProvider,
                                                  userIndicatorController: parameters.userIndicatorController)
     }
     

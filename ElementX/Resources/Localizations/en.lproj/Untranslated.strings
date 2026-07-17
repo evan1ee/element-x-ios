@@ -5,6 +5,9 @@
 "screen_search_no_results_message" = "There are no results for “%1$@.” Try a new search term.";
 "screen_search_tab_messages" = "Messages";
 "screen_search_tab_rooms" = "Rooms";
+"screen_sticker_picker_add_sticker" = "Add sticker";
+"screen_sticker_picker_built_in_stickers" = "Built-in";
+"screen_sticker_picker_my_stickers" = "My stickers";
 "screen_sticker_picker_title" = "Stickers";
 "soft_logout_clear_data_dialog_content" = "Clear all data currently stored on this device?\nSign in again to access your account data and messages.";
 "soft_logout_clear_data_dialog_title" = "Clear data";

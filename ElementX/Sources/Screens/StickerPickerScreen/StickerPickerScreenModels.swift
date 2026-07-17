@@ -6,21 +6,37 @@
 //
 
 import Foundation
+import PhotosUI
+import SwiftUI
 
 enum StickerPickerScreenViewModelAction {
     case dismiss
 }
 
 struct StickerPickerScreenViewState: BindableState {
-    var stickers: [BuiltInSticker]
+    var userStickers: [Sticker] = []
+    var builtInStickers: [Sticker] = []
     var sendingStickerID: String?
+    var isAddingSticker = false
+    
+    var bindings = StickerPickerScreenViewStateBindings()
     
     var isSending: Bool {
         sendingStickerID != nil
     }
+    
+    var isBusy: Bool {
+        isSending || isAddingSticker
+    }
+}
+
+struct StickerPickerScreenViewStateBindings {
+    var photosPickerItem: PhotosPickerItem?
 }
 
 enum StickerPickerScreenViewAction {
-    case send(BuiltInSticker)
+    case send(Sticker)
+    case addSelectedPhoto
+    case removeSticker(Sticker)
     case cancel
 }

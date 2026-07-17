@@ -6,6 +6,7 @@
 //
 
 import Compound
+import PhotosUI
 import SwiftUI
 
 struct StickerPickerScreen: View {
@@ -15,20 +16,17 @@ struct StickerPickerScreen: View {
     
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(context.viewState.stickers) { sticker in
-                    Button {
-                        context.send(viewAction: .send(sticker))
-                    } label: {
-                        stickerImage(for: sticker)
-                            .overlay {
-                                if context.viewState.sendingStickerID == sticker.id {
-                                    ProgressView()
-                                }
-                            }
-                    }
-                    .disabled(context.viewState.isSending)
-                    .accessibilityLabel(sticker.body)
+            VStack(alignment: .leading, spacing: 24) {
+                if !context.viewState.userStickers.isEmpty {
+                    section(title: UntranslatedL10n.screenStickerPickerMyStickers,
+                            stickers: context.viewState.userStickers,
+                            allowsRemoval: true)
+                    
+                    section(title: UntranslatedL10n.screenStickerPickerBuiltInStickers,
+                            stickers: context.viewState.builtInStickers,
+                            allowsRemoval: false)
+                } else {
+                    grid(for: context.viewState.builtInStickers, allowsRemoval: false)
                 }
             }
             .padding(16)
@@ -42,20 +40,94 @@ struct StickerPickerScreen: View {
                     context.send(viewAction: .cancel)
                 }
             }
+            
+            ToolbarItem(placement: .primaryAction) {
+                if context.viewState.isAddingSticker {
+                    ProgressView()
+                } else {
+                    PhotosPicker(selection: $context.photosPickerItem, matching: .images, photoLibrary: .shared()) {
+                        CompoundIcon(\.plus)
+                    }
+                    .disabled(context.viewState.isBusy)
+                    .accessibilityLabel(UntranslatedL10n.screenStickerPickerAddSticker)
+                    .accessibilityIdentifier(A11yIdentifiers.stickerPickerScreen.addSticker)
+                }
+            }
+        }
+        .onChange(of: context.photosPickerItem) {
+            context.send(viewAction: .addSelectedPhoto)
+        }
+    }
+    
+    private func section(title: String, stickers: [Sticker], allowsRemoval: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.compound.bodySMSemibold)
+                .foregroundColor(.compound.textSecondary)
+            
+            grid(for: stickers, allowsRemoval: allowsRemoval)
+        }
+    }
+    
+    private func grid(for stickers: [Sticker], allowsRemoval: Bool) -> some View {
+        LazyVGrid(columns: columns, spacing: 16) {
+            ForEach(stickers) { sticker in
+                Button {
+                    context.send(viewAction: .send(sticker))
+                } label: {
+                    stickerImage(for: sticker)
+                        .overlay {
+                            if context.viewState.sendingStickerID == sticker.id {
+                                ProgressView()
+                            }
+                        }
+                }
+                .disabled(context.viewState.isBusy)
+                .accessibilityLabel(sticker.body)
+                .contextMenu {
+                    if allowsRemoval {
+                        Button(role: .destructive) {
+                            context.send(viewAction: .removeSticker(sticker))
+                        } label: {
+                            Label(L10n.actionRemove, icon: \.delete)
+                        }
+                    }
+                }
+            }
         }
     }
     
     @ViewBuilder
-    private func stickerImage(for sticker: BuiltInSticker) -> some View {
-        if let image = UIImage(contentsOfFile: sticker.fileURL.path(percentEncoded: false)) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-        } else {
-            Rectangle()
-                .foregroundColor(.compound.bgSubtleSecondary)
+    private func stickerImage(for sticker: Sticker) -> some View {
+        switch sticker.source {
+        case .bundle(let fileURL):
+            if let image = UIImage(contentsOfFile: fileURL.path(percentEncoded: false)) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                placeholder
+            }
+        case .media(let url):
+            if let mediaSource = try? MediaSourceProxy(url: URL(string: url) ?? URL(filePath: "/"), mimeType: sticker.mimeType) {
+                LoadableImage(mediaSource: mediaSource,
+                              mediaType: .generic,
+                              blurhash: nil,
+                              size: nil,
+                              mediaProvider: context.mediaProvider) {
+                    placeholder
+                }
                 .aspectRatio(1, contentMode: .fit)
+            } else {
+                placeholder
+            }
         }
+    }
+    
+    private var placeholder: some View {
+        Rectangle()
+            .foregroundColor(.compound.bgSubtleSecondary)
+            .aspectRatio(1, contentMode: .fit)
     }
 }
 
@@ -72,11 +144,15 @@ struct StickerPickerScreen_Previews: PreviewProvider, TestablePreview {
     }
     
     static func makeViewModel() -> StickerPickerScreenViewModel {
-        let stickerService = StickerService(clientProxy: ClientProxyMock(.init()))
+        let clientProxy = ClientProxyMock(.init())
+        clientProxy.accountDataEventTypeReturnValue = .success(nil)
+        
+        let stickerService = StickerService(clientProxy: clientProxy,
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: AppSettings.volatile()))
         
         return StickerPickerScreenViewModel(stickerService: stickerService,
-                                            roomProxy: JoinedRoomProxyMock(.init()),
-                                            threadRootEventID: nil,
+                                            timelineController: TimelineControllerMock(.init()),
+                                            mediaProvider: MediaProviderMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
     }
 }

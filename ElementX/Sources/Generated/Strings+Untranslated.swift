@@ -26,6 +26,12 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
   /// Rooms
   internal static var screenSearchTabRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_rooms") }
+  /// Add sticker
+  internal static var screenStickerPickerAddSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_add_sticker") }
+  /// Built-in
+  internal static var screenStickerPickerBuiltInStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_built_in_stickers") }
+  /// My stickers
+  internal static var screenStickerPickerMyStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_my_stickers") }
   /// Stickers
   internal static var screenStickerPickerTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_title") }
   /// Clear all data currently stored on this device?
