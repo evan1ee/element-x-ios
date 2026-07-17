@@ -453,6 +453,20 @@ final class TimelineProxy: TimelineProxyProtocol {
         return .success(())
     }
     
+    func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineProxyError> {
+        MXLog.info("Sending sticker")
+        
+        do {
+            _ = try await timeline.sendSticker(body: body, url: url, info: imageInfo)
+            MXLog.info("Finished sending sticker")
+        } catch {
+            MXLog.error("Failed sending sticker with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+        
+        return .success(())
+    }
+    
     func sendReadReceipt(for eventID: String, type: ReceiptType) async -> Result<Void, TimelineProxyError> {
         MXLog.info("Sending read receipt for eventID: \(eventID)")
         

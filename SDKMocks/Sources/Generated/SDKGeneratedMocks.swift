@@ -9606,12 +9606,12 @@ open class RoomSDKMock: MatrixRustSDK.Room, @unchecked Sendable {
         get { heroesReturnValueLock.withLock { heroesUnderlyingReturnValue } }
         set { heroesReturnValueLock.withLock { heroesUnderlyingReturnValue = newValue } }
     }
-    open var heroesClosure: (() -> [RoomHero])?
+    open var heroesClosure: (() async -> [RoomHero])?
 
-    open override func heroes() -> [RoomHero] {
+    open override func heroes() async -> [RoomHero] {
         heroesCallsCountLock.withLock { heroesUnderlyingCallsCount += 1 }
         if let heroesClosure = heroesClosure {
-            return heroesClosure()
+            return await heroesClosure()
         } else {
             return heroesReturnValue
         }
@@ -17824,6 +17824,53 @@ open class TimelineSDKMock: MatrixRustSDK.Timeline, @unchecked Sendable {
         sendReplyMsgEventIdReceivedArguments = (msg: msg, eventId: eventId)
         sendReplyMsgEventIdReceivedInvocationsLock.withLock { sendReplyMsgEventIdUnderlyingReceivedInvocations.append((msg: msg, eventId: eventId)) }
         try await sendReplyMsgEventIdClosure?(msg, eventId)
+    }
+
+    //MARK: - sendSticker
+
+    open var sendStickerBodyUrlInfoThrowableError: Error?
+    private let sendStickerBodyUrlInfoCallsCountLock = NSLock()
+    private var sendStickerBodyUrlInfoUnderlyingCallsCount = 0
+    open var sendStickerBodyUrlInfoCallsCount: Int {
+        get { sendStickerBodyUrlInfoCallsCountLock.withLock { sendStickerBodyUrlInfoUnderlyingCallsCount } }
+        set { sendStickerBodyUrlInfoCallsCountLock.withLock { sendStickerBodyUrlInfoUnderlyingCallsCount = newValue } }
+    }
+    open var sendStickerBodyUrlInfoCalled: Bool {
+        return sendStickerBodyUrlInfoCallsCount > 0
+    }
+    private let sendStickerBodyUrlInfoReceivedArgumentsLock = NSLock()
+    private var sendStickerBodyUrlInfoUnderlyingReceivedArguments: (body: String, url: String, info: ImageInfo)?
+    open var sendStickerBodyUrlInfoReceivedArguments: (body: String, url: String, info: ImageInfo)? {
+        get { sendStickerBodyUrlInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlInfoUnderlyingReceivedArguments } }
+        set { sendStickerBodyUrlInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlInfoUnderlyingReceivedArguments = newValue } }
+    }
+    private let sendStickerBodyUrlInfoReceivedInvocationsLock = NSLock()
+    private var sendStickerBodyUrlInfoUnderlyingReceivedInvocations: [(body: String, url: String, info: ImageInfo)] = []
+    open var sendStickerBodyUrlInfoReceivedInvocations: [(body: String, url: String, info: ImageInfo)] {
+        get { sendStickerBodyUrlInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlInfoUnderlyingReceivedInvocations } }
+        set { sendStickerBodyUrlInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlInfoUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let sendStickerBodyUrlInfoReturnValueLock = NSLock()
+    open var sendStickerBodyUrlInfoUnderlyingReturnValue: SendHandle!
+    open var sendStickerBodyUrlInfoReturnValue: SendHandle! {
+        get { sendStickerBodyUrlInfoReturnValueLock.withLock { sendStickerBodyUrlInfoUnderlyingReturnValue } }
+        set { sendStickerBodyUrlInfoReturnValueLock.withLock { sendStickerBodyUrlInfoUnderlyingReturnValue = newValue } }
+    }
+    open var sendStickerBodyUrlInfoClosure: ((String, String, ImageInfo) async throws -> SendHandle)?
+
+    open override func sendSticker(body: String, url: String, info: ImageInfo) async throws -> SendHandle {
+        if let error = sendStickerBodyUrlInfoThrowableError {
+            throw error
+        }
+        sendStickerBodyUrlInfoCallsCountLock.withLock { sendStickerBodyUrlInfoUnderlyingCallsCount += 1 }
+        sendStickerBodyUrlInfoReceivedArguments = (body: body, url: url, info: info)
+        sendStickerBodyUrlInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlInfoUnderlyingReceivedInvocations.append((body: body, url: url, info: info)) }
+        if let sendStickerBodyUrlInfoClosure = sendStickerBodyUrlInfoClosure {
+            return try await sendStickerBodyUrlInfoClosure(body, url, info)
+        } else {
+            return sendStickerBodyUrlInfoReturnValue
+        }
     }
 
     //MARK: - sendVideo

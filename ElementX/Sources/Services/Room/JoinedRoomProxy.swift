@@ -462,16 +462,6 @@ class JoinedRoomProxy: JoinedRoomProxyProtocol {
         }
     }
     
-    func sendRaw(eventType: String, content: String) async -> Result<Void, RoomProxyError> {
-        do {
-            try await room.sendRaw(eventType: eventType, content: content)
-            return .success(())
-        } catch {
-            MXLog.error("Failed sending raw event of type \(eventType) with error: \(error)")
-            return .failure(.sdkError(error))
-        }
-    }
-    
     func ignoreDeviceTrustAndResend(devices: [String: [String]], sendHandle: SendHandleProxy) async -> Result<Void, RoomProxyError> {
         do {
             try await room.ignoreDeviceTrustAndResend(devices: devices, sendHandle: sendHandle.underlyingHandle)

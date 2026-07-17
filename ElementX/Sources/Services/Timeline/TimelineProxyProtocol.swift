@@ -122,6 +122,9 @@ protocol TimelineProxyProtocol: Sendable {
                      inReplyToEventID: String?,
                      intentionalMentions: IntentionalMentions) async -> Result<Void, TimelineProxyError>
     
+    /// Sends an `m.sticker` event for already uploaded media, `url` being its `mxc://` URI.
+    func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineProxyError>
+    
     func toggleReaction(_ reaction: String, to eventID: TimelineItemIdentifier.EventOrTransactionID) async -> Result<Void, TimelineProxyError>
     
     func createPoll(question: String, answers: [String], maxSelections: Int, pollKind: Poll.Kind) async -> Result<Void, TimelineProxyError>

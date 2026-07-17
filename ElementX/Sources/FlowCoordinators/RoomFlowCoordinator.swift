@@ -456,8 +456,11 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                 }
                 presentPollForm(mode: mode, timelineController: timelineController)
                 
-            case (_, .presentStickerPicker(let threadRootEventID), .stickerPicker):
-                presentStickerPicker(threadRootEventID: threadRootEventID)
+            case (_, .presentStickerPicker, .stickerPicker):
+                guard let timelineController = (context.userInfo as? EventUserInfo)?.timelineController else {
+                    fatalError("Missing required TimelineController")
+                }
+                presentStickerPicker(timelineController: timelineController)
                 
             case (_, .presentResolveSendFailure(let failure, let sendHandle), .resolveSendFailure):
                 presentResolveSendFailure(failure: failure, sendHandle: sendHandle)
@@ -721,7 +724,8 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                     stateMachine.tryEvent(.presentPollForm(mode: mode),
                                           userInfo: EventUserInfo(animated: animated, timelineController: timelineController))
                 case .presentStickerPicker:
-                    stateMachine.tryEvent(.presentStickerPicker(threadRootEventID: nil))
+                    stateMachine.tryEvent(.presentStickerPicker,
+                                          userInfo: EventUserInfo(animated: animated, timelineController: timelineController))
                 case .presentLocationViewer(let location):
                     stateMachine.tryEvent(.presentMapNavigator(interactionMode: .viewStatic(location)),
                                           userInfo: EventUserInfo(animated: animated,
@@ -835,7 +839,8 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                 stateMachine.tryEvent(.presentPollForm(mode: mode),
                                       userInfo: EventUserInfo(animated: animated, timelineController: timelineController))
             case .presentStickerPicker:
-                stateMachine.tryEvent(.presentStickerPicker(threadRootEventID: threadRootEventID))
+                stateMachine.tryEvent(.presentStickerPicker,
+                                      userInfo: EventUserInfo(animated: animated, timelineController: timelineController))
             case .presentLocationViewer(let location):
                 stateMachine.tryEvent(.presentMapNavigator(interactionMode: .viewStatic(location)),
                                       userInfo: EventUserInfo(animated: animated,
@@ -1239,11 +1244,13 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
         }
     }
     
-    private func presentStickerPicker(threadRootEventID: String?) {
+    private func presentStickerPicker(timelineController: TimelineControllerProtocol) {
         let stackCoordinator = NavigationStackCoordinator()
-        let coordinator = StickerPickerScreenCoordinator(parameters: .init(stickerService: StickerService(clientProxy: userSession.clientProxy),
-                                                                           roomProxy: roomProxy,
-                                                                           threadRootEventID: threadRootEventID,
+        let stickerService = StickerService(clientProxy: userSession.clientProxy,
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: flowParameters.appSettings))
+        let coordinator = StickerPickerScreenCoordinator(parameters: .init(stickerService: stickerService,
+                                                                           timelineController: timelineController,
+                                                                           mediaProvider: userSession.mediaProvider,
                                                                            userIndicatorController: flowParameters.userIndicatorController))
         stackCoordinator.setRootCoordinator(coordinator)
         

@@ -1265,6 +1265,7 @@
 		CB99B0FA38A4AC596F38CC13 /* KeychainControllerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E94DCFEE803E5ABAE8ACCE /* KeychainControllerProtocol.swift */; };
 		CB9FB2BEF313072C705AC9B5 /* SecurityAndPrivacyScreenViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0315C328FF40F84276364E66 /* SecurityAndPrivacyScreenViewModelTests.swift */; };
 		CBBBE597BE74A2DF68DE2209 /* NotificationItemProxyProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DDB7A9BB466C56614BB589D /* NotificationItemProxyProtocol.swift */; };
+		CBCAF9847B0583D56C78263A /* UserStickerPack.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC673C58F13AB19EF9A46E18 /* UserStickerPack.swift */; };
 		CBD2ABE4C1A47ECD99E1488E /* NotificationSettingsScreenViewModelProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421FA93BCC2840E66E4F306F /* NotificationSettingsScreenViewModelProtocol.swift */; };
 		CBEE2AA8B0C9BDDB3FDD4C81 /* DeferredFulfillment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91AD590B0B40718A0AA0C61 /* DeferredFulfillment.swift */; };
 		CC0D088F505F33A20DC5590F /* RoomStateEventStringBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEAFB646E583655652C3D04 /* RoomStateEventStringBuilderTests.swift */; };
@@ -2867,6 +2868,7 @@
 		CC1DDB2293A51EA4C2739351 /* RoomListFiltersEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomListFiltersEmptyStateView.swift; sourceTree = "<group>"; };
 		CC437C491EA6996513B1CEAB /* ElementCallConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElementCallConfiguration.swift; sourceTree = "<group>"; };
 		CC666DAE98245269775329B2 /* RoomMembersFlowCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomMembersFlowCoordinatorTests.swift; sourceTree = "<group>"; };
+		CC673C58F13AB19EF9A46E18 /* UserStickerPack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStickerPack.swift; sourceTree = "<group>"; };
 		CC680E0E79D818706CB28CF8 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CC743C7A85E3171BCBF0A653 /* AvatarHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarHeaderView.swift; sourceTree = "<group>"; };
 		CC8E9ECC1118A92FAD5191CD /* SpaceAddRoomsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceAddRoomsScreen.swift; sourceTree = "<group>"; };
@@ -2881,6 +2883,7 @@
 		CE19840E1FEB32519A3C1922 /* sticker_party.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sticker_party.png; sourceTree = "<group>"; };
 		CEE20623EB4A9B88FB29F2BA /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/SAS.strings; sourceTree = "<group>"; };
 		CEE41494C837AA403A06A5D9 /* UnitTests.xctestplan */ = {isa = PBXFileReference; path = UnitTests.xctestplan; sourceTree = "<group>"; };
+		CF05437C99730E5B3357FC51 /* matrix-rust-sdk */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "matrix-rust-sdk"; path = "../matrix-rust-sdk"; sourceTree = SOURCE_ROOT; };
 		CF19027E7FFA5E63D148873A /* CreateRoomScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateRoomScreenViewModel.swift; sourceTree = "<group>"; };
 		CF847A34FC4C8C937CD39E08 /* LabsScreenViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabsScreenViewModelProtocol.swift; sourceTree = "<group>"; };
 		CFFA5E881D281810AB428EA3 /* RoomPowerLevelsProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomPowerLevelsProxy.swift; sourceTree = "<group>"; };
@@ -5763,6 +5766,7 @@
 			children = (
 				DEF8766F9B1A5CEB15FD0935 /* BuildExtensions */,
 				174E4AEF3DED300AA81046EC /* compound-ios */,
+				CF05437C99730E5B3357FC51 /* matrix-rust-sdk */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -6586,6 +6590,7 @@
 			children = (
 				9B6B0FADFC2D5123EC1EBDE0 /* StickerService.swift */,
 				248466D3322209170A19EB53 /* StickerServiceProtocol.swift */,
+				CC673C58F13AB19EF9A46E18 /* UserStickerPack.swift */,
 			);
 			path = Stickers;
 			sourceTree = "<group>";
@@ -7681,7 +7686,6 @@
 				4BDA7F6042968E8422470F3F /* XCRemoteSwiftPackageReference "LoremSwiftum" */,
 				77AE49CFABC25477776A855A /* XCRemoteSwiftPackageReference "Mantis" */,
 				0CBF57301AA172C21F76CE86 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
-				6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */,
 				96495DD8554E2F39D3954354 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				A08925A9D5E3770DEB9D8509 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				E9C4F3A12AA1F65C13A8C8EB /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
@@ -7693,6 +7697,7 @@
 				EE40B0E16A55BD23ECBFFD22 /* XCRemoteSwiftPackageReference "matrix-rich-text-editor-swift" */,
 				FE1E8395D966E5C36506BB4A /* XCLocalSwiftPackageReference "BuildExtensions" */,
 				C89CF7729E028671C5DC461E /* XCLocalSwiftPackageReference "compound-ios" */,
+				8FB6F8BBB0A235E3C8DCF8F7 /* XCLocalSwiftPackageReference "../matrix-rust-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 681566846AF307E9BA4C72C6 /* Products */;
@@ -9385,6 +9390,7 @@
 				7E91BAC17963ED41208F489B /* UserSessionStore.swift in Sources */,
 				79D57E9AE03A2DC689D14EA2 /* UserSessionStoreMock.swift in Sources */,
 				AC69B6DF15FC451AB2945036 /* UserSessionStoreProtocol.swift in Sources */,
+				CBCAF9847B0583D56C78263A /* UserStickerPack.swift in Sources */,
 				9707AF8D41667FA9B35E8953 /* UserToInvite.swift in Sources */,
 				2447FADEF13225BB6227B977 /* VerificationBadge.swift in Sources */,
 				5C33976A720B64094CBC56B1 /* VideoMediaEventsTimelineView.swift in Sources */,
@@ -10397,6 +10403,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		8FB6F8BBB0A235E3C8DCF8F7 /* XCLocalSwiftPackageReference "../matrix-rust-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../matrix-rust-sdk";
+		};
 		C89CF7729E028671C5DC461E /* XCLocalSwiftPackageReference "compound-ios" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "compound-ios";
@@ -10462,14 +10472,6 @@
 			requirement = {
 				kind = upToNextMinorVersion;
 				minimumVersion = 6.0.1;
-			};
-		};
-		6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/element-hq/matrix-rust-components-swift";
-			requirement = {
-				kind = exactVersion;
-				version = 26.07.15;
 			};
 		};
 		701C7BEF8F70F7A83E852DCC /* XCRemoteSwiftPackageReference "GZIP" */ = {
@@ -10778,7 +10780,6 @@
 		};
 		6647C55D93508C7CE9D954A5 /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		6690850AA47ECED7E1CAB345 /* KZFileWatchers */ = {
@@ -10873,7 +10874,6 @@
 		};
 		A678E40E917620059695F067 /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		A7CA6F33C553805035C3B114 /* DeviceKit */ = {
@@ -10897,7 +10897,6 @@
 		};
 		B1E8B697DF78FE7F61FC6CA4 /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		BA93CD75CCE486660C9040BD /* Collections */ = {
@@ -10907,7 +10906,6 @@
 		};
 		BB111AE9D390233CDD2C7FD5 /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		BC01130651CB23340B899032 /* DeviceKit */ = {
@@ -10922,17 +10920,14 @@
 		};
 		C07EA60CAB296D7726210F5B /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		C2C69B8BA5A9702E7A8BC08F /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		C79D91A7F9F378CECEF64B5A /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		CA07D57389DACE18AEB6A5E2 /* WysiwygComposer */ = {
@@ -10962,7 +10957,6 @@
 		};
 		DB9D6197EEDBA2CC860208E2 /* MatrixRustSDK */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6FC4820D8D4559CEECA064D7 /* XCRemoteSwiftPackageReference "matrix-rust-components-swift" */;
 			productName = MatrixRustSDK;
 		};
 		DCA3C4A997AD28E6918D4CE5 /* Compound */ = {

@@ -158,7 +158,7 @@ extension RoomFlowCoordinator {
         case presentPollForm(mode: PollFormMode)
         case dismissPollForm
         
-        case presentStickerPicker(threadRootEventID: String?)
+        case presentStickerPicker
         case dismissStickerPicker
         
         case presentPollsHistory

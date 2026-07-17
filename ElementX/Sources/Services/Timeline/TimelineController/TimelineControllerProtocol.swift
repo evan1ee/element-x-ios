@@ -135,6 +135,11 @@ protocol TimelineControllerProtocol: Sendable {
                           waveform: [Float],
                           requestHandle: @MainActor (SendAttachmentJoinHandleProtocol) -> Void) async -> Result<Void, TimelineControllerError>
     
+    // MARK: - Stickers
+    
+    /// Sends an `m.sticker` event for already uploaded media, `url` being its `mxc://` URI.
+    func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError>
+    
     // MARK: - Poll
     
     func createPoll(question: String, answers: [String], maxSelections: Int, pollKind: Poll.Kind) async -> Result<Void, TimelineControllerError>

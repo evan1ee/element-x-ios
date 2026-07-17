@@ -402,6 +402,18 @@ class TimelineController: TimelineControllerProtocol {
         }
     }
     
+    // MARK: - Stickers
+    
+    func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError> {
+        switch await activeTimeline.sendSticker(body: body, url: url, imageInfo: imageInfo).mapError(TimelineControllerError.timelineProxyError) {
+        case .success:
+            callbacks.send(.messageSentOrEdited)
+            return .success(())
+        case .failure(let error):
+            return .failure(error)
+        }
+    }
+    
     // MARK: - Polls
     
     func createPoll(question: String, answers: [String], maxSelections: Int, pollKind: Poll.Kind) async -> Result<Void, TimelineControllerError> {

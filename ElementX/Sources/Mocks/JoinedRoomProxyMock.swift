@@ -82,7 +82,6 @@ extension JoinedRoomProxyMock {
         
         ignoreDeviceTrustAndResendDevicesSendHandleReturnValue = .success(())
         withdrawVerificationAndResendUserIDsSendHandleReturnValue = .success(())
-        sendRawEventTypeContentReturnValue = .success(())
         
         flagAsUnreadReturnValue = .success(())
         markAsReadReceiptTypeReturnValue = .success(())
@@ -205,7 +204,9 @@ private extension RoomHero {
     init(from memberProxy: RoomMemberProxyMock) {
         self.init(userId: memberProxy.userID,
                   displayName: memberProxy.displayName,
-                  avatarUrl: memberProxy.avatarURL?.absoluteString)
+                  avatarUrl: memberProxy.avatarURL?.absoluteString,
+                  status: nil,
+                  call: nil)
     }
 }
 

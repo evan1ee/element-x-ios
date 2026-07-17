@@ -2965,6 +2965,90 @@ nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
             return uploadMediaReturnValue
         }
     }
+    //MARK: - accountData
+
+    private let accountDataEventTypeCallsCountLock = NSLock()
+    private nonisolated(unsafe) var accountDataEventTypeUnderlyingCallsCount = 0
+    var accountDataEventTypeCallsCount: Int {
+        get { accountDataEventTypeCallsCountLock.withLock { accountDataEventTypeUnderlyingCallsCount } }
+        set { accountDataEventTypeCallsCountLock.withLock { accountDataEventTypeUnderlyingCallsCount = newValue } }
+    }
+    var accountDataEventTypeCalled: Bool {
+        return accountDataEventTypeCallsCount > 0
+    }
+    private let accountDataEventTypeReceivedEventTypeLock = NSLock()
+    private nonisolated(unsafe) var accountDataEventTypeUnderlyingReceivedEventType: String?
+    var accountDataEventTypeReceivedEventType: String? {
+        get { accountDataEventTypeReceivedEventTypeLock.withLock { accountDataEventTypeUnderlyingReceivedEventType } }
+        set { accountDataEventTypeReceivedEventTypeLock.withLock { accountDataEventTypeUnderlyingReceivedEventType = newValue } }
+    }
+    private let accountDataEventTypeReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var accountDataEventTypeUnderlyingReceivedInvocations: [String] = []
+    var accountDataEventTypeReceivedInvocations: [String] {
+        get { accountDataEventTypeReceivedInvocationsLock.withLock { accountDataEventTypeUnderlyingReceivedInvocations } }
+        set { accountDataEventTypeReceivedInvocationsLock.withLock { accountDataEventTypeUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let accountDataEventTypeReturnValueLock = NSLock()
+    private nonisolated(unsafe) var accountDataEventTypeUnderlyingReturnValue: Result<String?, ClientProxyError>!
+    var accountDataEventTypeReturnValue: Result<String?, ClientProxyError>! {
+        get { accountDataEventTypeReturnValueLock.withLock { accountDataEventTypeUnderlyingReturnValue } }
+        set { accountDataEventTypeReturnValueLock.withLock { accountDataEventTypeUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var accountDataEventTypeClosure: ((String) async -> Result<String?, ClientProxyError>)?
+
+    @concurrent func accountData(eventType: String) async -> Result<String?, ClientProxyError> {
+        accountDataEventTypeCallsCountLock.withLock { accountDataEventTypeUnderlyingCallsCount += 1 }
+        accountDataEventTypeReceivedEventType = eventType
+        accountDataEventTypeReceivedInvocationsLock.withLock { accountDataEventTypeUnderlyingReceivedInvocations.append(eventType) }
+        if let accountDataEventTypeClosure = accountDataEventTypeClosure {
+            return await accountDataEventTypeClosure(eventType)
+        } else {
+            return accountDataEventTypeReturnValue
+        }
+    }
+    //MARK: - setAccountData
+
+    private let setAccountDataEventTypeContentCallsCountLock = NSLock()
+    private nonisolated(unsafe) var setAccountDataEventTypeContentUnderlyingCallsCount = 0
+    var setAccountDataEventTypeContentCallsCount: Int {
+        get { setAccountDataEventTypeContentCallsCountLock.withLock { setAccountDataEventTypeContentUnderlyingCallsCount } }
+        set { setAccountDataEventTypeContentCallsCountLock.withLock { setAccountDataEventTypeContentUnderlyingCallsCount = newValue } }
+    }
+    var setAccountDataEventTypeContentCalled: Bool {
+        return setAccountDataEventTypeContentCallsCount > 0
+    }
+    private let setAccountDataEventTypeContentReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var setAccountDataEventTypeContentUnderlyingReceivedArguments: (eventType: String, content: String)?
+    var setAccountDataEventTypeContentReceivedArguments: (eventType: String, content: String)? {
+        get { setAccountDataEventTypeContentReceivedArgumentsLock.withLock { setAccountDataEventTypeContentUnderlyingReceivedArguments } }
+        set { setAccountDataEventTypeContentReceivedArgumentsLock.withLock { setAccountDataEventTypeContentUnderlyingReceivedArguments = newValue } }
+    }
+    private let setAccountDataEventTypeContentReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var setAccountDataEventTypeContentUnderlyingReceivedInvocations: [(eventType: String, content: String)] = []
+    var setAccountDataEventTypeContentReceivedInvocations: [(eventType: String, content: String)] {
+        get { setAccountDataEventTypeContentReceivedInvocationsLock.withLock { setAccountDataEventTypeContentUnderlyingReceivedInvocations } }
+        set { setAccountDataEventTypeContentReceivedInvocationsLock.withLock { setAccountDataEventTypeContentUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let setAccountDataEventTypeContentReturnValueLock = NSLock()
+    private nonisolated(unsafe) var setAccountDataEventTypeContentUnderlyingReturnValue: Result<Void, ClientProxyError>!
+    var setAccountDataEventTypeContentReturnValue: Result<Void, ClientProxyError>! {
+        get { setAccountDataEventTypeContentReturnValueLock.withLock { setAccountDataEventTypeContentUnderlyingReturnValue } }
+        set { setAccountDataEventTypeContentReturnValueLock.withLock { setAccountDataEventTypeContentUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var setAccountDataEventTypeContentClosure: ((String, String) async -> Result<Void, ClientProxyError>)?
+
+    @concurrent func setAccountData(eventType: String, content: String) async -> Result<Void, ClientProxyError> {
+        setAccountDataEventTypeContentCallsCountLock.withLock { setAccountDataEventTypeContentUnderlyingCallsCount += 1 }
+        setAccountDataEventTypeContentReceivedArguments = (eventType: eventType, content: content)
+        setAccountDataEventTypeContentReceivedInvocationsLock.withLock { setAccountDataEventTypeContentUnderlyingReceivedInvocations.append((eventType: eventType, content: content)) }
+        if let setAccountDataEventTypeContentClosure = setAccountDataEventTypeContentClosure {
+            return await setAccountDataEventTypeContentClosure(eventType, content)
+        } else {
+            return setAccountDataEventTypeContentReturnValue
+        }
+    }
     //MARK: - roomForIdentifier
 
     private let roomForIdentifierCallsCountLock = NSLock()
@@ -5959,48 +6043,6 @@ nonisolated class JoinedRoomProxyMock: JoinedRoomProxyProtocol, @unchecked Senda
             return await sendTypingNotificationIsTypingClosure(isTyping)
         } else {
             return sendTypingNotificationIsTypingReturnValue
-        }
-    }
-    //MARK: - sendRaw
-
-    private let sendRawEventTypeContentCallsCountLock = NSLock()
-    private nonisolated(unsafe) var sendRawEventTypeContentUnderlyingCallsCount = 0
-    var sendRawEventTypeContentCallsCount: Int {
-        get { sendRawEventTypeContentCallsCountLock.withLock { sendRawEventTypeContentUnderlyingCallsCount } }
-        set { sendRawEventTypeContentCallsCountLock.withLock { sendRawEventTypeContentUnderlyingCallsCount = newValue } }
-    }
-    var sendRawEventTypeContentCalled: Bool {
-        return sendRawEventTypeContentCallsCount > 0
-    }
-    private let sendRawEventTypeContentReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var sendRawEventTypeContentUnderlyingReceivedArguments: (eventType: String, content: String)?
-    var sendRawEventTypeContentReceivedArguments: (eventType: String, content: String)? {
-        get { sendRawEventTypeContentReceivedArgumentsLock.withLock { sendRawEventTypeContentUnderlyingReceivedArguments } }
-        set { sendRawEventTypeContentReceivedArgumentsLock.withLock { sendRawEventTypeContentUnderlyingReceivedArguments = newValue } }
-    }
-    private let sendRawEventTypeContentReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var sendRawEventTypeContentUnderlyingReceivedInvocations: [(eventType: String, content: String)] = []
-    var sendRawEventTypeContentReceivedInvocations: [(eventType: String, content: String)] {
-        get { sendRawEventTypeContentReceivedInvocationsLock.withLock { sendRawEventTypeContentUnderlyingReceivedInvocations } }
-        set { sendRawEventTypeContentReceivedInvocationsLock.withLock { sendRawEventTypeContentUnderlyingReceivedInvocations = newValue } }
-    }
-
-    private let sendRawEventTypeContentReturnValueLock = NSLock()
-    private nonisolated(unsafe) var sendRawEventTypeContentUnderlyingReturnValue: Result<Void, RoomProxyError>!
-    var sendRawEventTypeContentReturnValue: Result<Void, RoomProxyError>! {
-        get { sendRawEventTypeContentReturnValueLock.withLock { sendRawEventTypeContentUnderlyingReturnValue } }
-        set { sendRawEventTypeContentReturnValueLock.withLock { sendRawEventTypeContentUnderlyingReturnValue = newValue } }
-    }
-    nonisolated(unsafe) var sendRawEventTypeContentClosure: ((String, String) async -> Result<Void, RoomProxyError>)?
-
-    @concurrent func sendRaw(eventType: String, content: String) async -> Result<Void, RoomProxyError> {
-        sendRawEventTypeContentCallsCountLock.withLock { sendRawEventTypeContentUnderlyingCallsCount += 1 }
-        sendRawEventTypeContentReceivedArguments = (eventType: eventType, content: content)
-        sendRawEventTypeContentReceivedInvocationsLock.withLock { sendRawEventTypeContentUnderlyingReceivedInvocations.append((eventType: eventType, content: content)) }
-        if let sendRawEventTypeContentClosure = sendRawEventTypeContentClosure {
-            return await sendRawEventTypeContentClosure(eventType, content)
-        } else {
-            return sendRawEventTypeContentReturnValue
         }
     }
     //MARK: - ignoreDeviceTrustAndResend
@@ -12079,48 +12121,160 @@ nonisolated class StaticRoomSummaryProviderMock: StaticRoomSummaryProviderProtoc
     }
 }
 nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendable {
-    nonisolated(unsafe) var stickers: [BuiltInSticker] = []
+    nonisolated(unsafe) var builtInStickers: [Sticker] = []
 
+    //MARK: - loadStickers
+
+    private let loadStickersCallsCountLock = NSLock()
+    private nonisolated(unsafe) var loadStickersUnderlyingCallsCount = 0
+    var loadStickersCallsCount: Int {
+        get { loadStickersCallsCountLock.withLock { loadStickersUnderlyingCallsCount } }
+        set { loadStickersCallsCountLock.withLock { loadStickersUnderlyingCallsCount = newValue } }
+    }
+    var loadStickersCalled: Bool {
+        return loadStickersCallsCount > 0
+    }
+
+    private let loadStickersReturnValueLock = NSLock()
+    private nonisolated(unsafe) var loadStickersUnderlyingReturnValue: StickerCollection!
+    var loadStickersReturnValue: StickerCollection! {
+        get { loadStickersReturnValueLock.withLock { loadStickersUnderlyingReturnValue } }
+        set { loadStickersReturnValueLock.withLock { loadStickersUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var loadStickersClosure: (() async -> StickerCollection)?
+
+    @concurrent func loadStickers() async -> StickerCollection {
+        loadStickersCallsCountLock.withLock { loadStickersUnderlyingCallsCount += 1 }
+        if let loadStickersClosure = loadStickersClosure {
+            return await loadStickersClosure()
+        } else {
+            return loadStickersReturnValue
+        }
+    }
     //MARK: - send
 
-    private let sendInThreadRootEventIDCallsCountLock = NSLock()
-    private nonisolated(unsafe) var sendInThreadRootEventIDUnderlyingCallsCount = 0
-    var sendInThreadRootEventIDCallsCount: Int {
-        get { sendInThreadRootEventIDCallsCountLock.withLock { sendInThreadRootEventIDUnderlyingCallsCount } }
-        set { sendInThreadRootEventIDCallsCountLock.withLock { sendInThreadRootEventIDUnderlyingCallsCount = newValue } }
+    private let sendInCallsCountLock = NSLock()
+    private nonisolated(unsafe) var sendInUnderlyingCallsCount = 0
+    var sendInCallsCount: Int {
+        get { sendInCallsCountLock.withLock { sendInUnderlyingCallsCount } }
+        set { sendInCallsCountLock.withLock { sendInUnderlyingCallsCount = newValue } }
     }
-    var sendInThreadRootEventIDCalled: Bool {
-        return sendInThreadRootEventIDCallsCount > 0
+    var sendInCalled: Bool {
+        return sendInCallsCount > 0
     }
-    private let sendInThreadRootEventIDReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var sendInThreadRootEventIDUnderlyingReceivedArguments: (sticker: BuiltInSticker, roomProxy: JoinedRoomProxyProtocol, threadRootEventID: String?)?
-    var sendInThreadRootEventIDReceivedArguments: (sticker: BuiltInSticker, roomProxy: JoinedRoomProxyProtocol, threadRootEventID: String?)? {
-        get { sendInThreadRootEventIDReceivedArgumentsLock.withLock { sendInThreadRootEventIDUnderlyingReceivedArguments } }
-        set { sendInThreadRootEventIDReceivedArgumentsLock.withLock { sendInThreadRootEventIDUnderlyingReceivedArguments = newValue } }
+    private let sendInReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var sendInUnderlyingReceivedArguments: (sticker: Sticker, timelineController: TimelineControllerProtocol)?
+    var sendInReceivedArguments: (sticker: Sticker, timelineController: TimelineControllerProtocol)? {
+        get { sendInReceivedArgumentsLock.withLock { sendInUnderlyingReceivedArguments } }
+        set { sendInReceivedArgumentsLock.withLock { sendInUnderlyingReceivedArguments = newValue } }
     }
-    private let sendInThreadRootEventIDReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var sendInThreadRootEventIDUnderlyingReceivedInvocations: [(sticker: BuiltInSticker, roomProxy: JoinedRoomProxyProtocol, threadRootEventID: String?)] = []
-    var sendInThreadRootEventIDReceivedInvocations: [(sticker: BuiltInSticker, roomProxy: JoinedRoomProxyProtocol, threadRootEventID: String?)] {
-        get { sendInThreadRootEventIDReceivedInvocationsLock.withLock { sendInThreadRootEventIDUnderlyingReceivedInvocations } }
-        set { sendInThreadRootEventIDReceivedInvocationsLock.withLock { sendInThreadRootEventIDUnderlyingReceivedInvocations = newValue } }
+    private let sendInReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var sendInUnderlyingReceivedInvocations: [(sticker: Sticker, timelineController: TimelineControllerProtocol)] = []
+    var sendInReceivedInvocations: [(sticker: Sticker, timelineController: TimelineControllerProtocol)] {
+        get { sendInReceivedInvocationsLock.withLock { sendInUnderlyingReceivedInvocations } }
+        set { sendInReceivedInvocationsLock.withLock { sendInUnderlyingReceivedInvocations = newValue } }
     }
 
-    private let sendInThreadRootEventIDReturnValueLock = NSLock()
-    private nonisolated(unsafe) var sendInThreadRootEventIDUnderlyingReturnValue: Result<Void, StickerServiceError>!
-    var sendInThreadRootEventIDReturnValue: Result<Void, StickerServiceError>! {
-        get { sendInThreadRootEventIDReturnValueLock.withLock { sendInThreadRootEventIDUnderlyingReturnValue } }
-        set { sendInThreadRootEventIDReturnValueLock.withLock { sendInThreadRootEventIDUnderlyingReturnValue = newValue } }
+    private let sendInReturnValueLock = NSLock()
+    private nonisolated(unsafe) var sendInUnderlyingReturnValue: Result<Void, StickerServiceError>!
+    var sendInReturnValue: Result<Void, StickerServiceError>! {
+        get { sendInReturnValueLock.withLock { sendInUnderlyingReturnValue } }
+        set { sendInReturnValueLock.withLock { sendInUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var sendInThreadRootEventIDClosure: ((BuiltInSticker, JoinedRoomProxyProtocol, String?) async -> Result<Void, StickerServiceError>)?
+    nonisolated(unsafe) var sendInClosure: ((Sticker, TimelineControllerProtocol) async -> Result<Void, StickerServiceError>)?
 
-    @concurrent func send(_ sticker: BuiltInSticker, in roomProxy: JoinedRoomProxyProtocol, threadRootEventID: String?) async -> Result<Void, StickerServiceError> {
-        sendInThreadRootEventIDCallsCountLock.withLock { sendInThreadRootEventIDUnderlyingCallsCount += 1 }
-        sendInThreadRootEventIDReceivedArguments = (sticker: sticker, roomProxy: roomProxy, threadRootEventID: threadRootEventID)
-        sendInThreadRootEventIDReceivedInvocationsLock.withLock { sendInThreadRootEventIDUnderlyingReceivedInvocations.append((sticker: sticker, roomProxy: roomProxy, threadRootEventID: threadRootEventID)) }
-        if let sendInThreadRootEventIDClosure = sendInThreadRootEventIDClosure {
-            return await sendInThreadRootEventIDClosure(sticker, roomProxy, threadRootEventID)
+    @concurrent func send(_ sticker: Sticker, in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+        sendInCallsCountLock.withLock { sendInUnderlyingCallsCount += 1 }
+        sendInReceivedArguments = (sticker: sticker, timelineController: timelineController)
+        sendInReceivedInvocationsLock.withLock { sendInUnderlyingReceivedInvocations.append((sticker: sticker, timelineController: timelineController)) }
+        if let sendInClosure = sendInClosure {
+            return await sendInClosure(sticker, timelineController)
         } else {
-            return sendInThreadRootEventIDReturnValue
+            return sendInReturnValue
+        }
+    }
+    //MARK: - addUserSticker
+
+    private let addUserStickerFromMediaAtCallsCountLock = NSLock()
+    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingCallsCount = 0
+    var addUserStickerFromMediaAtCallsCount: Int {
+        get { addUserStickerFromMediaAtCallsCountLock.withLock { addUserStickerFromMediaAtUnderlyingCallsCount } }
+        set { addUserStickerFromMediaAtCallsCountLock.withLock { addUserStickerFromMediaAtUnderlyingCallsCount = newValue } }
+    }
+    var addUserStickerFromMediaAtCalled: Bool {
+        return addUserStickerFromMediaAtCallsCount > 0
+    }
+    private let addUserStickerFromMediaAtReceivedUrlLock = NSLock()
+    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingReceivedUrl: URL?
+    var addUserStickerFromMediaAtReceivedUrl: URL? {
+        get { addUserStickerFromMediaAtReceivedUrlLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedUrl } }
+        set { addUserStickerFromMediaAtReceivedUrlLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedUrl = newValue } }
+    }
+    private let addUserStickerFromMediaAtReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingReceivedInvocations: [URL] = []
+    var addUserStickerFromMediaAtReceivedInvocations: [URL] {
+        get { addUserStickerFromMediaAtReceivedInvocationsLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedInvocations } }
+        set { addUserStickerFromMediaAtReceivedInvocationsLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let addUserStickerFromMediaAtReturnValueLock = NSLock()
+    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingReturnValue: Result<Void, StickerServiceError>!
+    var addUserStickerFromMediaAtReturnValue: Result<Void, StickerServiceError>! {
+        get { addUserStickerFromMediaAtReturnValueLock.withLock { addUserStickerFromMediaAtUnderlyingReturnValue } }
+        set { addUserStickerFromMediaAtReturnValueLock.withLock { addUserStickerFromMediaAtUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var addUserStickerFromMediaAtClosure: ((URL) async -> Result<Void, StickerServiceError>)?
+
+    @concurrent func addUserSticker(fromMediaAt url: URL) async -> Result<Void, StickerServiceError> {
+        addUserStickerFromMediaAtCallsCountLock.withLock { addUserStickerFromMediaAtUnderlyingCallsCount += 1 }
+        addUserStickerFromMediaAtReceivedUrl = url
+        addUserStickerFromMediaAtReceivedInvocationsLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedInvocations.append(url) }
+        if let addUserStickerFromMediaAtClosure = addUserStickerFromMediaAtClosure {
+            return await addUserStickerFromMediaAtClosure(url)
+        } else {
+            return addUserStickerFromMediaAtReturnValue
+        }
+    }
+    //MARK: - removeUserSticker
+
+    private let removeUserStickerIdCallsCountLock = NSLock()
+    private nonisolated(unsafe) var removeUserStickerIdUnderlyingCallsCount = 0
+    var removeUserStickerIdCallsCount: Int {
+        get { removeUserStickerIdCallsCountLock.withLock { removeUserStickerIdUnderlyingCallsCount } }
+        set { removeUserStickerIdCallsCountLock.withLock { removeUserStickerIdUnderlyingCallsCount = newValue } }
+    }
+    var removeUserStickerIdCalled: Bool {
+        return removeUserStickerIdCallsCount > 0
+    }
+    private let removeUserStickerIdReceivedIdLock = NSLock()
+    private nonisolated(unsafe) var removeUserStickerIdUnderlyingReceivedId: String?
+    var removeUserStickerIdReceivedId: String? {
+        get { removeUserStickerIdReceivedIdLock.withLock { removeUserStickerIdUnderlyingReceivedId } }
+        set { removeUserStickerIdReceivedIdLock.withLock { removeUserStickerIdUnderlyingReceivedId = newValue } }
+    }
+    private let removeUserStickerIdReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var removeUserStickerIdUnderlyingReceivedInvocations: [String] = []
+    var removeUserStickerIdReceivedInvocations: [String] {
+        get { removeUserStickerIdReceivedInvocationsLock.withLock { removeUserStickerIdUnderlyingReceivedInvocations } }
+        set { removeUserStickerIdReceivedInvocationsLock.withLock { removeUserStickerIdUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let removeUserStickerIdReturnValueLock = NSLock()
+    private nonisolated(unsafe) var removeUserStickerIdUnderlyingReturnValue: Result<Void, StickerServiceError>!
+    var removeUserStickerIdReturnValue: Result<Void, StickerServiceError>! {
+        get { removeUserStickerIdReturnValueLock.withLock { removeUserStickerIdUnderlyingReturnValue } }
+        set { removeUserStickerIdReturnValueLock.withLock { removeUserStickerIdUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var removeUserStickerIdClosure: ((String) async -> Result<Void, StickerServiceError>)?
+
+    @concurrent func removeUserSticker(id: String) async -> Result<Void, StickerServiceError> {
+        removeUserStickerIdCallsCountLock.withLock { removeUserStickerIdUnderlyingCallsCount += 1 }
+        removeUserStickerIdReceivedId = id
+        removeUserStickerIdReceivedInvocationsLock.withLock { removeUserStickerIdUnderlyingReceivedInvocations.append(id) }
+        if let removeUserStickerIdClosure = removeUserStickerIdClosure {
+            return await removeUserStickerIdClosure(id)
+        } else {
+            return removeUserStickerIdReturnValue
         }
     }
 }
@@ -13152,6 +13306,48 @@ nonisolated class TimelineControllerMock: TimelineControllerProtocol, @unchecked
             return sendVoiceMessageUrlAudioInfoWaveformRequestHandleReturnValue
         }
     }
+    //MARK: - sendSticker
+
+    private let sendStickerBodyUrlImageInfoCallsCountLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingCallsCount = 0
+    var sendStickerBodyUrlImageInfoCallsCount: Int {
+        get { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount } }
+        set { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount = newValue } }
+    }
+    var sendStickerBodyUrlImageInfoCalled: Bool {
+        return sendStickerBodyUrlImageInfoCallsCount > 0
+    }
+    private let sendStickerBodyUrlImageInfoReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)?
+    var sendStickerBodyUrlImageInfoReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)? {
+        get { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments } }
+        set { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments = newValue } }
+    }
+    private let sendStickerBodyUrlImageInfoReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] = []
+    var sendStickerBodyUrlImageInfoReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] {
+        get { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations } }
+        set { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let sendStickerBodyUrlImageInfoReturnValueLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReturnValue: Result<Void, TimelineControllerError>!
+    var sendStickerBodyUrlImageInfoReturnValue: Result<Void, TimelineControllerError>! {
+        get { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue } }
+        set { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var sendStickerBodyUrlImageInfoClosure: ((String, String, ImageInfo) async -> Result<Void, TimelineControllerError>)?
+
+    @concurrent func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError> {
+        sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount += 1 }
+        sendStickerBodyUrlImageInfoReceivedArguments = (body: body, url: url, imageInfo: imageInfo)
+        sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations.append((body: body, url: url, imageInfo: imageInfo)) }
+        if let sendStickerBodyUrlImageInfoClosure = sendStickerBodyUrlImageInfoClosure {
+            return await sendStickerBodyUrlImageInfoClosure(body, url, imageInfo)
+        } else {
+            return sendStickerBodyUrlImageInfoReturnValue
+        }
+    }
     //MARK: - createPoll
 
     private let createPollQuestionAnswersMaxSelectionsPollKindCallsCountLock = NSLock()
@@ -14073,6 +14269,48 @@ nonisolated class TimelineProxyMock: TimelineProxyProtocol, @unchecked Sendable 
             return await sendMessageHtmlInReplyToEventIDIntentionalMentionsClosure(message, html, inReplyToEventID, intentionalMentions)
         } else {
             return sendMessageHtmlInReplyToEventIDIntentionalMentionsReturnValue
+        }
+    }
+    //MARK: - sendSticker
+
+    private let sendStickerBodyUrlImageInfoCallsCountLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingCallsCount = 0
+    var sendStickerBodyUrlImageInfoCallsCount: Int {
+        get { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount } }
+        set { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount = newValue } }
+    }
+    var sendStickerBodyUrlImageInfoCalled: Bool {
+        return sendStickerBodyUrlImageInfoCallsCount > 0
+    }
+    private let sendStickerBodyUrlImageInfoReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)?
+    var sendStickerBodyUrlImageInfoReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)? {
+        get { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments } }
+        set { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments = newValue } }
+    }
+    private let sendStickerBodyUrlImageInfoReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] = []
+    var sendStickerBodyUrlImageInfoReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] {
+        get { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations } }
+        set { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let sendStickerBodyUrlImageInfoReturnValueLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReturnValue: Result<Void, TimelineProxyError>!
+    var sendStickerBodyUrlImageInfoReturnValue: Result<Void, TimelineProxyError>! {
+        get { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue } }
+        set { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var sendStickerBodyUrlImageInfoClosure: ((String, String, ImageInfo) async -> Result<Void, TimelineProxyError>)?
+
+    @concurrent func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineProxyError> {
+        sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount += 1 }
+        sendStickerBodyUrlImageInfoReceivedArguments = (body: body, url: url, imageInfo: imageInfo)
+        sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations.append((body: body, url: url, imageInfo: imageInfo)) }
+        if let sendStickerBodyUrlImageInfoClosure = sendStickerBodyUrlImageInfoClosure {
+            return await sendStickerBodyUrlImageInfoClosure(body, url, imageInfo)
+        } else {
+            return sendStickerBodyUrlImageInfoReturnValue
         }
     }
     //MARK: - toggleReaction

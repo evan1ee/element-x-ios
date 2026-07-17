@@ -73,9 +73,11 @@ include:
 packages:
   # Element/Matrix dependencies
   MatrixRustSDK:
-    url: https://github.com/element-hq/matrix-rust-components-swift
-    exactVersion: 26.07.15
-    # path: ../matrix-rust-sdk
+    # Building against the local SDK for Timeline.sendSticker, revert to the
+    # released package once the FFI addition is available upstream.
+    # url: https://github.com/element-hq/matrix-rust-components-swift
+    # exactVersion: 26.07.15
+    path: ../matrix-rust-sdk
   Compound:
     path: compound-ios
   BuildExtensions:
