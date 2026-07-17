@@ -82,6 +82,7 @@ extension JoinedRoomProxyMock {
         
         ignoreDeviceTrustAndResendDevicesSendHandleReturnValue = .success(())
         withdrawVerificationAndResendUserIDsSendHandleReturnValue = .success(())
+        sendRawEventTypeContentReturnValue = .success(())
         
         flagAsUnreadReturnValue = .success(())
         markAsReadReceiptTypeReturnValue = .success(())

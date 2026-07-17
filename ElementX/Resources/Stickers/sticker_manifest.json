@@ -1,0 +1,10 @@
+[
+    { "id": "smile", "body": "Smiling face", "file": "sticker_smile.png" },
+    { "id": "heart", "body": "Heart", "file": "sticker_heart.png" },
+    { "id": "star", "body": "Star", "file": "sticker_star.png" },
+    { "id": "check", "body": "Check mark", "file": "sticker_check.png" },
+    { "id": "party", "body": "Party hat", "file": "sticker_party.png" },
+    { "id": "cool", "body": "Cool face with sunglasses", "file": "sticker_cool.png" },
+    { "id": "sad", "body": "Sad face", "file": "sticker_sad.png" },
+    { "id": "fire", "body": "Fire", "file": "sticker_fire.png" }
+]

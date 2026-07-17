@@ -140,6 +140,9 @@ protocol JoinedRoomProxyProtocol: RoomProxyProtocol {
     /// https://spec.matrix.org/v1.9/client-server-api/#typing-notifications
     @discardableResult func sendTypingNotification(isTyping: Bool) async -> Result<Void, RoomProxyError>
     
+    /// Sends a message-like event with a custom type and JSON encoded content, bypassing the send queue.
+    func sendRaw(eventType: String, content: String) async -> Result<Void, RoomProxyError>
+    
     func ignoreDeviceTrustAndResend(devices: [String: [String]], sendHandle: SendHandleProxy) async -> Result<Void, RoomProxyError>
     
     func withdrawVerificationAndResend(userIDs: [String], sendHandle: SendHandleProxy) async -> Result<Void, RoomProxyError>
