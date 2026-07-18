@@ -17,10 +17,13 @@ struct StickerRoomTimelineView: View {
         TimelineStyler(timelineItem: timelineItem) {
             ContentScanningView(contentScannerService: context?.contentScannerService,
                                 mediaSource: timelineItem.imageInfo.source) {
+                // Stickers are small, load the original media rather than a server
+                // thumbnail: it preserves transparency and some servers thumbnail
+                // transparent images incorrectly.
                 LoadableImage(mediaSource: timelineItem.imageInfo.source,
                               mediaType: .timelineItem(uniqueID: timelineItem.id.uniqueID),
                               blurhash: timelineItem.blurhash,
-                              size: timelineItem.imageInfo.size,
+                              size: nil,
                               mediaProvider: context?.mediaProvider) {
                     placeholder
                 }
