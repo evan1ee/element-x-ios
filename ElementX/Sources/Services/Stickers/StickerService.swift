@@ -23,8 +23,9 @@ class StickerService: StickerServiceProtocol {
     
     let builtInStickers: [Sticker]
     
+    // v2: builds prior to disabling Xcode's PNG optimisation uploaded broken media.
     private var uploadCacheKey: String {
-        "stickerMediaURIs-\(clientProxy.userID)"
+        "stickerMediaURIs-v2-\(clientProxy.userID)"
     }
     
     init(clientProxy: ClientProxyProtocol,
