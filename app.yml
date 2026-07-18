@@ -1,10 +1,10 @@
 settings:
   APP_DISPLAY_NAME: Element X
   PRODUCTION_APP_NAME: Element
-  APP_GROUP_IDENTIFIER: group.io.element
-  BASE_BUNDLE_IDENTIFIER: io.element.elementx
+  APP_GROUP_IDENTIFIER: group.com.evan1ee.elementx
+  BASE_BUNDLE_IDENTIFIER: com.evan1ee.elementx
   ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: "colors/accent-color"
-  DEVELOPMENT_TEAM: 7J4U792NQT
+  DEVELOPMENT_TEAM: RN9SLQ2637
   IS_NIGHTLY_BUILD: false
 
   # Optional configuration to load accounts from Element Classic.

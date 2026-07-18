@@ -7585,34 +7585,34 @@
 				ORGANIZATIONNAME = Element;
 				TargetAttributes = {
 					0E28CD62691FDBC63147D5E3 = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 						TestTargetID = C0FAEB81CFD9776CD78CE489;
 					};
 					19F0C845D67E9BEA4BE7133E = {
 						DevelopmentTeam = "$(DEVELOPMENT_TEAM)";
 					};
 					32C23C8D224D46EFE62AFAD0 = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 					};
 					676A87694F0F247B2AF1A142 = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 					};
 					7A17BE29BAC81ADBAC6349D9 = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 					};
 					C0C687DE1D270F9895FEE186 = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 						TestTargetID = C0FAEB81CFD9776CD78CE489;
 					};
 					C0FAEB81CFD9776CD78CE489 = {
 						DevelopmentTeam = "$(DEVELOPMENT_TEAM)";
 					};
 					D3DB351B7FBE0F49649171FC = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 						TestTargetID = C0FAEB81CFD9776CD78CE489;
 					};
 					F8E276FD6DC43EADB85241BC = {
-						DevelopmentTeam = 7J4U792NQT;
+						DevelopmentTeam = RN9SLQ2637;
 					};
 					FEB53A5BC378C913769656D8 = {
 						DevelopmentTeam = "$(DEVELOPMENT_TEAM)";
@@ -9960,10 +9960,10 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				APP_DISPLAY_NAME = "Element X";
-				APP_GROUP_IDENTIFIER = group.io.element;
+				APP_GROUP_IDENTIFIER = group.com.evan1ee.elementx;
 				APP_NAME = ElementX;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "colors/accent-color";
-				BASE_BUNDLE_IDENTIFIER = io.element.elementx;
+				BASE_BUNDLE_IDENTIFIER = com.evan1ee.elementx;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -10001,7 +10001,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = 7J4U792NQT;
+				DEVELOPMENT_TEAM = RN9SLQ2637;
 				ENABLE_BITCODE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -10035,10 +10035,10 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				APP_DISPLAY_NAME = "Element X";
-				APP_GROUP_IDENTIFIER = group.io.element;
+				APP_GROUP_IDENTIFIER = group.com.evan1ee.elementx;
 				APP_NAME = ElementX;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "colors/accent-color";
-				BASE_BUNDLE_IDENTIFIER = io.element.elementx;
+				BASE_BUNDLE_IDENTIFIER = com.evan1ee.elementx;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -10076,7 +10076,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = 7J4U792NQT;
+				DEVELOPMENT_TEAM = RN9SLQ2637;
 				ENABLE_BITCODE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;

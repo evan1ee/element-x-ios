@@ -62,7 +62,8 @@ targets:
     entitlements:
       path: NSE.entitlements
       properties:
-        com.apple.developer.usernotifications.filtering: true
+        # Fork: notification filtering needs Apple's approval per team, request it before re-enabling.
+        # com.apple.developer.usernotifications.filtering: true
         com.apple.security.application-groups:
         - $(APP_GROUP_IDENTIFIER)
         keychain-access-groups:
