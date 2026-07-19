@@ -2,6 +2,54 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>screen_sticker_picker_added_count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@COUNT@</string>
+		<key>COUNT</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>1 sticker added</string>
+			<key>other</key>
+			<string>%d stickers added</string>
+		</dict>
+	</dict>
+	<key>screen_sticker_picker_duplicate_count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@COUNT@</string>
+		<key>COUNT</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>1 already in your stickers</string>
+			<key>other</key>
+			<string>%d already in your stickers</string>
+		</dict>
+	</dict>
+	<key>screen_sticker_picker_failed_count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@COUNT@</string>
+		<key>COUNT</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>1 failed</string>
+			<key>other</key>
+			<string>%d failed</string>
+		</dict>
+	</dict>
 	<key>untranslated_plural</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

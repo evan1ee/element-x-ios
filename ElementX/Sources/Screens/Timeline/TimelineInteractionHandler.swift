@@ -44,6 +44,7 @@ class TimelineInteractionHandler {
     private let emojiProvider: EmojiProviderProtocol
     private let linkMetadataProvider: LinkMetadataProviderProtocol
     private let timelineControllerFactory: TimelineControllerFactoryProtocol
+    private let stickerService: StickerServiceProtocol
     private let pollInteractionHandler: PollInteractionHandlerProtocol
     
     private let actionsSubject: PassthroughSubject<TimelineInteractionHandlerAction, Never> = .init()
@@ -70,7 +71,8 @@ class TimelineInteractionHandler {
          analyticsService: AnalyticsServiceProtocol,
          emojiProvider: EmojiProviderProtocol,
          linkMetadataProvider: LinkMetadataProviderProtocol,
-         timelineControllerFactory: TimelineControllerFactoryProtocol) {
+         timelineControllerFactory: TimelineControllerFactoryProtocol,
+         stickerService: StickerServiceProtocol) {
         self.roomProxy = roomProxy
         self.timelineController = timelineController
         self.userSession = userSession
@@ -83,6 +85,7 @@ class TimelineInteractionHandler {
         self.emojiProvider = emojiProvider
         self.linkMetadataProvider = linkMetadataProvider
         self.timelineControllerFactory = timelineControllerFactory
+        self.stickerService = stickerService
         
         pollInteractionHandler = PollInteractionHandler(analyticsService: analyticsService,
                                                         timelineController: timelineController)
@@ -196,6 +199,9 @@ class TimelineInteractionHandler {
             actionsSubject.send(.viewInRoomTimeline(eventID: eventID))
         case .downloadMedia:
             break // Handled inline in the media preview screen.
+        case .collectSticker:
+            guard let stickerItem = timelineItem as? StickerRoomTimelineItem else { return }
+            collectSticker(from: stickerItem)
         case .translate:
             guard let messageTimelineItem = timelineItem as? EventBasedMessageTimelineItemProtocol else { return }
             actionsSubject.send(.showTranslation(text: messageTimelineItem.body))
@@ -203,6 +209,23 @@ class TimelineInteractionHandler {
         
         if action.switchToDefaultComposer {
             actionsSubject.send(.composer(action: .setMode(mode: .default)))
+        }
+    }
+    
+    private func collectSticker(from item: StickerRoomTimelineItem) {
+        Task {
+            let result = await stickerService.collectSticker(body: item.body,
+                                                             url: item.imageInfo.source.url.absoluteString,
+                                                             width: (item.imageInfo.size?.width).map(UInt64.init),
+                                                             height: (item.imageInfo.size?.height).map(UInt64.init),
+                                                             fileSize: item.imageInfo.fileSize.map(UInt64.init),
+                                                             mimeType: item.imageInfo.mimeType)
+            switch result {
+            case .success:
+                userIndicatorController.submitIndicator(UserIndicator(title: UntranslatedL10n.commonStickerAdded, icon: \.check))
+            case .failure:
+                actionsSubject.send(.displayErrorToast(L10n.errorUnknown))
+            }
         }
     }
     

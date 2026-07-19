@@ -66,6 +66,10 @@ struct TimelineItemMenuActionProvider {
             actions.append(.forward(itemID: item.id))
         }
         
+        if timelineItem is StickerRoomTimelineItem, !item.isOutgoing {
+            actions.append(.collectSticker)
+        }
+        
         if item.isEditable, canCurrentUserSendMessage {
             if item.supportsMediaCaption {
                 if item.hasMediaCaption {

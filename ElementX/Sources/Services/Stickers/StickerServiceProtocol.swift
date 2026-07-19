@@ -29,6 +29,12 @@ struct StickerCollection: Equatable {
     var builtInStickers: [Sticker] = []
 }
 
+struct StickerBatchSummary: Equatable {
+    var added = 0
+    var duplicates = 0
+    var failed = 0
+}
+
 enum StickerServiceError: Error {
     case uploadFailed
     case sendFailed
@@ -47,9 +53,21 @@ protocol StickerServiceProtocol {
     func send(_ sticker: Sticker,
               in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError>
     
-    /// Processes and uploads the image at the given URL, adding it to the
-    /// user's sticker pack in their account data.
-    func addUserSticker(fromMediaAt url: URL) async -> Result<Void, StickerServiceError>
+    /// Processes and uploads the images at the given URLs, adding them to the
+    /// user's sticker pack in their account data. Files whose content hash is
+    /// already in the pack (or earlier in the batch) are skipped as duplicates,
+    /// and per-file failures don't abort the batch.
+    func addUserStickers(fromMediaAt urls: [URL]) async -> StickerBatchSummary
+    
+    /// Adds media that already exists on the homeserver (e.g. a sticker received
+    /// in a room) to the user's pack without re-uploading it. Collecting a
+    /// sticker that's already in the pack is a no-op success.
+    func collectSticker(body: String,
+                        url: String,
+                        width: UInt64?,
+                        height: UInt64?,
+                        fileSize: UInt64?,
+                        mimeType: String?) async -> Result<Void, StickerServiceError>
     
     /// Removes the sticker with the given ID from the user's pack.
     func removeUserSticker(id: String) async -> Result<Void, StickerServiceError>

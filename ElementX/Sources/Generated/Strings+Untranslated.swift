@@ -10,6 +10,10 @@ import Foundation
 // swiftlint:disable explicit_type_interface function_parameter_count identifier_name line_length
 // swiftlint:disable nesting type_body_length type_name vertical_whitespace_opening_braces
 internal nonisolated enum UntranslatedL10n {
+  /// Add to stickers
+  internal static var actionAddToStickers: String { return UntranslatedL10n.tr("Untranslated", "action_add_to_stickers") }
+  /// Sticker added
+  internal static var commonStickerAdded: String { return UntranslatedL10n.tr("Untranslated", "common_sticker_added") }
   /// Search
   internal static var screenHomeTabSearch: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_search") }
   /// Sticker
@@ -28,8 +32,20 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchTabRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_rooms") }
   /// Add sticker
   internal static var screenStickerPickerAddSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_add_sticker") }
+  /// Plural format key: "%#@COUNT@"
+  internal static func screenStickerPickerAddedCount(_ p1: Int) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_added_count", p1)
+  }
   /// Built-in
   internal static var screenStickerPickerBuiltInStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_built_in_stickers") }
+  /// Plural format key: "%#@COUNT@"
+  internal static func screenStickerPickerDuplicateCount(_ p1: Int) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_duplicate_count", p1)
+  }
+  /// Plural format key: "%#@COUNT@"
+  internal static func screenStickerPickerFailedCount(_ p1: Int) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_failed_count", p1)
+  }
   /// My stickers
   internal static var screenStickerPickerMyStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_my_stickers") }
   /// Stickers

@@ -26,6 +26,13 @@ struct UserStickerPack: Codable, Equatable {
         var body: String?
         var info: Info?
         var usage: [String]?
+        /// SHA-256 of the originally uploaded file, used to avoid duplicate uploads.
+        var sha256: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case url, body, info, usage
+            case sha256 = "io.element.sha256"
+        }
         
         var isUsableAsSticker: Bool {
             guard let usage, !usage.isEmpty else { return true }

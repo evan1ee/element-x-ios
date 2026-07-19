@@ -31,12 +31,12 @@ struct StickerPickerScreenViewState: BindableState {
 }
 
 struct StickerPickerScreenViewStateBindings {
-    var photosPickerItem: PhotosPickerItem?
+    var photosPickerItems: [PhotosPickerItem] = []
 }
 
 enum StickerPickerScreenViewAction {
     case send(Sticker)
-    case addSelectedPhoto
+    case addSelectedPhotos
     case removeSticker(Sticker)
     case cancel
 }

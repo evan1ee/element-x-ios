@@ -5,6 +5,7 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
+import CryptoKit
 @testable import ElementX
 import Testing
 import UIKit
@@ -110,21 +111,20 @@ struct StickerServiceTests {
     }
     
     @Test
-    mutating func addingAStickerUploadsAndUpdatesThePack() async throws {
+    mutating func addingStickersUploadsAllAndSavesThePackOnce() async throws {
         try setup()
-        let imageURL = try makeTestImageFile(named: "Fancy Cat")
+        let catURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        let dogURL = try makeTestImageFile(named: "Happy Dog", color: .blue)
         
-        let result = await service.addUserSticker(fromMediaAt: imageURL)
+        let summary = await service.addUserStickers(fromMediaAt: [catURL, dogURL])
         
-        guard case .success = result else {
-            Issue.record("Adding should succeed")
-            return
-        }
-        
-        #expect(clientProxy.uploadMediaCallsCount == 1)
+        #expect(summary == StickerBatchSummary(added: 2, duplicates: 0, failed: 0))
+        #expect(clientProxy.uploadMediaCallsCount == 2)
+        #expect(clientProxy.setAccountDataEventTypeContentCallsCount == 1)
         
         let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
         #expect(arguments.eventType == "im.ponies.user_emotes")
+        #expect(arguments.content.contains("io.element.sha256"))
         
         let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
         let image = try #require(pack.images["fancy_cat"])
@@ -132,6 +132,131 @@ struct StickerServiceTests {
         #expect(image.body == "Fancy Cat")
         #expect(image.usage == ["sticker"])
         #expect(image.info?.mimetype != nil)
+        #expect(image.sha256?.count == 64)
+        #expect(pack.images["happy_dog"]?.sha256 != image.sha256)
+    }
+    
+    @Test
+    mutating func duplicateWithinABatchIsSkipped() async throws {
+        try setup()
+        let firstURL = try makeTestImageFile(named: "First", color: .red)
+        let secondURL = try makeTestImageFile(named: "Second", color: .red)
+        
+        let summary = await service.addUserStickers(fromMediaAt: [firstURL, secondURL])
+        
+        #expect(summary == StickerBatchSummary(added: 1, duplicates: 1, failed: 0))
+        #expect(clientProxy.uploadMediaCallsCount == 1)
+    }
+    
+    @Test
+    mutating func duplicateAgainstTheExistingPackIsSkipped() async throws {
+        try setup()
+        let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        let hash = try sha256Hex(ofFileAt: imageURL)
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        { "images": { "cat": { "url": "mxc://example.com/cat", "io.element.sha256": "\(hash)" } } }
+        """)
+        
+        let summary = await service.addUserStickers(fromMediaAt: [imageURL])
+        
+        #expect(summary == StickerBatchSummary(added: 0, duplicates: 1, failed: 0))
+        #expect(!clientProxy.uploadMediaCalled)
+        #expect(!clientProxy.setAccountDataEventTypeContentCalled)
+    }
+    
+    @Test
+    mutating func existingEntryWithoutAHashDoesNotMatch() async throws {
+        try setup()
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        { "images": { "cat": { "url": "mxc://example.com/cat" } } }
+        """)
+        let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        
+        let summary = await service.addUserStickers(fromMediaAt: [imageURL])
+        
+        #expect(summary == StickerBatchSummary(added: 1, duplicates: 0, failed: 0))
+        #expect(clientProxy.uploadMediaCallsCount == 1)
+    }
+    
+    @Test
+    mutating func perFileUploadFailureDoesNotAbortTheBatch() async throws {
+        try setup()
+        // The mock increments its calls count before invoking the closure.
+        let proxy = try #require(clientProxy)
+        clientProxy.uploadMediaClosure = { _ in
+            proxy.uploadMediaCallsCount == 1 ? .failure(.invalidMedia) : .success("mxc://example.com/abc123")
+        }
+        let catURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        let dogURL = try makeTestImageFile(named: "Happy Dog", color: .blue)
+        
+        let summary = await service.addUserStickers(fromMediaAt: [catURL, dogURL])
+        
+        #expect(summary == StickerBatchSummary(added: 1, duplicates: 0, failed: 1))
+        
+        let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
+        let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
+        #expect(pack.images.count == 1)
+    }
+    
+    @Test
+    mutating func packSaveFailureCountsAllAddedAsFailed() async throws {
+        try setup()
+        clientProxy.setAccountDataEventTypeContentReturnValue = .failure(.invalidResponse)
+        let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        
+        let summary = await service.addUserStickers(fromMediaAt: [imageURL])
+        
+        #expect(summary == StickerBatchSummary(added: 0, duplicates: 0, failed: 1))
+    }
+    
+    @Test
+    mutating func collectingAReceivedStickerAddsItToThePackWithoutUploading() async throws {
+        try setup()
+        
+        let result = await service.collectSticker(body: "Party",
+                                                  url: "mxc://example.com/party",
+                                                  width: 512,
+                                                  height: 512,
+                                                  fileSize: 1000,
+                                                  mimeType: "image/png")
+        
+        guard case .success = result else {
+            Issue.record("Collecting should succeed")
+            return
+        }
+        
+        #expect(!clientProxy.uploadMediaCalled)
+        
+        let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
+        #expect(arguments.eventType == "im.ponies.user_emotes")
+        
+        let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
+        let image = try #require(pack.images["party"])
+        #expect(image.url == "mxc://example.com/party")
+        #expect(image.body == "Party")
+        #expect(image.info?.w == 512)
+        #expect(image.usage == ["sticker"])
+    }
+    
+    @Test
+    mutating func collectingAnAlreadyCollectedStickerDoesNotWriteAccountData() async throws {
+        try setup()
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        { "images": { "party": { "url": "mxc://example.com/party" } } }
+        """)
+        
+        let result = await service.collectSticker(body: "Party again",
+                                                  url: "mxc://example.com/party",
+                                                  width: nil,
+                                                  height: nil,
+                                                  fileSize: nil,
+                                                  mimeType: nil)
+        
+        guard case .success = result else {
+            Issue.record("Collecting a duplicate should be a no-op success")
+            return
+        }
+        #expect(!clientProxy.setAccountDataEventTypeContentCalled)
     }
     
     @Test
@@ -203,20 +328,25 @@ struct StickerServiceTests {
                                  userDefaults: userDefaults)
     }
     
-    private func makeTestImageFile(named name: String) throws -> URL {
+    private func makeTestImageFile(named name: String, color: UIColor = .red) throws -> URL {
         let directory = URL(filePath: NSTemporaryDirectory()).appending(path: "StickerServiceTests-media-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let fileURL = directory.appending(path: "\(name).png")
-        try makeTestImage().pngData()?.write(to: fileURL)
+        try makeTestImage(color: color).pngData()?.write(to: fileURL)
         return fileURL
     }
     
-    private func makeTestImage() -> UIImage {
+    private func makeTestImage(color: UIColor = .red) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         return UIGraphicsImageRenderer(size: CGSize(width: 2, height: 2), format: format).image { context in
-            UIColor.red.setFill()
+            color.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
         }
+    }
+    
+    private func sha256Hex(ofFileAt url: URL) throws -> String {
+        let data = try Data(contentsOf: url)
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 }

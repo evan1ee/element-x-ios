@@ -5,6 +5,7 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
+import CryptoKit
 import Foundation
 import ImageIO
 import MatrixRustSDK
@@ -76,11 +77,55 @@ class StickerService: StickerServiceProtocol {
         }
     }
     
-    func addUserSticker(fromMediaAt url: URL) async -> Result<Void, StickerServiceError> {
+    func addUserStickers(fromMediaAt urls: [URL]) async -> StickerBatchSummary {
         guard case let .success(maxUploadSize) = await clientProxy.maxMediaUploadSize else {
-            return .failure(.processingFailed)
+            return StickerBatchSummary(failed: urls.count)
         }
         
+        var summary = StickerBatchSummary()
+        var pack = await loadUserPack()
+        var knownHashes = Set(pack.images.values.compactMap(\.sha256))
+        
+        for url in urls {
+            guard let data = try? Data(contentsOf: url) else {
+                summary.failed += 1
+                continue
+            }
+            
+            let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            
+            guard !knownHashes.contains(hash) else {
+                summary.duplicates += 1
+                continue
+            }
+            
+            guard case let .success((mediaURI, imageInfo)) = await uploadSticker(at: url, maxUploadSize: maxUploadSize) else {
+                summary.failed += 1
+                continue
+            }
+            
+            let body = url.deletingPathExtension().lastPathComponent
+            pack.images[uniqueShortcode(for: body, in: pack)] = .init(url: mediaURI,
+                                                                      body: body,
+                                                                      info: .init(w: imageInfo.width,
+                                                                                  h: imageInfo.height,
+                                                                                  size: imageInfo.size,
+                                                                                  mimetype: imageInfo.mimetype),
+                                                                      usage: [UserStickerPack.stickerUsage],
+                                                                      sha256: hash)
+            knownHashes.insert(hash)
+            summary.added += 1
+        }
+        
+        if summary.added > 0, case .failure = await save(pack) {
+            summary.failed += summary.added
+            summary.added = 0
+        }
+        
+        return summary
+    }
+    
+    private func uploadSticker(at url: URL, maxUploadSize: UInt) async -> Result<(String, ImageInfo), StickerServiceError> {
         guard case let .success(mediaInfo) = await mediaUploadingPreprocessor.processMedia(at: url, maxUploadSize: maxUploadSize),
               case let .image(imageURL, _, imageInfo) = mediaInfo else {
             MXLog.error("Failed processing the image to add as a sticker.")
@@ -93,16 +138,25 @@ class StickerService: StickerServiceProtocol {
             return .failure(.uploadFailed)
         }
         
+        return .success((mediaURI, imageInfo))
+    }
+    
+    func collectSticker(body: String,
+                        url: String,
+                        width: UInt64?,
+                        height: UInt64?,
+                        fileSize: UInt64?,
+                        mimeType: String?) async -> Result<Void, StickerServiceError> {
         var pack = await loadUserPack()
         
-        let body = url.deletingPathExtension().lastPathComponent
+        guard !pack.images.values.contains(where: { $0.url == url }) else {
+            return .success(())
+        }
+        
         let shortcode = uniqueShortcode(for: body, in: pack)
-        pack.images[shortcode] = .init(url: mediaURI,
+        pack.images[shortcode] = .init(url: url,
                                        body: body,
-                                       info: .init(w: imageInfo.width,
-                                                   h: imageInfo.height,
-                                                   size: imageInfo.size,
-                                                   mimetype: imageInfo.mimetype),
+                                       info: .init(w: width, h: height, size: fileSize, mimetype: mimeType),
                                        usage: [UserStickerPack.stickerUsage])
         
         return await save(pack)

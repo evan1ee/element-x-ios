@@ -12193,46 +12193,88 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
             return sendInReturnValue
         }
     }
-    //MARK: - addUserSticker
+    //MARK: - addUserStickers
 
-    private let addUserStickerFromMediaAtCallsCountLock = NSLock()
-    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingCallsCount = 0
-    var addUserStickerFromMediaAtCallsCount: Int {
-        get { addUserStickerFromMediaAtCallsCountLock.withLock { addUserStickerFromMediaAtUnderlyingCallsCount } }
-        set { addUserStickerFromMediaAtCallsCountLock.withLock { addUserStickerFromMediaAtUnderlyingCallsCount = newValue } }
+    private let addUserStickersFromMediaAtCallsCountLock = NSLock()
+    private nonisolated(unsafe) var addUserStickersFromMediaAtUnderlyingCallsCount = 0
+    var addUserStickersFromMediaAtCallsCount: Int {
+        get { addUserStickersFromMediaAtCallsCountLock.withLock { addUserStickersFromMediaAtUnderlyingCallsCount } }
+        set { addUserStickersFromMediaAtCallsCountLock.withLock { addUserStickersFromMediaAtUnderlyingCallsCount = newValue } }
     }
-    var addUserStickerFromMediaAtCalled: Bool {
-        return addUserStickerFromMediaAtCallsCount > 0
+    var addUserStickersFromMediaAtCalled: Bool {
+        return addUserStickersFromMediaAtCallsCount > 0
     }
-    private let addUserStickerFromMediaAtReceivedUrlLock = NSLock()
-    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingReceivedUrl: URL?
-    var addUserStickerFromMediaAtReceivedUrl: URL? {
-        get { addUserStickerFromMediaAtReceivedUrlLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedUrl } }
-        set { addUserStickerFromMediaAtReceivedUrlLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedUrl = newValue } }
+    private let addUserStickersFromMediaAtReceivedUrlsLock = NSLock()
+    private nonisolated(unsafe) var addUserStickersFromMediaAtUnderlyingReceivedUrls: [URL]?
+    var addUserStickersFromMediaAtReceivedUrls: [URL]? {
+        get { addUserStickersFromMediaAtReceivedUrlsLock.withLock { addUserStickersFromMediaAtUnderlyingReceivedUrls } }
+        set { addUserStickersFromMediaAtReceivedUrlsLock.withLock { addUserStickersFromMediaAtUnderlyingReceivedUrls = newValue } }
     }
-    private let addUserStickerFromMediaAtReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingReceivedInvocations: [URL] = []
-    var addUserStickerFromMediaAtReceivedInvocations: [URL] {
-        get { addUserStickerFromMediaAtReceivedInvocationsLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedInvocations } }
-        set { addUserStickerFromMediaAtReceivedInvocationsLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedInvocations = newValue } }
+    private let addUserStickersFromMediaAtReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var addUserStickersFromMediaAtUnderlyingReceivedInvocations: [[URL]] = []
+    var addUserStickersFromMediaAtReceivedInvocations: [[URL]] {
+        get { addUserStickersFromMediaAtReceivedInvocationsLock.withLock { addUserStickersFromMediaAtUnderlyingReceivedInvocations } }
+        set { addUserStickersFromMediaAtReceivedInvocationsLock.withLock { addUserStickersFromMediaAtUnderlyingReceivedInvocations = newValue } }
     }
 
-    private let addUserStickerFromMediaAtReturnValueLock = NSLock()
-    private nonisolated(unsafe) var addUserStickerFromMediaAtUnderlyingReturnValue: Result<Void, StickerServiceError>!
-    var addUserStickerFromMediaAtReturnValue: Result<Void, StickerServiceError>! {
-        get { addUserStickerFromMediaAtReturnValueLock.withLock { addUserStickerFromMediaAtUnderlyingReturnValue } }
-        set { addUserStickerFromMediaAtReturnValueLock.withLock { addUserStickerFromMediaAtUnderlyingReturnValue = newValue } }
+    private let addUserStickersFromMediaAtReturnValueLock = NSLock()
+    private nonisolated(unsafe) var addUserStickersFromMediaAtUnderlyingReturnValue: StickerBatchSummary!
+    var addUserStickersFromMediaAtReturnValue: StickerBatchSummary! {
+        get { addUserStickersFromMediaAtReturnValueLock.withLock { addUserStickersFromMediaAtUnderlyingReturnValue } }
+        set { addUserStickersFromMediaAtReturnValueLock.withLock { addUserStickersFromMediaAtUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var addUserStickerFromMediaAtClosure: ((URL) async -> Result<Void, StickerServiceError>)?
+    nonisolated(unsafe) var addUserStickersFromMediaAtClosure: (([URL]) async -> StickerBatchSummary)?
 
-    @concurrent func addUserSticker(fromMediaAt url: URL) async -> Result<Void, StickerServiceError> {
-        addUserStickerFromMediaAtCallsCountLock.withLock { addUserStickerFromMediaAtUnderlyingCallsCount += 1 }
-        addUserStickerFromMediaAtReceivedUrl = url
-        addUserStickerFromMediaAtReceivedInvocationsLock.withLock { addUserStickerFromMediaAtUnderlyingReceivedInvocations.append(url) }
-        if let addUserStickerFromMediaAtClosure = addUserStickerFromMediaAtClosure {
-            return await addUserStickerFromMediaAtClosure(url)
+    @concurrent func addUserStickers(fromMediaAt urls: [URL]) async -> StickerBatchSummary {
+        addUserStickersFromMediaAtCallsCountLock.withLock { addUserStickersFromMediaAtUnderlyingCallsCount += 1 }
+        addUserStickersFromMediaAtReceivedUrls = urls
+        addUserStickersFromMediaAtReceivedInvocationsLock.withLock { addUserStickersFromMediaAtUnderlyingReceivedInvocations.append(urls) }
+        if let addUserStickersFromMediaAtClosure = addUserStickersFromMediaAtClosure {
+            return await addUserStickersFromMediaAtClosure(urls)
         } else {
-            return addUserStickerFromMediaAtReturnValue
+            return addUserStickersFromMediaAtReturnValue
+        }
+    }
+    //MARK: - collectSticker
+
+    private let collectStickerBodyUrlWidthHeightFileSizeMimeTypeCallsCountLock = NSLock()
+    private nonisolated(unsafe) var collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingCallsCount = 0
+    var collectStickerBodyUrlWidthHeightFileSizeMimeTypeCallsCount: Int {
+        get { collectStickerBodyUrlWidthHeightFileSizeMimeTypeCallsCountLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingCallsCount } }
+        set { collectStickerBodyUrlWidthHeightFileSizeMimeTypeCallsCountLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingCallsCount = newValue } }
+    }
+    var collectStickerBodyUrlWidthHeightFileSizeMimeTypeCalled: Bool {
+        return collectStickerBodyUrlWidthHeightFileSizeMimeTypeCallsCount > 0
+    }
+    private let collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedArguments: (body: String, url: String, width: UInt64?, height: UInt64?, fileSize: UInt64?, mimeType: String?)?
+    var collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedArguments: (body: String, url: String, width: UInt64?, height: UInt64?, fileSize: UInt64?, mimeType: String?)? {
+        get { collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedArgumentsLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedArguments } }
+        set { collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedArgumentsLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedArguments = newValue } }
+    }
+    private let collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedInvocations: [(body: String, url: String, width: UInt64?, height: UInt64?, fileSize: UInt64?, mimeType: String?)] = []
+    var collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedInvocations: [(body: String, url: String, width: UInt64?, height: UInt64?, fileSize: UInt64?, mimeType: String?)] {
+        get { collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedInvocationsLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedInvocations } }
+        set { collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedInvocationsLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let collectStickerBodyUrlWidthHeightFileSizeMimeTypeReturnValueLock = NSLock()
+    private nonisolated(unsafe) var collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReturnValue: Result<Void, StickerServiceError>!
+    var collectStickerBodyUrlWidthHeightFileSizeMimeTypeReturnValue: Result<Void, StickerServiceError>! {
+        get { collectStickerBodyUrlWidthHeightFileSizeMimeTypeReturnValueLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReturnValue } }
+        set { collectStickerBodyUrlWidthHeightFileSizeMimeTypeReturnValueLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var collectStickerBodyUrlWidthHeightFileSizeMimeTypeClosure: ((String, String, UInt64?, UInt64?, UInt64?, String?) async -> Result<Void, StickerServiceError>)?
+
+    @concurrent func collectSticker(body: String, url: String, width: UInt64?, height: UInt64?, fileSize: UInt64?, mimeType: String?) async -> Result<Void, StickerServiceError> {
+        collectStickerBodyUrlWidthHeightFileSizeMimeTypeCallsCountLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingCallsCount += 1 }
+        collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedArguments = (body: body, url: url, width: width, height: height, fileSize: fileSize, mimeType: mimeType)
+        collectStickerBodyUrlWidthHeightFileSizeMimeTypeReceivedInvocationsLock.withLock { collectStickerBodyUrlWidthHeightFileSizeMimeTypeUnderlyingReceivedInvocations.append((body: body, url: url, width: width, height: height, fileSize: fileSize, mimeType: mimeType)) }
+        if let collectStickerBodyUrlWidthHeightFileSizeMimeTypeClosure = collectStickerBodyUrlWidthHeightFileSizeMimeTypeClosure {
+            return await collectStickerBodyUrlWidthHeightFileSizeMimeTypeClosure(body, url, width, height, fileSize, mimeType)
+        } else {
+            return collectStickerBodyUrlWidthHeightFileSizeMimeTypeReturnValue
         }
     }
     //MARK: - removeUserSticker

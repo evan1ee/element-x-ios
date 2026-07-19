@@ -43,8 +43,8 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
         switch viewAction {
         case .send(let sticker):
             send(sticker)
-        case .addSelectedPhoto:
-            addSelectedPhoto()
+        case .addSelectedPhotos:
+            addSelectedPhotos()
         case .removeSticker(let sticker):
             removeSticker(sticker)
         case .cancel:
@@ -78,37 +78,53 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
         }
     }
     
-    private func addSelectedPhoto() {
-        guard let item = state.bindings.photosPickerItem else {
+    private func addSelectedPhotos() {
+        let items = state.bindings.photosPickerItems
+        
+        // Resetting the binding below re-triggers the view's onChange.
+        guard !items.isEmpty else {
             return
         }
         
-        state.bindings.photosPickerItem = nil
+        state.bindings.photosPickerItems = []
         state.isAddingSticker = true
         
         Task {
-            await addSticker(from: item)
+            await addStickers(from: items)
             state.isAddingSticker = false
         }
     }
     
-    private func addSticker(from item: PhotosPickerItem) async {
-        let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "png"
+    private func addStickers(from items: [PhotosPickerItem]) async {
+        var fileURLs = [URL]()
+        var failedToLoadCount = 0
         
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let fileURL = try? writeToTemporaryFile(data, fileExtension: fileExtension) else {
-            showFailureIndicator()
-            return
+        for item in items {
+            let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "png"
+            
+            guard let data = try? await item.loadTransferable(type: Data.self),
+                  let fileURL = try? writeToTemporaryFile(data, fileExtension: fileExtension) else {
+                failedToLoadCount += 1
+                continue
+            }
+            
+            fileURLs.append(fileURL)
         }
         
-        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
+        defer {
+            for fileURL in fileURLs {
+                try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent())
+            }
+        }
         
-        switch await stickerService.addUserSticker(fromMediaAt: fileURL) {
-        case .success:
+        var summary = await stickerService.addUserStickers(fromMediaAt: fileURLs)
+        summary.failed += failedToLoadCount
+        
+        if summary.added > 0 {
             await loadStickers()
-        case .failure:
-            showFailureIndicator()
         }
+        
+        showSummaryIndicator(summary)
     }
     
     private func removeSticker(_ sticker: Sticker) {
@@ -139,5 +155,25 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
     
     private func showFailureIndicator() {
         userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorUnknown, icon: \.close))
+    }
+    
+    private func showSummaryIndicator(_ summary: StickerBatchSummary) {
+        var parts = [String]()
+        if summary.added > 0 {
+            parts.append(UntranslatedL10n.screenStickerPickerAddedCount(summary.added))
+        }
+        if summary.duplicates > 0 {
+            parts.append(UntranslatedL10n.screenStickerPickerDuplicateCount(summary.duplicates))
+        }
+        if summary.failed > 0 {
+            parts.append(UntranslatedL10n.screenStickerPickerFailedCount(summary.failed))
+        }
+        
+        guard !parts.isEmpty else {
+            return
+        }
+        
+        userIndicatorController.submitIndicator(UserIndicator(title: parts.formatted(.list(type: .and, width: .narrow)),
+                                                              icon: summary.failed == 0 ? \.check : \.close))
     }
 }

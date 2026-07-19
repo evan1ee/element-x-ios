@@ -72,6 +72,9 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
         
         let voiceMessageRecorder = VoiceMessageRecorder(audioRecorder: AudioRecorder(), mediaPlayerProvider: mediaPlayerProvider)
         
+        let stickerService = StickerService(clientProxy: userSession.clientProxy,
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: appSettings))
+        
         timelineInteractionHandler = TimelineInteractionHandler(roomProxy: roomProxy,
                                                                 timelineController: timelineController,
                                                                 userSession: userSession,
@@ -83,7 +86,8 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
                                                                 analyticsService: analyticsService,
                                                                 emojiProvider: emojiProvider,
                                                                 linkMetadataProvider: linkMetadataProvider,
-                                                                timelineControllerFactory: timelineControllerFactory)
+                                                                timelineControllerFactory: timelineControllerFactory,
+                                                                stickerService: stickerService)
         
         let hideTimelineMedia = switch userSession.clientProxy.timelineMediaVisibilityPublisher.value {
         case .always:

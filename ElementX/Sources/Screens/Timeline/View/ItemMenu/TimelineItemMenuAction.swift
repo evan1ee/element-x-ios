@@ -77,6 +77,7 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
     case unpin
     case viewInRoomTimeline
     case downloadMedia
+    case collectSticker
     
     var id: Self {
         self
@@ -190,6 +191,8 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
             Label(L10n.actionViewInTimeline, icon: \.visibilityOn)
         case .downloadMedia:
             Label(L10n.actionDownload, icon: \.downloadIos)
+        case .collectSticker:
+            Label(UntranslatedL10n.actionAddToStickers, icon: \.sticker)
         }
     }
 }

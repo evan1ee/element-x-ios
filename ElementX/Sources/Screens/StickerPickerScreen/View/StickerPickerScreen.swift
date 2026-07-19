@@ -45,7 +45,10 @@ struct StickerPickerScreen: View {
                 if context.viewState.isAddingSticker {
                     ProgressView()
                 } else {
-                    PhotosPicker(selection: $context.photosPickerItem, matching: .images, photoLibrary: .shared()) {
+                    PhotosPicker(selection: $context.photosPickerItems,
+                                 maxSelectionCount: 10,
+                                 matching: .images,
+                                 photoLibrary: .shared()) {
                         CompoundIcon(\.plus)
                     }
                     .disabled(context.viewState.isBusy)
@@ -54,8 +57,8 @@ struct StickerPickerScreen: View {
                 }
             }
         }
-        .onChange(of: context.photosPickerItem) {
-            context.send(viewAction: .addSelectedPhoto)
+        .onChange(of: context.photosPickerItems) {
+            context.send(viewAction: .addSelectedPhotos)
         }
     }
     
