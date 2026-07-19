@@ -174,12 +174,25 @@ class StickerService: StickerServiceProtocol {
     
     // MARK: - User pack
     
+    /// The last pack we loaded or saved. Account data reads lag writes (the change
+    /// only lands locally once it syncs back), so within a session we trust this
+    /// rather than re-reading a stale value straight after a mutation.
+    private var cachedPack: UserStickerPack?
+    
     private func loadUserPack() async -> UserStickerPack {
+        if let cachedPack {
+            return cachedPack
+        }
+        
         guard case let .success(content) = await clientProxy.accountData(eventType: UserStickerPack.eventType),
               let content,
               let pack = try? JSONDecoder().decode(UserStickerPack.self, from: Data(content.utf8)) else {
-            return UserStickerPack()
+            let pack = UserStickerPack()
+            cachedPack = pack
+            return pack
         }
+        
+        cachedPack = pack
         return pack
     }
     
@@ -190,6 +203,7 @@ class StickerService: StickerServiceProtocol {
         
         switch await clientProxy.setAccountData(eventType: UserStickerPack.eventType, content: content) {
         case .success:
+            cachedPack = pack
             return .success(())
         case .failure(let error):
             MXLog.error("Failed updating the user sticker pack with error: \(error)")

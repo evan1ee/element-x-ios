@@ -210,6 +210,34 @@ struct StickerServiceTests {
     }
     
     @Test
+    mutating func addedStickerIsVisibleBeforeAccountDataSyncsBack() async throws {
+        try setup()
+        // Account data reads keep returning the pre-write value (the write hasn't
+        // synced back), so loadStickers must reflect what we just saved instead.
+        clientProxy.accountDataEventTypeReturnValue = .success(nil)
+        let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        
+        _ = await service.addUserStickers(fromMediaAt: [imageURL])
+        let stickers = await service.loadStickers().userStickers
+        
+        #expect(stickers.map(\.body) == ["Fancy Cat"])
+    }
+    
+    @Test
+    mutating func removedStickerIsGoneBeforeAccountDataSyncsBack() async throws {
+        try setup()
+        // The stale read still contains the sticker; loadStickers must not resurrect it.
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        { "images": { "party": { "url": "mxc://example.com/party" } } }
+        """)
+        
+        _ = await service.removeUserSticker(id: "party")
+        let stickers = await service.loadStickers().userStickers
+        
+        #expect(stickers.isEmpty)
+    }
+    
+    @Test
     mutating func collectingAReceivedStickerAddsItToThePackWithoutUploading() async throws {
         try setup()
         

@@ -54,10 +54,18 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
     
     // MARK: - Private
     
-    private func loadStickers() async {
+    private func loadStickers(animated: Bool = false) async {
         let collection = await stickerService.loadStickers()
-        state.userStickers = collection.userStickers
-        state.builtInStickers = collection.builtInStickers
+        
+        if animated {
+            withAnimation {
+                state.userStickers = collection.userStickers
+                state.builtInStickers = collection.builtInStickers
+            }
+        } else {
+            state.userStickers = collection.userStickers
+            state.builtInStickers = collection.builtInStickers
+        }
     }
     
     private func send(_ sticker: Sticker) {
@@ -97,18 +105,27 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
     
     private func addStickers(from items: [PhotosPickerItem]) async {
         var fileURLs = [URL]()
+        var pendingIDs = [String]()
         var failedToLoadCount = 0
         
         for item in items {
             let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "png"
             
             guard let data = try? await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data),
                   let fileURL = try? writeToTemporaryFile(data, fileExtension: fileExtension) else {
                 failedToLoadCount += 1
                 continue
             }
             
+            let id = UUID().uuidString
+            pendingIDs.append(id)
             fileURLs.append(fileURL)
+            
+            // Show the image uploading straight away, before the slow upload.
+            withAnimation {
+                state.uploadingStickers.append(PendingSticker(id: id, image: image))
+            }
         }
         
         defer {
@@ -120,11 +137,20 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
         var summary = await stickerService.addUserStickers(fromMediaAt: fileURLs)
         summary.failed += failedToLoadCount
         
+        // Reload before clearing placeholders so each new sticker replaces its
+        // placeholder in one animation instead of flashing empty.
         if summary.added > 0 {
-            await loadStickers()
+            await loadStickers(animated: true)
         }
         
-        showSummaryIndicator(summary)
+        withAnimation {
+            state.uploadingStickers.removeAll { pendingIDs.contains($0.id) }
+        }
+        
+        // Added stickers appear in the grid, so only surface duplicates or failures.
+        if summary.duplicates > 0 || summary.failed > 0 {
+            showSummaryIndicator(summary)
+        }
     }
     
     private func removeSticker(_ sticker: Sticker) {
@@ -133,14 +159,16 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
         }
         
         state.isAddingSticker = true
+        withAnimation { _ = state.removingStickerIDs.insert(sticker.id) }
         
         Task {
             switch await stickerService.removeUserSticker(id: sticker.id) {
             case .success:
-                await loadStickers()
+                await loadStickers(animated: true)
             case .failure:
                 showFailureIndicator()
             }
+            withAnimation { state.removingStickerIDs.remove(sticker.id) }
             state.isAddingSticker = false
         }
     }

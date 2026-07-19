@@ -8,14 +8,23 @@
 import Foundation
 import PhotosUI
 import SwiftUI
+import UIKit
 
 enum StickerPickerScreenViewModelAction {
     case dismiss
 }
 
+/// A sticker being uploaded, shown as a placeholder until it lands in the pack.
+struct PendingSticker: Identifiable {
+    let id: String
+    let image: UIImage
+}
+
 struct StickerPickerScreenViewState: BindableState {
     var userStickers: [Sticker] = []
     var builtInStickers: [Sticker] = []
+    var uploadingStickers: [PendingSticker] = []
+    var removingStickerIDs: Set<String> = []
     var sendingStickerID: String?
     var isAddingSticker = false
     

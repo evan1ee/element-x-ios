@@ -14,17 +14,21 @@ struct StickerPickerScreen: View {
     
     private let columns = [GridItem(.adaptive(minimum: 96), spacing: 16)]
     
+    private var hasUserStickers: Bool {
+        !context.viewState.userStickers.isEmpty || !context.viewState.uploadingStickers.isEmpty
+    }
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                if !context.viewState.userStickers.isEmpty {
-                    section(title: UntranslatedL10n.screenStickerPickerMyStickers,
-                            stickers: context.viewState.userStickers,
-                            allowsRemoval: true)
+                if hasUserStickers {
+                    section(title: UntranslatedL10n.screenStickerPickerMyStickers) {
+                        myStickersGrid
+                    }
                     
-                    section(title: UntranslatedL10n.screenStickerPickerBuiltInStickers,
-                            stickers: context.viewState.builtInStickers,
-                            allowsRemoval: false)
+                    section(title: UntranslatedL10n.screenStickerPickerBuiltInStickers) {
+                        grid(for: context.viewState.builtInStickers, allowsRemoval: false)
+                    }
                 } else {
                     grid(for: context.viewState.builtInStickers, allowsRemoval: false)
                 }
@@ -41,20 +45,18 @@ struct StickerPickerScreen: View {
                 }
             }
             
+            // Keep the picker mounted while busy — unmounting it mid-upload tears
+            // down its presentation and dismisses the enclosing sheet.
             ToolbarItem(placement: .primaryAction) {
-                if context.viewState.isAddingSticker {
-                    ProgressView()
-                } else {
-                    PhotosPicker(selection: $context.photosPickerItems,
-                                 maxSelectionCount: 10,
-                                 matching: .images,
-                                 photoLibrary: .shared()) {
-                        CompoundIcon(\.plus)
-                    }
-                    .disabled(context.viewState.isBusy)
-                    .accessibilityLabel(UntranslatedL10n.screenStickerPickerAddSticker)
-                    .accessibilityIdentifier(A11yIdentifiers.stickerPickerScreen.addSticker)
+                PhotosPicker(selection: $context.photosPickerItems,
+                             maxSelectionCount: 10,
+                             matching: .images,
+                             photoLibrary: .shared()) {
+                    CompoundIcon(\.plus)
                 }
+                .disabled(context.viewState.isBusy)
+                .accessibilityLabel(UntranslatedL10n.screenStickerPickerAddSticker)
+                .accessibilityIdentifier(A11yIdentifiers.stickerPickerScreen.addSticker)
             }
         }
         .onChange(of: context.photosPickerItems) {
@@ -62,42 +64,72 @@ struct StickerPickerScreen: View {
         }
     }
     
-    private func section(title: String, stickers: [Sticker], allowsRemoval: Bool) -> some View {
+    private func section(title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.compound.bodySMSemibold)
                 .foregroundColor(.compound.textSecondary)
             
-            grid(for: stickers, allowsRemoval: allowsRemoval)
+            content()
+        }
+    }
+    
+    private var myStickersGrid: some View {
+        LazyVGrid(columns: columns, spacing: 16) {
+            ForEach(context.viewState.uploadingStickers) { pending in
+                uploadingTile(for: pending)
+            }
+            
+            ForEach(context.viewState.userStickers) { sticker in
+                stickerButton(for: sticker, allowsRemoval: true)
+            }
         }
     }
     
     private func grid(for stickers: [Sticker], allowsRemoval: Bool) -> some View {
         LazyVGrid(columns: columns, spacing: 16) {
             ForEach(stickers) { sticker in
-                Button {
-                    context.send(viewAction: .send(sticker))
-                } label: {
-                    stickerImage(for: sticker)
-                        .overlay {
-                            if context.viewState.sendingStickerID == sticker.id {
-                                ProgressView()
-                            }
-                        }
-                }
-                .disabled(context.viewState.isBusy)
-                .accessibilityLabel(sticker.body)
-                .contextMenu {
-                    if allowsRemoval {
-                        Button(role: .destructive) {
-                            context.send(viewAction: .removeSticker(sticker))
-                        } label: {
-                            Label(L10n.actionRemove, icon: \.delete)
-                        }
+                stickerButton(for: sticker, allowsRemoval: allowsRemoval)
+            }
+        }
+    }
+    
+    private func stickerButton(for sticker: Sticker, allowsRemoval: Bool) -> some View {
+        let isRemoving = context.viewState.removingStickerIDs.contains(sticker.id)
+        
+        return Button {
+            context.send(viewAction: .send(sticker))
+        } label: {
+            stickerImage(for: sticker)
+                .opacity(isRemoving ? 0.4 : 1)
+                .overlay {
+                    if context.viewState.sendingStickerID == sticker.id || isRemoving {
+                        ProgressView()
                     }
+                }
+        }
+        .disabled(context.viewState.isBusy)
+        .accessibilityLabel(sticker.body)
+        .contextMenu {
+            if allowsRemoval {
+                Button(role: .destructive) {
+                    context.send(viewAction: .removeSticker(sticker))
+                } label: {
+                    Label(L10n.actionRemove, icon: \.delete)
                 }
             }
         }
+        .transition(.scale.combined(with: .opacity))
+    }
+    
+    private func uploadingTile(for pending: PendingSticker) -> some View {
+        Image(uiImage: pending.image)
+            .resizable()
+            .scaledToFit()
+            .aspectRatio(1, contentMode: .fit)
+            .opacity(0.4)
+            .overlay { ProgressView() }
+            .transition(.scale.combined(with: .opacity))
     }
     
     @ViewBuilder
