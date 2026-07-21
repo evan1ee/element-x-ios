@@ -238,6 +238,79 @@ struct StickerServiceTests {
     }
     
     @Test
+    mutating func sendingAnExternalStickerUploadsRawBytesAndSends() async throws {
+        try setup()
+        let data = try #require(makeTestImage().pngData())
+        
+        let result = await service.sendExternalSticker(imageData: data,
+                                                       body: "Happy Cat",
+                                                       width: 480,
+                                                       height: 480,
+                                                       mimeType: "image/webp",
+                                                       in: timelineController)
+        
+        guard case .success = result else {
+            Issue.record("Sending should succeed")
+            return
+        }
+        #expect(clientProxy.uploadMediaCallsCount == 1)
+        #expect(clientProxy.uploadMediaReceivedMedia?.mimeType == "image/webp")
+        
+        let arguments = try #require(timelineController.sendStickerBodyUrlImageInfoReceivedArguments)
+        #expect(arguments.body == "Happy Cat")
+        #expect(arguments.url == "mxc://example.com/abc123")
+        #expect(arguments.imageInfo.mimetype == "image/webp")
+        #expect(arguments.imageInfo.isAnimated == true)
+        // Sending directly must not persist anything to the pack.
+        #expect(!clientProxy.setAccountDataEventTypeContentCalled)
+    }
+    
+    @Test
+    mutating func addingAnExternalStickerUploadsRawBytesAndSaves() async throws {
+        try setup()
+        let data = try #require(makeTestImage().pngData())
+        
+        let summary = await service.addExternalSticker(imageData: data,
+                                                       body: "Happy Cat",
+                                                       width: 480,
+                                                       height: 480,
+                                                       mimeType: "image/webp")
+        
+        #expect(summary == StickerBatchSummary(added: 1, duplicates: 0, failed: 0))
+        #expect(clientProxy.uploadMediaCallsCount == 1)
+        #expect(clientProxy.uploadMediaReceivedMedia?.mimeType == "image/webp")
+        #expect(clientProxy.setAccountDataEventTypeContentCallsCount == 1)
+        
+        let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
+        let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
+        let image = try #require(pack.images["happy_cat"])
+        #expect(image.url == "mxc://example.com/abc123")
+        #expect(image.usage == ["sticker"])
+        #expect(image.info?.mimetype == "image/webp")
+        #expect(image.sha256?.count == 64)
+    }
+    
+    @Test
+    mutating func addingAnExternalStickerAlreadyInThePackIsSkipped() async throws {
+        try setup()
+        let data = try #require(makeTestImage().pngData())
+        let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        { "images": { "cat": { "url": "mxc://example.com/cat", "io.element.sha256": "\(hash)" } } }
+        """)
+        
+        let summary = await service.addExternalSticker(imageData: data,
+                                                       body: "Happy Cat",
+                                                       width: 480,
+                                                       height: 480,
+                                                       mimeType: "image/webp")
+        
+        #expect(summary == StickerBatchSummary(added: 0, duplicates: 1, failed: 0))
+        #expect(!clientProxy.uploadMediaCalled)
+        #expect(!clientProxy.setAccountDataEventTypeContentCalled)
+    }
+    
+    @Test
     mutating func collectingAReceivedStickerAddsItToThePackWithoutUploading() async throws {
         try setup()
         

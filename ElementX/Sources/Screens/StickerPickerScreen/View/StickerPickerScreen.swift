@@ -45,6 +45,17 @@ struct StickerPickerScreen: View {
                 }
             }
             
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    context.send(viewAction: .discover)
+                } label: {
+                    CompoundIcon(\.search)
+                }
+                .disabled(context.viewState.isBusy)
+                .accessibilityLabel(UntranslatedL10n.screenStickerDiscoveryTitle)
+                .accessibilityIdentifier(A11yIdentifiers.stickerPickerScreen.discover)
+            }
+            
             // Keep the picker mounted while busy — unmounting it mid-upload tears
             // down its presentation and dismisses the enclosing sheet.
             ToolbarItem(placement: .primaryAction) {

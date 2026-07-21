@@ -348,6 +348,15 @@ final nonisolated class AppSettings: @unchecked Sendable {
     /// that captions might not be visible to users who are using other Matrix clients.
     let shouldShowMediaCaptionWarning = true
     
+    // MARK: - Stickers
+    
+    /// The default Klipy API key used for sticker discovery. Users can override it in the sticker settings.
+    static let defaultKlipyAPIKey = "elLJFeXj5VQYe6K729esEOdNotU2i7y2yBYN9lwDNC0kK774ijXFTwgREQFo70O4"
+    
+    /// The Klipy API key used to search and download stickers in the discovery screen.
+    @UserPreference(defaultValue: AppSettings.defaultKlipyAPIKey)
+    var klipyAPIKey: String
+    
     // MARK: - Element Call
     
     #if IS_MAIN_APP

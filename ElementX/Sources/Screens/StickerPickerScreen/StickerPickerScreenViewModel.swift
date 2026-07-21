@@ -47,6 +47,8 @@ class StickerPickerScreenViewModel: StickerPickerScreenViewModelType, StickerPic
             addSelectedPhotos()
         case .removeSticker(let sticker):
             removeSticker(sticker)
+        case .discover:
+            actionsSubject.send(.discover)
         case .cancel:
             actionsSubject.send(.dismiss)
         }

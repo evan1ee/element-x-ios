@@ -298,6 +298,7 @@ enum A11yIdentifiers {
     
     struct StickerPickerScreen {
         let addSticker = "sticker_picker-add_sticker"
+        let discover = "sticker_picker-discover"
     }
     
     struct PollFormScreen {

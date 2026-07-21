@@ -146,6 +146,12 @@ struct SettingsScreen: View {
                     })
                     .accessibilityIdentifier(A11yIdentifiers.settingsScreen.advancedSettings)
             
+            ListRow(label: .default(title: UntranslatedL10n.screenStickerSettingsTitle,
+                                    icon: \.sticker),
+                    kind: .navigationLink {
+                        context.send(viewAction: .stickers)
+                    })
+            
             ListRow(label: .default(title: L10n.screenAdvancedSettingsLabs,
                                     icon: \.labs),
                     kind: .navigationLink {

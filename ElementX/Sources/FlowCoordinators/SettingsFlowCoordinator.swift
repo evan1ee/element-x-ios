@@ -113,6 +113,8 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                     presentNotificationSettings()
                 case .advancedSettings:
                     presentAdvancedSettings()
+                case .stickers:
+                    presentStickerSettings()
                 case .labs:
                     presentLabs()
                 case .developerOptions:
@@ -259,6 +261,11 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                                                                               analytics: flowParameters.analytics,
                                                                               clientProxy: flowParameters.userSession.clientProxy,
                                                                               userIndicatorController: flowParameters.userIndicatorController))
+        navigationStackCoordinator.push(coordinator)
+    }
+    
+    private func presentStickerSettings() {
+        let coordinator = StickerSettingsScreenCoordinator(parameters: .init(appSettings: flowParameters.appSettings))
         navigationStackCoordinator.push(coordinator)
     }
     

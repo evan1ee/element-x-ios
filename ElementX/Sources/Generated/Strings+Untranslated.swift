@@ -30,6 +30,16 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
   /// Rooms
   internal static var screenSearchTabRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_rooms") }
+  /// Add to my stickers
+  internal static var screenStickerDiscoveryAddToMyStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_discovery_add_to_my_stickers") }
+  /// No stickers found
+  internal static var screenStickerDiscoveryEmpty: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_discovery_empty") }
+  /// Couldn’t load stickers
+  internal static var screenStickerDiscoveryError: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_discovery_error") }
+  /// Search stickers
+  internal static var screenStickerDiscoverySearchPlaceholder: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_discovery_search_placeholder") }
+  /// Discover
+  internal static var screenStickerDiscoveryTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_discovery_title") }
   /// Add sticker
   internal static var screenStickerPickerAddSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_add_sticker") }
   /// Plural format key: "%#@COUNT@"
@@ -50,6 +60,14 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenStickerPickerMyStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_my_stickers") }
   /// Stickers
   internal static var screenStickerPickerTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_picker_title") }
+  /// Used to search and download stickers from Klipy in the sticker discovery screen.
+  internal static var screenStickerSettingsApiKeyFooter: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_settings_api_key_footer") }
+  /// Klipy API key
+  internal static var screenStickerSettingsApiKeyTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_settings_api_key_title") }
+  /// Reset to default
+  internal static var screenStickerSettingsReset: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_settings_reset") }
+  /// Stickers
+  internal static var screenStickerSettingsTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_settings_title") }
   /// Clear all data currently stored on this device?
   /// Sign in again to access your account data and messages.
   internal static var softLogoutClearDataDialogContent: String { return UntranslatedL10n.tr("Untranslated", "soft_logout_clear_data_dialog_content") }

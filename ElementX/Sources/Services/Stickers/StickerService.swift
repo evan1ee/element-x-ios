@@ -92,7 +92,7 @@ class StickerService: StickerServiceProtocol {
                 continue
             }
             
-            let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            let hash = Self.sha256Hex(data)
             
             guard !knownHashes.contains(hash) else {
                 summary.duplicates += 1
@@ -123,6 +123,106 @@ class StickerService: StickerServiceProtocol {
         }
         
         return summary
+    }
+    
+    func sendExternalSticker(imageData: Data,
+                             body: String,
+                             width: UInt64,
+                             height: UInt64,
+                             mimeType: String,
+                             in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+        switch await uploadRawImage(data: imageData, mimeType: mimeType, width: width, height: height) {
+        case .failure(let error):
+            return .failure(error)
+        case .success(let (mediaURI, imageInfo)):
+            switch await timelineController.sendSticker(body: body, url: mediaURI, imageInfo: imageInfo) {
+            case .success:
+                return .success(())
+            case .failure(let error):
+                MXLog.error("Failed sending external sticker with error: \(error)")
+                return .failure(.sendFailed)
+            }
+        }
+    }
+    
+    func addExternalSticker(imageData: Data,
+                            body: String,
+                            width: UInt64,
+                            height: UInt64,
+                            mimeType: String) async -> StickerBatchSummary {
+        let hash = Self.sha256Hex(imageData)
+        var pack = await loadUserPack()
+        
+        guard !pack.images.values.contains(where: { $0.sha256 == hash }) else {
+            return StickerBatchSummary(duplicates: 1)
+        }
+        
+        switch await uploadRawImage(data: imageData, mimeType: mimeType, width: width, height: height) {
+        case .failure:
+            return StickerBatchSummary(failed: 1)
+        case .success(let (mediaURI, imageInfo)):
+            pack.images[uniqueShortcode(for: body, in: pack)] = .init(url: mediaURI,
+                                                                      body: body,
+                                                                      info: .init(w: imageInfo.width,
+                                                                                  h: imageInfo.height,
+                                                                                  size: imageInfo.size,
+                                                                                  mimetype: imageInfo.mimetype),
+                                                                      usage: [UserStickerPack.stickerUsage],
+                                                                      sha256: hash)
+            
+            if case .failure = await save(pack) {
+                return StickerBatchSummary(failed: 1)
+            }
+            return StickerBatchSummary(added: 1)
+        }
+    }
+    
+    /// Writes the bytes to a temporary file and uploads them without re-encoding so animation is preserved.
+    private func uploadRawImage(data: Data,
+                                mimeType: String,
+                                width: UInt64,
+                                height: UInt64) async -> Result<(String, ImageInfo), StickerServiceError> {
+        let directory = URL(filePath: NSTemporaryDirectory()).appending(path: "sticker-external-\(UUID().uuidString)")
+        guard (try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)) != nil else {
+            return .failure(.processingFailed)
+        }
+        defer { try? FileManager.default.removeItem(at: directory) }
+        
+        let fileURL = directory.appending(path: "sticker.\(Self.fileExtension(for: mimeType))")
+        guard (try? data.write(to: fileURL)) != nil else {
+            return .failure(.processingFailed)
+        }
+        
+        let imageInfo = ImageInfo(height: height,
+                                  width: width,
+                                  mimetype: mimeType,
+                                  size: UInt64(data.count),
+                                  thumbnailInfo: nil,
+                                  thumbnailSource: nil,
+                                  blurhash: nil,
+                                  isAnimated: true)
+        
+        guard case let .success(mediaURI) = await clientProxy.uploadMedia(.image(imageURL: fileURL,
+                                                                                 thumbnailURL: fileURL,
+                                                                                 imageInfo: imageInfo)) else {
+            return .failure(.uploadFailed)
+        }
+        
+        return .success((mediaURI, imageInfo))
+    }
+    
+    private static func fileExtension(for mimeType: String) -> String {
+        switch mimeType {
+        case "image/webp": "webp"
+        case "image/gif": "gif"
+        case "image/png": "png"
+        case "image/jpeg": "jpg"
+        default: "img"
+        }
+    }
+    
+    private static func sha256Hex(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
     
     private func uploadSticker(at url: URL, maxUploadSize: UInt) async -> Result<(String, ImageInfo), StickerServiceError> {

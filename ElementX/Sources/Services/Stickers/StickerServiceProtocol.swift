@@ -59,6 +59,24 @@ protocol StickerServiceProtocol {
     /// and per-file failures don't abort the batch.
     func addUserStickers(fromMediaAt urls: [URL]) async -> StickerBatchSummary
     
+    /// Uploads the given image bytes as-is (preserving animation) and sends them
+    /// as a sticker, without adding them to the user's pack.
+    func sendExternalSticker(imageData: Data,
+                             body: String,
+                             width: UInt64,
+                             height: UInt64,
+                             mimeType: String,
+                             in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError>
+    
+    /// Uploads the given image bytes as-is (preserving animation) and adds them to
+    /// the user's pack. Bytes whose content hash is already in the pack are skipped
+    /// as duplicates.
+    func addExternalSticker(imageData: Data,
+                            body: String,
+                            width: UInt64,
+                            height: UInt64,
+                            mimeType: String) async -> StickerBatchSummary
+    
     /// Adds media that already exists on the homeserver (e.g. a sticker received
     /// in a room) to the user's pack without re-uploading it. Collecting a
     /// sticker that's already in the pack is a no-op success.

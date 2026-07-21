@@ -107,6 +107,15 @@ struct StickerPickerScreenViewModelTests {
     }
     
     @Test
+    mutating func discoverEmitsDiscoverAction() async throws {
+        setupViewModel()
+        
+        let deferred = deferFulfillment(viewModel.actionsPublisher) { $0 == .discover }
+        context.send(viewAction: .discover)
+        try await deferred.fulfill()
+    }
+    
+    @Test
     mutating func cancelDismisses() async throws {
         setupViewModel()
         

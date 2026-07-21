@@ -1261,6 +1261,10 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                 switch action {
                 case .dismiss:
                     navigationStackCoordinator.setSheetCoordinator(nil)
+                case .discover:
+                    presentStickerDiscovery(on: stackCoordinator,
+                                            stickerService: stickerService,
+                                            timelineController: timelineController)
                 }
             }
             .store(in: &cancellables)
@@ -1268,6 +1272,33 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
         navigationStackCoordinator.setSheetCoordinator(stackCoordinator) { [weak self] in
             self?.stateMachine.tryEvent(.dismissStickerPicker)
         }
+    }
+    
+    private func presentStickerDiscovery(on stackCoordinator: NavigationStackCoordinator,
+                                         stickerService: StickerServiceProtocol,
+                                         timelineController: TimelineControllerProtocol) {
+        let appSettings = flowParameters.appSettings
+        let klipyService = KlipyService(apiKey: { appSettings.klipyAPIKey },
+                                        customerID: userSession.clientProxy.userID)
+        let coordinator = StickerDiscoveryScreenCoordinator(parameters: .init(klipyService: klipyService,
+                                                                              stickerService: stickerService,
+                                                                              timelineController: timelineController,
+                                                                              mediaProvider: userSession.mediaProvider,
+                                                                              userIndicatorController: flowParameters.userIndicatorController))
+        coordinator.actionsPublisher
+            .sink { [weak self] action in
+                guard let self else { return }
+                
+                switch action {
+                case .dismiss:
+                    stackCoordinator.pop()
+                case .sent:
+                    navigationStackCoordinator.setSheetCoordinator(nil)
+                }
+            }
+            .store(in: &cancellables)
+        coordinator.start()
+        stackCoordinator.push(coordinator)
     }
     
     private func presentRoomPollsHistory(animated: Bool) async {

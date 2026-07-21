@@ -7594,6 +7594,93 @@ nonisolated class KeychainControllerMock: KeychainControllerProtocol, @unchecked
         removePINCodeBiometricStateClosure?()
     }
 }
+nonisolated class KlipyServiceMock: KlipyServiceProtocol, @unchecked Sendable {
+
+    //MARK: - search
+
+    private let searchQueryPageCallsCountLock = NSLock()
+    private nonisolated(unsafe) var searchQueryPageUnderlyingCallsCount = 0
+    var searchQueryPageCallsCount: Int {
+        get { searchQueryPageCallsCountLock.withLock { searchQueryPageUnderlyingCallsCount } }
+        set { searchQueryPageCallsCountLock.withLock { searchQueryPageUnderlyingCallsCount = newValue } }
+    }
+    var searchQueryPageCalled: Bool {
+        return searchQueryPageCallsCount > 0
+    }
+    private let searchQueryPageReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var searchQueryPageUnderlyingReceivedArguments: (query: String, page: Int)?
+    var searchQueryPageReceivedArguments: (query: String, page: Int)? {
+        get { searchQueryPageReceivedArgumentsLock.withLock { searchQueryPageUnderlyingReceivedArguments } }
+        set { searchQueryPageReceivedArgumentsLock.withLock { searchQueryPageUnderlyingReceivedArguments = newValue } }
+    }
+    private let searchQueryPageReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var searchQueryPageUnderlyingReceivedInvocations: [(query: String, page: Int)] = []
+    var searchQueryPageReceivedInvocations: [(query: String, page: Int)] {
+        get { searchQueryPageReceivedInvocationsLock.withLock { searchQueryPageUnderlyingReceivedInvocations } }
+        set { searchQueryPageReceivedInvocationsLock.withLock { searchQueryPageUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let searchQueryPageReturnValueLock = NSLock()
+    private nonisolated(unsafe) var searchQueryPageUnderlyingReturnValue: Result<KlipySearchResults, KlipyServiceError>!
+    var searchQueryPageReturnValue: Result<KlipySearchResults, KlipyServiceError>! {
+        get { searchQueryPageReturnValueLock.withLock { searchQueryPageUnderlyingReturnValue } }
+        set { searchQueryPageReturnValueLock.withLock { searchQueryPageUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var searchQueryPageClosure: ((String, Int) async -> Result<KlipySearchResults, KlipyServiceError>)?
+
+    @concurrent func search(query: String, page: Int) async -> Result<KlipySearchResults, KlipyServiceError> {
+        searchQueryPageCallsCountLock.withLock { searchQueryPageUnderlyingCallsCount += 1 }
+        searchQueryPageReceivedArguments = (query: query, page: page)
+        searchQueryPageReceivedInvocationsLock.withLock { searchQueryPageUnderlyingReceivedInvocations.append((query: query, page: page)) }
+        if let searchQueryPageClosure = searchQueryPageClosure {
+            return await searchQueryPageClosure(query, page)
+        } else {
+            return searchQueryPageReturnValue
+        }
+    }
+    //MARK: - downloadImage
+
+    private let downloadImageFromCallsCountLock = NSLock()
+    private nonisolated(unsafe) var downloadImageFromUnderlyingCallsCount = 0
+    var downloadImageFromCallsCount: Int {
+        get { downloadImageFromCallsCountLock.withLock { downloadImageFromUnderlyingCallsCount } }
+        set { downloadImageFromCallsCountLock.withLock { downloadImageFromUnderlyingCallsCount = newValue } }
+    }
+    var downloadImageFromCalled: Bool {
+        return downloadImageFromCallsCount > 0
+    }
+    private let downloadImageFromReceivedUrlLock = NSLock()
+    private nonisolated(unsafe) var downloadImageFromUnderlyingReceivedUrl: URL?
+    var downloadImageFromReceivedUrl: URL? {
+        get { downloadImageFromReceivedUrlLock.withLock { downloadImageFromUnderlyingReceivedUrl } }
+        set { downloadImageFromReceivedUrlLock.withLock { downloadImageFromUnderlyingReceivedUrl = newValue } }
+    }
+    private let downloadImageFromReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var downloadImageFromUnderlyingReceivedInvocations: [URL] = []
+    var downloadImageFromReceivedInvocations: [URL] {
+        get { downloadImageFromReceivedInvocationsLock.withLock { downloadImageFromUnderlyingReceivedInvocations } }
+        set { downloadImageFromReceivedInvocationsLock.withLock { downloadImageFromUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let downloadImageFromReturnValueLock = NSLock()
+    private nonisolated(unsafe) var downloadImageFromUnderlyingReturnValue: Result<Data, KlipyServiceError>!
+    var downloadImageFromReturnValue: Result<Data, KlipyServiceError>! {
+        get { downloadImageFromReturnValueLock.withLock { downloadImageFromUnderlyingReturnValue } }
+        set { downloadImageFromReturnValueLock.withLock { downloadImageFromUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var downloadImageFromClosure: ((URL) async -> Result<Data, KlipyServiceError>)?
+
+    @concurrent func downloadImage(from url: URL) async -> Result<Data, KlipyServiceError> {
+        downloadImageFromCallsCountLock.withLock { downloadImageFromUnderlyingCallsCount += 1 }
+        downloadImageFromReceivedUrl = url
+        downloadImageFromReceivedInvocationsLock.withLock { downloadImageFromUnderlyingReceivedInvocations.append(url) }
+        if let downloadImageFromClosure = downloadImageFromClosure {
+            return await downloadImageFromClosure(url)
+        } else {
+            return downloadImageFromReturnValue
+        }
+    }
+}
 nonisolated class KnockRequestProxyMock: KnockRequestProxyProtocol, @unchecked Sendable {
     var eventID: String {
         get { return underlyingEventID }
@@ -12233,6 +12320,90 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
             return await addUserStickersFromMediaAtClosure(urls)
         } else {
             return addUserStickersFromMediaAtReturnValue
+        }
+    }
+    //MARK: - sendExternalSticker
+
+    private let sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCountLock = NSLock()
+    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingCallsCount = 0
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCount: Int {
+        get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCountLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingCallsCount } }
+        set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCountLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingCallsCount = newValue } }
+    }
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInCalled: Bool {
+        return sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCount > 0
+    }
+    private let sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)?
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)? {
+        get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArgumentsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments } }
+        set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArgumentsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments = newValue } }
+    }
+    private let sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)] = []
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)] {
+        get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations } }
+        set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValueLock = NSLock()
+    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReturnValue: Result<Void, StickerServiceError>!
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValue: Result<Void, StickerServiceError>! {
+        get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValueLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReturnValue } }
+        set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValueLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInClosure: ((Data, String, UInt64, UInt64, String, TimelineControllerProtocol) async -> Result<Void, StickerServiceError>)?
+
+    @concurrent func sendExternalSticker(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+        sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCountLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingCallsCount += 1 }
+        sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments = (imageData: imageData, body: body, width: width, height: height, mimeType: mimeType, timelineController: timelineController)
+        sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations.append((imageData: imageData, body: body, width: width, height: height, mimeType: mimeType, timelineController: timelineController)) }
+        if let sendExternalStickerImageDataBodyWidthHeightMimeTypeInClosure = sendExternalStickerImageDataBodyWidthHeightMimeTypeInClosure {
+            return await sendExternalStickerImageDataBodyWidthHeightMimeTypeInClosure(imageData, body, width, height, mimeType, timelineController)
+        } else {
+            return sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValue
+        }
+    }
+    //MARK: - addExternalSticker
+
+    private let addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCountLock = NSLock()
+    private nonisolated(unsafe) var addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingCallsCount = 0
+    var addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCount: Int {
+        get { addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCountLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingCallsCount } }
+        set { addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCountLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingCallsCount = newValue } }
+    }
+    var addExternalStickerImageDataBodyWidthHeightMimeTypeCalled: Bool {
+        return addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCount > 0
+    }
+    private let addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String)?
+    var addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String)? {
+        get { addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedArgumentsLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedArguments } }
+        set { addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedArgumentsLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedArguments = newValue } }
+    }
+    private let addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String)] = []
+    var addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String)] {
+        get { addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedInvocationsLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedInvocations } }
+        set { addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedInvocationsLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let addExternalStickerImageDataBodyWidthHeightMimeTypeReturnValueLock = NSLock()
+    private nonisolated(unsafe) var addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReturnValue: StickerBatchSummary!
+    var addExternalStickerImageDataBodyWidthHeightMimeTypeReturnValue: StickerBatchSummary! {
+        get { addExternalStickerImageDataBodyWidthHeightMimeTypeReturnValueLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReturnValue } }
+        set { addExternalStickerImageDataBodyWidthHeightMimeTypeReturnValueLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var addExternalStickerImageDataBodyWidthHeightMimeTypeClosure: ((Data, String, UInt64, UInt64, String) async -> StickerBatchSummary)?
+
+    @concurrent func addExternalSticker(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String) async -> StickerBatchSummary {
+        addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCountLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingCallsCount += 1 }
+        addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedArguments = (imageData: imageData, body: body, width: width, height: height, mimeType: mimeType)
+        addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedInvocationsLock.withLock { addExternalStickerImageDataBodyWidthHeightMimeTypeUnderlyingReceivedInvocations.append((imageData: imageData, body: body, width: width, height: height, mimeType: mimeType)) }
+        if let addExternalStickerImageDataBodyWidthHeightMimeTypeClosure = addExternalStickerImageDataBodyWidthHeightMimeTypeClosure {
+            return await addExternalStickerImageDataBodyWidthHeightMimeTypeClosure(imageData, body, width, height, mimeType)
+        } else {
+            return addExternalStickerImageDataBodyWidthHeightMimeTypeReturnValue
         }
     }
     //MARK: - collectSticker

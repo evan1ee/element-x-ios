@@ -17,6 +17,7 @@ struct StickerPickerScreenCoordinatorParameters {
 
 enum StickerPickerScreenCoordinatorAction {
     case dismiss
+    case discover
 }
 
 final class StickerPickerScreenCoordinator: CoordinatorProtocol {
@@ -42,6 +43,8 @@ final class StickerPickerScreenCoordinator: CoordinatorProtocol {
             switch action {
             case .dismiss:
                 actionsSubject.send(.dismiss)
+            case .discover:
+                actionsSubject.send(.discover)
             }
         }
         .store(in: &cancellables)

@@ -12,6 +12,7 @@ import UIKit
 
 enum StickerPickerScreenViewModelAction {
     case dismiss
+    case discover
 }
 
 /// A sticker being uploaded, shown as a placeholder until it lands in the pack.
@@ -47,5 +48,6 @@ enum StickerPickerScreenViewAction {
     case send(Sticker)
     case addSelectedPhotos
     case removeSticker(Sticker)
+    case discover
     case cancel
 }
