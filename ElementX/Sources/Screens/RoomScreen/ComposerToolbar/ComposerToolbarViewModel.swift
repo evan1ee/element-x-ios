@@ -7,9 +7,11 @@
 //
 
 import Combine
+import Compound
 import Foundation
 import GameKit
 import MatrixRustSDK
+import PhotosUI
 import SwiftUI
 import WysiwygComposer
 
@@ -22,6 +24,13 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     private let roomProxy: JoinedRoomProxyProtocol
     private let analyticsService: AnalyticsServiceProtocol
     private let draftService: ComposerDraftServiceProtocol
+    private let emojiProvider: EmojiProviderProtocol
+    /// Media-panel services. Optional because the composer is also used in contexts (e.g. threads)
+    /// that don't wire up sticker/GIF sending yet.
+    private let stickerService: StickerServiceProtocol?
+    private let gifService: KlipyServiceProtocol?
+    private let timelineController: TimelineControllerProtocol?
+    private let mediaUserIndicatorController: UserIndicatorControllerProtocol?
     private var identityPinningViolations = [String: RoomMemberProxyProtocol]()
     
     private let mentionBuilder: MentionBuilderProtocol
@@ -53,13 +62,23 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
          mentionDisplayHelper: MentionDisplayHelper,
          appSettings: AppSettings,
          analyticsService: AnalyticsServiceProtocol,
-         composerDraftService: ComposerDraftServiceProtocol) {
+         composerDraftService: ComposerDraftServiceProtocol,
+         emojiProvider: EmojiProviderProtocol? = nil,
+         stickerService: StickerServiceProtocol? = nil,
+         gifService: KlipyServiceProtocol? = nil,
+         timelineController: TimelineControllerProtocol? = nil,
+         mediaUserIndicatorController: UserIndicatorControllerProtocol? = nil) {
         self.initialText = initialText
         self.wysiwygViewModel = wysiwygViewModel
         self.completionSuggestionService = completionSuggestionService
         self.analyticsService = analyticsService
         self.roomProxy = roomProxy
         draftService = composerDraftService
+        self.emojiProvider = emojiProvider ?? EmojiProvider(appSettings: appSettings)
+        self.stickerService = stickerService
+        self.gifService = gifService
+        self.timelineController = timelineController
+        self.mediaUserIndicatorController = mediaUserIndicatorController
         
         mentionBuilder = MentionBuilder()
         attributedStringBuilder = AttributedStringBuilder(cacheKey: "Composer", mentionBuilder: mentionBuilder)
@@ -97,7 +116,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         context.$viewState
             .map(\.bindings.composerFocused)
             .removeDuplicates()
-            .sink { [weak self] in self?.actionsSubject.send(.composerFocusedChanged(isFocused: $0)) }
+            .sink { [weak self] in self?.handleComposerFocusChange($0) }
             .store(in: &cancellables)
         
         wysiwygViewModel.$isContentEmpty
@@ -165,6 +184,279 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             self?.saveDraft()
         }
         .store(in: &cancellables)
+        
+        setupMediaInput()
+    }
+    
+    // MARK: - Media input
+    
+    private var mediaEmojiLoadTask: Task<Void, Never>?
+    private var mediaGIFLoadTask: Task<Void, Never>?
+    private var mediaGIFPage = 1
+    
+    private func setupMediaInput() {
+        context.$viewState
+            .map(\.bindings.mediaSearchQuery)
+            .removeDuplicates()
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                switch state.inputMode.mediaTab {
+                case .emoji:
+                    loadMediaEmojis()
+                case .gif:
+                    loadGIFs(reset: true)
+                default:
+                    break
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleComposerFocusChange(_ focused: Bool) {
+        // Focusing the composer (tapping the field) brings the keyboard back, so close the media panel.
+        if focused, state.inputMode.isMedia {
+            state.inputMode = .none
+        }
+        actionsSubject.send(.composerFocusedChanged(isFocused: focused))
+    }
+    
+    private func toggleMediaInput() {
+        if state.inputMode.isMedia {
+            showKeyboard()
+        } else {
+            presentMediaPanel(.emoji)
+        }
+    }
+    
+    /// Presents the media panel below the composer, dismissing the keyboard so the panel takes
+    /// its place (the composer stays visible above it).
+    private func presentMediaPanel(_ tab: MediaTab) {
+        state.inputMode = .media(tab)
+        loadContent(for: tab)
+        state.bindings.composerFocused = false
+    }
+    
+    /// Hides the media panel and brings the keyboard back.
+    private func showKeyboard() {
+        state.inputMode = .none
+        state.bindings.composerFocused = true
+    }
+    
+    private func dismissMediaPanel() {
+        state.inputMode = .none
+    }
+    
+    /// Switches the visible tab in place while the sheet stays presented.
+    private func selectMediaTab(_ tab: MediaTab) {
+        guard state.inputMode.isMedia, state.inputMode.mediaTab != tab else { return }
+        state.inputMode = .media(tab)
+        loadContent(for: tab)
+    }
+    
+    private func loadContent(for tab: MediaTab) {
+        switch tab {
+        case .emoji:
+            loadMediaEmojis()
+        case .gif:
+            loadGIFs(reset: true)
+        case .sticker:
+            loadStickers()
+        }
+    }
+    
+    // MARK: GIFs
+    
+    private func loadGIFs(reset: Bool) {
+        guard let gifService else { return }
+        if reset {
+            mediaGIFPage = 1
+            state.mediaGIFsLoading = true
+        }
+        let query = state.bindings.mediaSearchQuery
+        let page = reset ? 1 : mediaGIFPage + 1
+        
+        mediaGIFLoadTask?.cancel()
+        mediaGIFLoadTask = Task { [weak self] in
+            guard let self else { return }
+            let result = await gifService.search(query: query, page: page)
+            guard !Task.isCancelled, query == state.bindings.mediaSearchQuery else { return }
+            
+            if case let .success(results) = result {
+                mediaGIFPage = page
+                if reset {
+                    state.mediaGIFs = results.stickers
+                } else {
+                    let existingIDs = Set(state.mediaGIFs.map(\.id))
+                    state.mediaGIFs += results.stickers.filter { !existingIDs.contains($0.id) }
+                }
+                state.mediaGIFsHasMore = results.hasNextPage
+            } else if reset {
+                state.mediaGIFs = []
+                state.mediaGIFsHasMore = false
+            }
+            state.mediaGIFsLoading = false
+        }
+    }
+    
+    private func loadMoreGIFs() {
+        guard state.inputMode.mediaTab == .gif, state.mediaGIFsHasMore, !state.mediaGIFsLoading else { return }
+        loadGIFs(reset: false)
+    }
+    
+    private func sendMediaGIF(_ gif: KlipySticker) {
+        guard let gifService, let stickerService, let timelineController, state.sendingMediaItemID == nil else { return }
+        state.sendingMediaItemID = gif.id
+        
+        Task { [weak self] in
+            guard let self else { return }
+            defer { state.sendingMediaItemID = nil }
+            
+            guard case let .success(data) = await gifService.downloadImage(from: gif.fileURL) else {
+                showMediaFailureIndicator()
+                return
+            }
+            let body = gif.title.isEmpty ? "GIF" : gif.title
+            if case .failure = await stickerService.sendExternalSticker(imageData: data,
+                                                                        body: body,
+                                                                        width: gif.width,
+                                                                        height: gif.height,
+                                                                        mimeType: gif.mimeType,
+                                                                        in: timelineController) {
+                showMediaFailureIndicator()
+            }
+        }
+    }
+    
+    // MARK: Stickers
+    
+    private func loadStickers() {
+        guard let stickerService else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            let collection = await stickerService.loadStickers()
+            state.mediaStickers = collection.userStickers + collection.builtInStickers
+        }
+    }
+    
+    private func sendMediaSticker(_ sticker: Sticker) {
+        guard let stickerService, let timelineController, state.sendingMediaItemID == nil else { return }
+        state.sendingMediaItemID = sticker.id
+        
+        Task { [weak self] in
+            guard let self else { return }
+            defer { state.sendingMediaItemID = nil }
+            
+            if case .failure = await stickerService.send(sticker, in: timelineController) {
+                showMediaFailureIndicator()
+            }
+        }
+    }
+    
+    private func showMediaFailureIndicator() {
+        mediaUserIndicatorController?.submitIndicator(UserIndicator(title: L10n.errorUnknown, icon: \.close))
+    }
+    
+    /// Adds the images/GIFs picked in the sticker tab to the user's pack, reusing the batch
+    /// upload with content-hash dedup, then refreshes the grid so the new stickers appear.
+    private func addStickerPhotos() {
+        guard let stickerService else { return }
+        let items = state.bindings.stickerPhotosPickerItems
+        // Resetting the binding below re-triggers the view's onChange.
+        guard !items.isEmpty else { return }
+        state.bindings.stickerPhotosPickerItems = []
+        state.isAddingStickers = true
+        
+        Task { [weak self] in
+            guard let self else { return }
+            defer { state.isAddingStickers = false }
+            
+            var fileURLs = [URL]()
+            var failedToLoadCount = 0
+            for item in items {
+                let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "png"
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      UIImage(data: data) != nil,
+                      let fileURL = try? writeStickerToTemporaryFile(data, fileExtension: fileExtension) else {
+                    failedToLoadCount += 1
+                    continue
+                }
+                fileURLs.append(fileURL)
+            }
+            defer {
+                for fileURL in fileURLs {
+                    try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent())
+                }
+            }
+            
+            var summary = await stickerService.addUserStickers(fromMediaAt: fileURLs)
+            summary.failed += failedToLoadCount
+            
+            if summary.added > 0 {
+                let collection = await stickerService.loadStickers()
+                state.mediaStickers = collection.userStickers + collection.builtInStickers
+            }
+            showStickerAddSummary(summary)
+        }
+    }
+    
+    private func writeStickerToTemporaryFile(_ data: Data, fileExtension: String) throws -> URL {
+        let directory = URL(filePath: NSTemporaryDirectory()).appending(path: "sticker-import-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let fileURL = directory.appending(path: "Sticker.\(fileExtension)")
+        try data.write(to: fileURL)
+        return fileURL
+    }
+    
+    private func showStickerAddSummary(_ summary: StickerBatchSummary) {
+        var parts = [String]()
+        if summary.added > 0 {
+            parts.append(UntranslatedL10n.screenStickerPickerAddedCount(summary.added))
+        }
+        if summary.duplicates > 0 {
+            parts.append(UntranslatedL10n.screenStickerPickerDuplicateCount(summary.duplicates))
+        }
+        if summary.failed > 0 {
+            parts.append(UntranslatedL10n.screenStickerPickerFailedCount(summary.failed))
+        }
+        guard !parts.isEmpty else { return }
+        
+        mediaUserIndicatorController?.submitIndicator(UserIndicator(title: parts.formatted(.list(type: .and, width: .narrow)),
+                                                                    icon: summary.failed == 0 ? \.check : \.close))
+    }
+    
+    private func loadMediaEmojis() {
+        let searchString = state.bindings.mediaSearchQuery
+        mediaEmojiLoadTask?.cancel()
+        mediaEmojiLoadTask = Task { [weak self] in
+            guard let self else { return }
+            let categories = await emojiProvider.categories(searchString: searchString.isBlank ? nil : searchString)
+            guard !Task.isCancelled else { return }
+            state.mediaEmojiCategories = categories
+        }
+    }
+    
+    private func insertEmoji(_ emoji: String) {
+        // The panel is a sheet, so the composer isn't first responder — insert into the model
+        // that drives the on-screen editor (plain text by default, WYSIWYG when formatting is on).
+        if context.composerFormattingEnabled {
+            wysiwygViewModel.replaceText(range: state.bindings.selectedRange, replacementText: emoji)
+        } else {
+            let attributedString = NSMutableAttributedString(attributedString: state.bindings.plainComposerText)
+            let location = min(state.bindings.selectedRange.location, attributedString.length)
+            let insertion = NSAttributedString(string: emoji,
+                                               attributes: [.font: UIFont.preferredFont(forTextStyle: .body),
+                                                            .foregroundColor: UIColor.compound.textPrimary])
+            attributedString.insert(insertion, at: location)
+            state.bindings.plainComposerText = attributedString
+            state.bindings.selectedRange = NSRange(location: location + (emoji as NSString).length, length: 0)
+        }
+        
+        emojiProvider.markEmojiAsFrequentlyUsed(emoji)
+        // Refresh the recents section, but only when browsing (not while filtering).
+        if state.bindings.mediaSearchQuery.isBlank {
+            loadMediaEmojis()
+        }
     }
     
     // MARK: - Public
@@ -186,6 +478,24 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             }
         case .composerDisappeared:
             saveDraft()
+        case .toggleMediaInput:
+            toggleMediaInput()
+        case .showKeyboard:
+            showKeyboard()
+        case .selectMediaTab(let tab):
+            selectMediaTab(tab)
+        case .mediaSearchQueryChanged:
+            break // Handled by the debounced observer in setupMediaInput().
+        case .insertEmoji(let emoji):
+            insertEmoji(emoji)
+        case .sendMediaGIF(let gif):
+            sendMediaGIF(gif)
+        case .loadMoreGIFs:
+            loadMoreGIFs()
+        case .sendMediaSticker(let sticker):
+            sendMediaSticker(sticker)
+        case .addStickerPhotos:
+            addStickerPhotos()
         case .sendMessage:
             guard !state.sendButtonDisabled else { return }
             

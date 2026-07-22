@@ -17,6 +17,7 @@ final nonisolated class KlipyService: KlipyServiceProtocol, Sendable {
     private let session: URLSession
     private let apiKey: @Sendable () -> String
     private let customerID: String
+    private let mediaType: String
     private let perPage: Int
     private let locale: String
     private let contentFilter: String
@@ -24,12 +25,14 @@ final nonisolated class KlipyService: KlipyServiceProtocol, Sendable {
     init(session: URLSession = .shared,
          apiKey: @escaping @Sendable () -> String,
          customerID: String,
+         mediaType: String = "stickers",
          perPage: Int = 24,
          locale: String = Locale.current.language.languageCode?.identifier ?? "en",
          contentFilter: String = "medium") {
         self.session = session
         self.apiKey = apiKey
         self.customerID = customerID
+        self.mediaType = mediaType
         self.perPage = perPage
         self.locale = locale
         self.contentFilter = contentFilter
@@ -44,7 +47,7 @@ final nonisolated class KlipyService: KlipyServiceProtocol, Sendable {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let endpoint = trimmedQuery.isEmpty ? "trending" : "search"
         
-        guard var components = URLComponents(url: Self.baseURL.appending(path: "\(key)/stickers/\(endpoint)"),
+        guard var components = URLComponents(url: Self.baseURL.appending(path: "\(key)/\(mediaType)/\(endpoint)"),
                                              resolvingAgainstBaseURL: false) else {
             return .failure(.requestFailed)
         }

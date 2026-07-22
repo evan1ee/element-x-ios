@@ -11,6 +11,7 @@ import Combine
 import Foundation
 import MatrixRustSDK
 import Testing
+import UIKit
 import WysiwygComposer
 
 @MainActor
@@ -19,6 +20,10 @@ final class ComposerToolbarViewModelTests {
     private var viewModel: ComposerToolbarViewModel!
     private var completionSuggestionServiceMock: CompletionSuggestionServiceMock!
     private var draftServiceMock: ComposerDraftServiceMock!
+    private var emojiProviderSpy: EmojiProviderSpy!
+    private var stickerServiceMock: StickerServiceMock!
+    private var gifServiceMock: KlipyServiceMock!
+    private var timelineControllerMock: TimelineControllerMock!
     
     init() {
         setUpViewModel()
@@ -52,6 +57,159 @@ final class ComposerToolbarViewModelTests {
     @Test
     func handleKeyCommand() {
         #expect(viewModel.context.viewState.keyCommands.count == 1)
+    }
+    
+    // MARK: - Media input
+    
+    @Test
+    func togglingMediaInputPresentsTheEmojiTab() {
+        #expect(viewModel.state.inputMode == .none)
+        
+        viewModel.process(viewAction: .toggleMediaInput)
+        
+        #expect(viewModel.state.inputMode == .media(.emoji))
+    }
+    
+    @Test
+    func togglingMediaInputAgainDismissesThePanel() {
+        viewModel.process(viewAction: .toggleMediaInput)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+        
+        viewModel.process(viewAction: .toggleMediaInput)
+        
+        #expect(viewModel.state.inputMode == .none)
+    }
+    
+    @Test
+    func showKeyboardDismissesTheMediaPanel() {
+        viewModel.process(viewAction: .toggleMediaInput)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+        
+        viewModel.process(viewAction: .showKeyboard)
+        
+        #expect(viewModel.state.inputMode == .none)
+    }
+    
+    @Test
+    func everyMediaTabIsRenderable() {
+        // Guards the extensibility contract: adding a tab must not break rendering.
+        for tab in MediaTab.allCases {
+            #expect(!tab.rawValue.isEmpty)
+        }
+    }
+    
+    @Test
+    func selectingATabSwitchesTheVisibleTab() {
+        viewModel.process(viewAction: .toggleMediaInput)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+        
+        viewModel.process(viewAction: .selectMediaTab(.sticker))
+        
+        #expect(viewModel.state.inputMode == .media(.sticker))
+    }
+    
+    @Test
+    func selectingATabIsIgnoredWhenThePanelIsClosed() {
+        viewModel.process(viewAction: .selectMediaTab(.gif))
+        #expect(viewModel.state.inputMode == .none)
+    }
+    
+    @Test
+    func openingTheEmojiTabLoadsEmojis() async throws {
+        let deferred = deferFulfillment(viewModel.context.$viewState.map(\.mediaEmojiCategories)) { !$0.isEmpty }
+        viewModel.process(viewAction: .toggleMediaInput)
+        try await deferred.fulfill()
+        
+        #expect(viewModel.state.mediaEmojiCategories == emojiProviderSpy.categoriesToReturn)
+    }
+    
+    @Test
+    func insertingAnEmojiRecordsARecentAndKeepsThePanelOpen() {
+        viewModel.process(viewAction: .toggleMediaInput)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+        
+        viewModel.process(viewAction: .insertEmoji("😀"))
+        
+        #expect(emojiProviderSpy.markedEmojis == ["😀"])
+        // Selection is an action, not a transition — the panel stays on the emoji tab.
+        #expect(viewModel.state.inputMode == .media(.emoji))
+    }
+    
+    @Test
+    func openingTheGIFTabLoadsTrendingGIFs() async throws {
+        let gif = makeGIF(id: "a")
+        gifServiceMock.searchQueryPageReturnValue = .success(.init(stickers: [gif], hasNextPage: true, nextPage: 2))
+        
+        let deferred = deferFulfillment(viewModel.context.$viewState.map(\.mediaGIFs)) { !$0.isEmpty }
+        viewModel.process(viewAction: .selectMediaTab(.gif))
+        // selectMediaTab is ignored unless the panel is open, so open it first.
+        viewModel.process(viewAction: .toggleMediaInput)
+        viewModel.process(viewAction: .selectMediaTab(.gif))
+        try await deferred.fulfill()
+        
+        #expect(viewModel.state.mediaGIFs.map(\.id) == ["a"])
+        #expect(viewModel.state.mediaGIFsHasMore)
+        #expect(gifServiceMock.searchQueryPageReceivedArguments?.query == "")
+    }
+    
+    @Test
+    func sendingAGIFDownloadsUploadsAndSendsIt() async throws {
+        viewModel.process(viewAction: .toggleMediaInput)
+        viewModel.process(viewAction: .selectMediaTab(.gif))
+        
+        viewModel.process(viewAction: .sendMediaGIF(makeGIF(id: "a")))
+        #expect(viewModel.state.sendingMediaItemID == "a")
+        
+        while !stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInCalled {
+            await Task.yield()
+        }
+        
+        #expect(gifServiceMock.downloadImageFromCalled)
+        let arguments = try #require(stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments)
+        #expect(arguments.mimeType == "image/gif")
+        // The panel stays open so several GIFs can be sent in a row.
+        #expect(viewModel.state.inputMode == .media(.gif))
+    }
+    
+    @Test
+    func openingTheStickerTabLoadsTheUserPack() async throws {
+        let sticker = Sticker(id: "party", body: "Party", source: .media(url: "mxc://example.com/party"),
+                              width: 512, height: 512, fileSize: 1024, mimeType: "image/png")
+        stickerServiceMock.loadStickersReturnValue = StickerCollection(userStickers: [sticker], builtInStickers: [])
+        
+        viewModel.process(viewAction: .toggleMediaInput)
+        let deferred = deferFulfillment(viewModel.context.$viewState.map(\.mediaStickers)) { !$0.isEmpty }
+        viewModel.process(viewAction: .selectMediaTab(.sticker))
+        try await deferred.fulfill()
+        
+        #expect(viewModel.state.mediaStickers.map(\.id) == ["party"])
+    }
+    
+    @Test
+    func sendingAStickerSendsItThroughTheStickerService() async {
+        let sticker = Sticker(id: "party", body: "Party", source: .media(url: "mxc://example.com/party"),
+                              width: 512, height: 512, fileSize: 1024, mimeType: "image/png")
+        viewModel.process(viewAction: .toggleMediaInput)
+        
+        viewModel.process(viewAction: .sendMediaSticker(sticker))
+        #expect(viewModel.state.sendingMediaItemID == "party")
+        
+        while !stickerServiceMock.sendInCalled {
+            await Task.yield()
+        }
+        
+        #expect(stickerServiceMock.sendInReceivedArguments?.sticker == sticker)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+    }
+    
+    private func makeGIF(id: String) -> KlipySticker {
+        KlipySticker(id: id, title: "GIF \(id)",
+                     previewURL: gifURL("\(id)-sm"), fileURL: gifURL("\(id)-md"),
+                     width: 200, height: 200, size: 5000, mimeType: "image/gif")
+    }
+    
+    private func gifURL(_ name: String) -> URL {
+        URL(string: "https://static.klipy.com/\(name).gif") ?? URL(filePath: "/")
     }
     
     @Test
@@ -806,9 +964,20 @@ final class ComposerToolbarViewModelTests {
         wysiwygViewModel = WysiwygComposerViewModel()
         completionSuggestionServiceMock = CompletionSuggestionServiceMock(configuration: .init())
         draftServiceMock = ComposerDraftServiceMock(.init())
+        emojiProviderSpy = EmojiProviderSpy()
         if let loadDraftClosure {
             draftServiceMock.loadDraftClosure = loadDraftClosure
         }
+        
+        stickerServiceMock = StickerServiceMock()
+        stickerServiceMock.builtInStickers = []
+        stickerServiceMock.loadStickersReturnValue = StickerCollection()
+        stickerServiceMock.sendInReturnValue = .success(())
+        stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValue = .success(())
+        gifServiceMock = KlipyServiceMock()
+        gifServiceMock.searchQueryPageReturnValue = .success(.init(stickers: [], hasNextPage: false, nextPage: 2))
+        gifServiceMock.downloadImageFromReturnValue = .success(Data("gif".utf8))
+        timelineControllerMock = TimelineControllerMock(.init())
         
         let appSettings = AppSettings.volatile()
         
@@ -820,7 +989,30 @@ final class ComposerToolbarViewModelTests {
                                              mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
                                              appSettings: appSettings,
                                              analyticsService: AnalyticsServiceMock(.init()),
-                                             composerDraftService: draftServiceMock)
+                                             composerDraftService: draftServiceMock,
+                                             emojiProvider: emojiProviderSpy,
+                                             stickerService: stickerServiceMock,
+                                             gifService: gifServiceMock,
+                                             timelineController: timelineControllerMock,
+                                             mediaUserIndicatorController: UserIndicatorControllerMock())
         viewModel.context.composerFormattingEnabled = true
+    }
+}
+
+private final class EmojiProviderSpy: EmojiProviderProtocol {
+    var state: EmojiProviderState = .notLoaded
+    var categoriesToReturn: [EmojiCategory] = [EmojiCategory(id: "smileys", emojis: [EmojiItem(label: "grinning", unicode: "😀", keywords: [], shortcodes: [])])]
+    private(set) var markedEmojis: [String] = []
+    
+    func categories(searchString: String?) async -> [EmojiCategory] {
+        categoriesToReturn
+    }
+    
+    func frequentlyUsedSystemEmojis() -> [String] {
+        []
+    }
+    
+    func markEmojiAsFrequentlyUsed(_ emoji: String) {
+        markedEmojis.append(emoji)
     }
 }

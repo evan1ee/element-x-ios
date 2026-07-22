@@ -8,6 +8,7 @@
 
 import Compound
 import MatrixRustSDK
+import PhotosUI
 import SwiftUI
 import WysiwygComposer
 
@@ -57,6 +58,25 @@ enum ComposerToolbarViewAction {
     case plainComposerTextChanged
     case didToggleFormattingOptions
     case selectedTextChanged
+    
+    /// Toggles between the system keyboard and the media panel.
+    case toggleMediaInput
+    /// Restores the system keyboard (e.g. the composer field was tapped while the panel was up).
+    case showKeyboard
+    /// Switches the visible media tab without touching the first responder.
+    case selectMediaTab(MediaTab)
+    /// The in-panel search query changed (currently filters the emoji grid).
+    case mediaSearchQueryChanged
+    /// Inserts the given emoji at the caret and keeps the panel open.
+    case insertEmoji(String)
+    /// Sends a discovered GIF into the timeline, keeping the panel open.
+    case sendMediaGIF(KlipySticker)
+    /// Loads the next page of GIF results (infinite scroll).
+    case loadMoreGIFs
+    /// Sends one of the user's stickers into the timeline, keeping the panel open.
+    case sendMediaSticker(Sticker)
+    /// Uploads the images/GIFs picked in the sticker tab to the user's pack (with dedup).
+    case addStickerPhotos
 }
 
 enum ComposerAttachmentType {
@@ -72,6 +92,20 @@ struct ComposerToolbarViewState: BindableState {
     let wysiwygViewModel: WysiwygComposerViewModel
     
     var composerMode: ComposerMode = .default
+    /// The current input source (system keyboard vs media panel). Drives the composer's media toggle glyph.
+    var inputMode: ComposerInputMode = .none
+    /// The emoji grid shown in the media panel's emoji tab (recents first, then categories).
+    var mediaEmojiCategories: [EmojiCategory] = []
+    /// The GIF results shown in the media panel's GIF tab (trending, or search matches).
+    var mediaGIFs: [KlipySticker] = []
+    var mediaGIFsHasMore = false
+    var mediaGIFsLoading = false
+    /// The stickers shown in the media panel's sticker tab (built-in + the user's own pack).
+    var mediaStickers: [Sticker] = []
+    /// The id of the GIF/sticker currently being uploaded and sent, for a per-item spinner.
+    var sendingMediaItemID: String?
+    /// Whether images picked from the library are currently being added to the user's pack.
+    var isAddingStickers = false
     var composerEmpty = true
     /// Could be false if sending is disabled in the room
     var canSend = true
@@ -147,6 +181,10 @@ struct ComposerToolbarViewState: BindableState {
 struct ComposerToolbarViewStateBindings {
     var plainComposerText: NSAttributedString = .init(string: "")
     var composerFocused = false
+    /// The media panel's in-panel search text.
+    var mediaSearchQuery = ""
+    /// Photos picked in the sticker tab to add to the user's pack.
+    var stickerPhotosPickerItems: [PhotosPickerItem] = []
     var composerFormattingEnabled = false
     var composerExpanded = false
     var formatItems: [FormatItem] = .init()

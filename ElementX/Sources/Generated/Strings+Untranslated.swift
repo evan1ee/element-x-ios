@@ -10,12 +10,48 @@ import Foundation
 // swiftlint:disable explicit_type_interface function_parameter_count identifier_name line_length
 // swiftlint:disable nesting type_body_length type_name vertical_whitespace_opening_braces
 internal nonisolated enum UntranslatedL10n {
+  /// Show keyboard
+  internal static var a11yShowKeyboard: String { return UntranslatedL10n.tr("Untranslated", "a11y_show_keyboard") }
+  /// Show emoji, GIFs and stickers
+  internal static var a11yShowMediaInput: String { return UntranslatedL10n.tr("Untranslated", "a11y_show_media_input") }
   /// Add to stickers
   internal static var actionAddToStickers: String { return UntranslatedL10n.tr("Untranslated", "action_add_to_stickers") }
   /// Sticker added
   internal static var commonStickerAdded: String { return UntranslatedL10n.tr("Untranslated", "common_sticker_added") }
   /// Search
   internal static var screenHomeTabSearch: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_search") }
+  /// Add image or GIF
+  internal static var screenMediaInputAddSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_add_sticker") }
+  /// Activity
+  internal static var screenMediaInputCategoryActivity: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_activity") }
+  /// Flags
+  internal static var screenMediaInputCategoryFlags: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_flags") }
+  /// Food & Drink
+  internal static var screenMediaInputCategoryFood: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_food") }
+  /// Frequently Used
+  internal static var screenMediaInputCategoryFrequentlyUsed: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_frequently_used") }
+  /// Animals & Nature
+  internal static var screenMediaInputCategoryNature: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_nature") }
+  /// Objects
+  internal static var screenMediaInputCategoryObjects: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_objects") }
+  /// Smileys & People
+  internal static var screenMediaInputCategoryPeople: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_people") }
+  /// Travel & Places
+  internal static var screenMediaInputCategoryPlaces: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_places") }
+  /// Symbols
+  internal static var screenMediaInputCategorySymbols: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_category_symbols") }
+  /// Emoji
+  internal static var screenMediaInputEmoji: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_emoji") }
+  /// GIFs
+  internal static var screenMediaInputGifs: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_gifs") }
+  /// No results
+  internal static var screenMediaInputNoResults: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_no_results") }
+  /// Search emoji
+  internal static var screenMediaInputSearchEmojis: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_search_emojis") }
+  /// Search GIFs
+  internal static var screenMediaInputSearchGifs: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_search_gifs") }
+  /// Stickers
+  internal static var screenMediaInputStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_stickers") }
   /// Sticker
   internal static var screenRoomAttachmentSourceSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_room_attachment_source_sticker") }
   /// Search for chats and messages

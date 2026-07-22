@@ -98,6 +98,14 @@ final class RoomScreenCoordinator: CoordinatorProtocol {
                                                         maxCompressedHeight: ComposerConstant.maxHeight,
                                                         maxExpandedHeight: ComposerConstant.maxHeight,
                                                         parserStyle: .elementX)
+        
+        let appSettings = parameters.appSettings
+        let stickerService = StickerService(clientProxy: parameters.userSession.clientProxy,
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: appSettings))
+        let gifService = KlipyService(apiKey: { appSettings.klipyAPIKey },
+                                      customerID: parameters.userSession.clientProxy.userID,
+                                      mediaType: "gifs")
+        
         let composerViewModel = ComposerToolbarViewModel(initialText: parameters.sharedText,
                                                          roomProxy: parameters.roomProxy,
                                                          wysiwygViewModel: wysiwygViewModel,
@@ -106,7 +114,12 @@ final class RoomScreenCoordinator: CoordinatorProtocol {
                                                          mentionDisplayHelper: ComposerMentionDisplayHelper(timelineContext: timelineViewModel.context),
                                                          appSettings: parameters.appSettings,
                                                          analyticsService: parameters.analytics,
-                                                         composerDraftService: parameters.composerDraftService)
+                                                         composerDraftService: parameters.composerDraftService,
+                                                         emojiProvider: parameters.emojiProvider,
+                                                         stickerService: stickerService,
+                                                         gifService: gifService,
+                                                         timelineController: parameters.timelineController,
+                                                         mediaUserIndicatorController: parameters.userIndicatorController)
         self.composerViewModel = composerViewModel
     }
     

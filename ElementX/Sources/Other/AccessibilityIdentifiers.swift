@@ -185,6 +185,7 @@ enum A11yIdentifiers {
             let link = "composer_toolbar-link"
             let openComposeOptions = "composer_toolbar-open_compose_options"
             let closeFormattingOptions = "composer_toolbar-close-formatting-options"
+            let mediaToggle = "composer_toolbar-media_toggle"
         }
         
         let timelineItemActionMenuAction = TimelineItemActionMenuAction()

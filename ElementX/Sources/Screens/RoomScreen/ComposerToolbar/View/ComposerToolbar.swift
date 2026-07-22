@@ -35,7 +35,25 @@ struct ComposerToolbar: View {
         Compound.supportsGlass ? 0 : 3
     }
     
+    /// The height of the media panel that replaces the keyboard below the composer.
+    private let mediaPanelHeight: CGFloat = 336
+    
     var body: some View {
+        VStack(spacing: 0) {
+            composerBar
+            
+            // The media panel takes the keyboard's place below the composer, so the composer
+            // stays visible (Discord behaviour) rather than being covered by a sheet.
+            if context.viewState.inputMode.isMedia {
+                MediaInputPanel(context: context)
+                    .frame(height: mediaPanelHeight)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: context.viewState.inputMode.isMedia)
+    }
+    
+    private var composerBar: some View {
         VStack(spacing: 8) {
             topBar
             
@@ -139,6 +157,13 @@ struct ComposerToolbar: View {
                         .scaledPadding(.vertical, buttonVerticalPadding, relativeTo: .compound.headingLG)
                 }
                 messageComposer
+                
+                if !context.composerFormattingEnabled {
+                    KeyboardMediaToggleButton(inputMode: context.viewState.inputMode) {
+                        context.send(viewAction: .toggleMediaInput)
+                    }
+                    .scaledPadding(.vertical, buttonVerticalPadding, relativeTo: .compound.headingLG)
+                }
             }
             .opacity(context.viewState.isVoiceMessageModeActivated ? 0 : 1)
             
