@@ -61,7 +61,9 @@ struct StickerTabView: View {
                 if isAddingStickers {
                     ProgressView()
                 } else {
-                    CompoundIcon(\.plus, size: .custom(72), relativeTo: .compound.bodyLG)
+                    // A thin SF Symbol plus: CompoundIcon's fixed weight looks too heavy at this size.
+                    Image(systemName: "plus")
+                        .font(.system(size: 56, weight: .light))
                         .foregroundStyle(.compound.iconSecondary)
                 }
             }
