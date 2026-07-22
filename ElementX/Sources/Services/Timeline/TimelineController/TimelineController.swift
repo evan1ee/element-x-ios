@@ -402,6 +402,14 @@ class TimelineController: TimelineControllerProtocol {
         }
     }
     
+    func sendGallery(itemInfos: [GalleryItemInfo],
+                     caption: String?,
+                     inReplyToEventID: String?) async -> Result<Void, TimelineControllerError> {
+        await activeTimeline.sendGallery(itemInfos: itemInfos,
+                                         caption: caption,
+                                         inReplyToEventID: inReplyToEventID).mapError(TimelineControllerError.timelineProxyError)
+    }
+    
     // MARK: - Stickers
     
     func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError> {

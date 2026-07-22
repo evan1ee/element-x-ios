@@ -44,7 +44,6 @@ enum TimelineControllerError: Error {
 /// timeline items, grouping together state events, donating intents to the larger system etc.
 @MainActor
 protocol TimelineControllerProtocol: Sendable {
-    var roomID: String { get }
     var timelineKind: TimelineKind { get }
     
     /// The currently known items, use only for setting up the intial state.
@@ -134,6 +133,10 @@ protocol TimelineControllerProtocol: Sendable {
                           audioInfo: AudioInfo,
                           waveform: [Float],
                           requestHandle: @MainActor (SendAttachmentJoinHandleProtocol) -> Void) async -> Result<Void, TimelineControllerError>
+    
+    func sendGallery(itemInfos: [GalleryItemInfo],
+                     caption: String?,
+                     inReplyToEventID: String?) async -> Result<Void, TimelineControllerError>
     
     // MARK: - Stickers
     

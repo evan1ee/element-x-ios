@@ -6,8 +6,6 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
-// periphery:ignore:all
-
 import Combine
 import Foundation
 import MatrixRustSDK
@@ -45,7 +43,6 @@ struct TimelineControllerMockConfiguration {
         let timelineItemsTimestamps = configuration.timelineItemsTimestamps
         
         callbacks = PassthroughSubject()
-        roomID = roomProxy?.id ?? "MockRoomIdentifier"
         timelineKind = configuration.timelineKind
         paginationState = configuration.paginationState
         timelineItems = configuration.timelineItems
@@ -161,6 +158,16 @@ struct TimelineControllerMockConfiguration {
                                                      videoInfo: videoInfo,
                                                      caption: caption,
                                                      requestHandle: requestHandle).mapError(TimelineControllerError.timelineProxyError)
+            }
+            return .success(())
+        }
+        
+        sendGalleryItemInfosCaptionInReplyToEventIDClosure = { [weak self, timelineProxy] itemInfos, caption, inReplyToEventID in
+            self?.callbacks.send(.messageSentOrEdited)
+            if let timelineProxy {
+                return await timelineProxy.sendGallery(itemInfos: itemInfos,
+                                                       caption: caption,
+                                                       inReplyToEventID: inReplyToEventID).mapError(TimelineControllerError.timelineProxyError)
             }
             return .success(())
         }

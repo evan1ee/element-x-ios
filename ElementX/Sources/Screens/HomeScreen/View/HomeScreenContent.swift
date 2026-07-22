@@ -11,8 +11,6 @@ import SentrySwiftUI
 import SwiftUI
 
 struct HomeScreenContent: View {
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    
     @ObservedObject var context: HomeScreenViewModel.Context
     let scrollViewAdapter: ScrollViewAdapter
     
@@ -54,6 +52,7 @@ struct HomeScreenContent: View {
                                     .frame(maxWidth: .infinity, minHeight: max(0, geometry.size.height - topSectionHeight))
                             } else {
                                 HomeScreenRoomList(context: context)
+                                    .accessibilityAddTraits(.updatesFrequently)
                             }
                         } header: {
                             topSection

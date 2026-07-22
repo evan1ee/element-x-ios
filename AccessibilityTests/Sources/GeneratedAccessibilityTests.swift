@@ -663,6 +663,14 @@ extension AccessibilityTests {
         try await performAccessibilityAudit(named: "SessionVerification_Previews")
     }
 
+    func testSettingsScreenUserStatusPickerView() async throws {
+        try await performAccessibilityAudit(named: "SettingsScreenUserStatusPickerView_Previews")
+    }
+
+    func testSettingsScreenUserStatusRow() async throws {
+        try await performAccessibilityAudit(named: "SettingsScreenUserStatusRow_Previews")
+    }
+
     func testSettingsScreen() async throws {
         try await performAccessibilityAudit(named: "SettingsScreen_Previews")
     }
@@ -749,10 +757,6 @@ extension AccessibilityTests {
 
     func testSwipeRightAction() async throws {
         try await performAccessibilityAudit(named: "SwipeRightAction_Previews")
-    }
-
-    func testSwipeToReplyView() async throws {
-        try await performAccessibilityAudit(named: "SwipeToReplyView_Previews")
     }
 
     func testTextRoomTimelineView() async throws {

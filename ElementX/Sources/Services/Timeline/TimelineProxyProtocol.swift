@@ -46,8 +46,6 @@ enum TimelineAllowedMessageType {
 
 enum TimelineProxyError: Error {
     case sdkError(Error)
-    
-    case failedRedacting
 }
 
 /// Element X proxies generally wrap the counterpart RustSDK objects while providing platform specific
@@ -111,6 +109,10 @@ protocol TimelineProxyProtocol: Sendable {
                           audioInfo: AudioInfo,
                           waveform: [Float],
                           requestHandle: @MainActor (SendAttachmentJoinHandleProtocol) -> Void) async -> Result<Void, TimelineProxyError>
+    
+    func sendGallery(itemInfos: [GalleryItemInfo],
+                     caption: String?,
+                     inReplyToEventID: String?) async -> Result<Void, TimelineProxyError>
     
     func sendReadReceipt(for eventID: String, type: ReceiptType) async -> Result<Void, TimelineProxyError>
     func markAsRead(receiptType: ReceiptType) async -> Result<Void, TimelineProxyError>

@@ -25,7 +25,6 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
     
     // periphery:ignore - retaining purpose
     private var appLockSetupFlowCoordinator: AppLockSetupFlowCoordinator?
-    // periphery:ignore - retaining purpose
     private var bugReportFlowCoordinator: BugReportFlowCoordinator?
     // periphery:ignore - retaining purpose
     private var encryptionSettingsFlowCoordinator: EncryptionSettingsFlowCoordinator?
@@ -60,7 +59,7 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
         case .settings:
             presentSettingsScreen(animated: animated)
         case .chatBackupSettings:
-            startEncryptionSettingsFlow(animated: animated)
+            startEncryptionSettingsFlow()
         default:
             break
         }
@@ -76,7 +75,8 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
         let settingsScreenCoordinator = SettingsScreenCoordinator(parameters: .init(userSession: flowParameters.userSession,
                                                                                     appSettings: flowParameters.appSettings,
                                                                                     isBugReportServiceEnabled: flowParameters.bugReportService.isEnabled,
-                                                                                    isInSecondaryWindow: isInSecondaryWindow))
+                                                                                    isInSecondaryWindow: isInSecondaryWindow,
+                                                                                    userIndicatorController: flowParameters.userIndicatorController))
         
         settingsScreenCoordinator.actions
             .sink { [weak self] action in
@@ -88,7 +88,7 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                 case .logout:
                     actionsSubject.send(.runLogoutFlow)
                 case .secureBackup:
-                    startEncryptionSettingsFlow(animated: true)
+                    startEncryptionSettingsFlow()
                 case .userDetails:
                     presentUserDetailsEditScreen()
                 case .linkNewDevice:
@@ -142,7 +142,7 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
         navigationStackCoordinator.push(coordinator)
     }
     
-    private func startEncryptionSettingsFlow(animated: Bool) {
+    private func startEncryptionSettingsFlow() {
         let coordinator = EncryptionSettingsFlowCoordinator(parameters: .init(userSession: flowParameters.userSession,
                                                                               appSettings: flowParameters.appSettings,
                                                                               appHooks: flowParameters.appHooks,
@@ -166,8 +166,7 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                                                                              userSession: flowParameters.userSession,
                                                                              mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: flowParameters.appSettings),
                                                                              navigationStackCoordinator: navigationStackCoordinator,
-                                                                             userIndicatorController: flowParameters.userIndicatorController,
-                                                                             appSettings: flowParameters.appSettings))
+                                                                             userIndicatorController: flowParameters.userIndicatorController))
         coordinator.actions
             .sink { [weak self] action in
                 switch action {

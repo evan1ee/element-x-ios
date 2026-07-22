@@ -28,7 +28,6 @@ nonisolated protocol CommonSettingsProtocol: AnyObject, Sendable {
     
     var enableOnlySignedDeviceIsolationMode: Bool { get }
     var threadsEnabled: Bool { get }
-    var globalSearchEnabled: Bool { get }
     var hideQuietNotificationAlerts: Bool { get }
 }
 
@@ -426,6 +425,11 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: false)
     var linkPreviewsEnabled: Bool
     
+    /// Enables *sending* gallery messages (multiple media in a single message).
+    /// Received galleries are always rendered regardless of this flag.
+    @UserPreference(defaultValue: false)
+    var galleryEnabled: Bool
+    
     @UserPreference(defaultValue: false)
     var jumpToReadMarkerEnabled: Bool
     
@@ -435,7 +439,7 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: false)
     var automaticBackPaginationEnabled: Bool
     
-    @UserPreference(defaultValue: AppBuildType.current != .release, volatile: true)
+    @UserPreference(defaultValue: true, volatile: true)
     var clientPausingAndResumingEnabled: Bool
     
     @UserPreference(defaultValue: false)

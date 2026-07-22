@@ -1160,6 +1160,20 @@ extension PreviewTests {
     }
 
     @Test
+    func settingsScreenUserStatusPickerView() async throws {
+        for (index, preview) in SettingsScreenUserStatusPickerView_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
+    func settingsScreenUserStatusRow() async throws {
+        for (index, preview) in SettingsScreenUserStatusRow_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func settingsScreen() async throws {
         for (index, preview) in SettingsScreen_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
@@ -1309,13 +1323,6 @@ extension PreviewTests {
     @Test
     func swipeRightAction() async throws {
         for (index, preview) in SwipeRightAction_Previews._allPreviews.enumerated() {
-            try await assertSnapshots(matching: preview, step: index)
-        }
-    }
-
-    @Test
-    func swipeToReplyView() async throws {
-        for (index, preview) in SwipeToReplyView_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
         }
     }
