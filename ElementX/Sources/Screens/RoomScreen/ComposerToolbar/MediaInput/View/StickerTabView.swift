@@ -47,21 +47,21 @@ struct StickerTabView: View {
         }
     }
     
-    /// A circular "+" tile that opens the photo library to add images/GIFs to the pack,
-    /// matching the composer's attachment button.
+    /// A dashed-square "+" tile that opens the photo library to add images/GIFs to the pack.
     private var addTile: some View {
         PhotosPicker(selection: $photosPickerItems,
                      maxSelectionCount: 10,
                      matching: .images,
                      photoLibrary: .shared()) {
             ZStack {
-                Circle()
-                    .fill(Color.compound.bgSubtleSecondary)
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Color.compound.borderInteractiveSecondary,
+                                  style: StrokeStyle(lineWidth: 2, dash: [6]))
                 
                 if isAddingStickers {
                     ProgressView()
                 } else {
-                    CompoundIcon(\.plus, size: .medium, relativeTo: .compound.bodyLG)
+                    CompoundIcon(\.plus, size: .custom(72), relativeTo: .compound.bodyLG)
                         .foregroundStyle(.compound.iconSecondary)
                 }
             }
