@@ -14,11 +14,16 @@ import WysiwygComposer
 
 struct ComposerToolbar: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    /// The vertical space available to the composer and its media panel, measured by the room
+    /// screen. `.infinity` until measured, meaning "no cap yet".
+    @Environment(\.availableComposerHeight) private var availableComposerHeight
     
     @ObservedObject var context: ComposerToolbarViewModel.Context
     
     @FocusState private var composerFocused: Bool
     @State private var frame: CGRect = .zero
+    /// The measured height of the composer bar, so the media panel can leave room for it.
+    @State private var composerBarHeight: CGFloat = 0
     
     /// - When Liquid Glass is available, the buttons and composer are all 44pt x 44pt.
     /// - On iOS 18 and below, the main buttons are 30pt x 30pt and the composer is 42pt high, so some
@@ -35,20 +40,43 @@ struct ComposerToolbar: View {
         Compound.supportsGlass ? 0 : 3
     }
     
-    /// The height of the media panel that replaces the keyboard below the composer.
-    private let mediaPanelHeight: CGFloat = 336
+    /// The heights the media panel snaps to when the grabber is dragged, smallest first.
+    /// The first matches the keyboard it replaces; the others reveal more content. Any detent
+    /// taller than the screen allows is capped so the composer is never pushed off-screen.
+    private let mediaPanelDetents: [CGFloat] = [336, 520, 720]
+    /// The media panel's current height, remembered across opening/closing the panel.
+    @State private var mediaPanelHeight: CGFloat = 336
+    
+    /// The tallest the media panel may grow while keeping the composer fully visible.
+    /// `availableComposerHeight` is the space between the nav bar and the home indicator, so we
+    /// just reserve the composer bar's own height and a little breathing room.
+    private var maxMediaPanelHeight: CGFloat {
+        let smallest = mediaPanelDetents.first ?? 336
+        guard availableComposerHeight.isFinite else { return mediaPanelDetents.last ?? smallest }
+        return max(smallest, availableComposerHeight - composerBarHeight - 8)
+    }
+    
+    /// The detents clamped to what fits on the current screen.
+    private var cappedDetents: [CGFloat] {
+        mediaPanelDetents.map { min($0, maxMediaPanelHeight) }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
             composerBar
+                .readHeight($composerBarHeight)
             
             // The media panel takes the keyboard's place below the composer, so the composer
             // stays visible (Discord behaviour) rather than being covered by a sheet.
             if context.viewState.inputMode.isMedia {
-                MediaInputPanel(context: context)
+                MediaInputPanel(context: context, height: $mediaPanelHeight, detents: cappedDetents)
                     .frame(height: mediaPanelHeight)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+        }
+        .onChange(of: maxMediaPanelHeight, initial: true) { _, newMax in
+            // Keep the remembered height within what the current screen allows.
+            mediaPanelHeight = min(mediaPanelHeight, newMax)
         }
         .animation(.easeInOut(duration: 0.2), value: context.viewState.inputMode.isMedia)
     }
@@ -112,24 +140,58 @@ struct ComposerToolbar: View {
     }
     
     private var topBar: some View {
-        topBarLayout {
-            mainTopBarContent
-            
-            if !context.composerFormattingEnabled {
-                if context.viewState.isUploading {
-                    ProgressView()
-                        .scaledFrame(size: Compound.supportsGlass ? 44 : 36, relativeTo: .compound.headingLG)
-                        .scaledPadding(.vertical, trailingButtonVerticalPadding, relativeTo: .compound.headingLG)
-                } else if context.viewState.showSendButton {
-                    sendButton
-                        .scaledPadding(.vertical, trailingButtonVerticalPadding, relativeTo: .compound.headingLG)
-                } else {
-                    voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
+        topBarContent
+            .animation(.linear(duration: 0.15), value: context.viewState.composerMode)
+    }
+    
+    @ViewBuilder
+    private var topBarContent: some View {
+        if !context.composerFormattingEnabled, !context.viewState.isVoiceMessageModeActivated {
+            // Two-line plain composer grouped in one box: the field on the first line, controls below.
+            VStack(alignment: .leading, spacing: 4) {
+                messageComposer(showsBackground: false)
+                    .padding(.horizontal, 8)
+                
+                HStack(alignment: .center, spacing: 12) {
+                    RoomAttachmentPicker(context: context)
+                    
+                    Spacer()
+                    
+                    KeyboardMediaToggleButton(inputMode: context.viewState.inputMode) {
+                        context.send(viewAction: .toggleMediaInput)
+                    }
+                    
+                    trailingButton
+                }
+            }
+            .padding(8)
+            .background(Color.compound.bgCanvasDefault,
+                        in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+            .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
+        } else {
+            // Voice recording and rich-text modes keep the single-line layout.
+            topBarLayout {
+                mainTopBarContent
+                
+                if !context.composerFormattingEnabled {
+                    trailingButton
                         .scaledPadding(.vertical, trailingButtonVerticalPadding, relativeTo: .compound.headingLG)
                 }
             }
         }
-        .animation(.linear(duration: 0.15), value: context.viewState.composerMode)
+    }
+    
+    @ViewBuilder
+    private var trailingButton: some View {
+        if context.viewState.isUploading {
+            ProgressView()
+                .scaledFrame(size: Compound.supportsGlass ? 44 : 36, relativeTo: .compound.headingLG)
+        } else if context.viewState.showSendButton {
+            sendButton
+        } else {
+            voiceMessageRecordingButton(mode: context.viewState.isVoiceMessageModeActivated ? .recording : .idle)
+        }
     }
     
     private var bottomBar: some View {
@@ -156,7 +218,7 @@ struct ComposerToolbar: View {
                     RoomAttachmentPicker(context: context)
                         .scaledPadding(.vertical, buttonVerticalPadding, relativeTo: .compound.headingLG)
                 }
-                messageComposer
+                messageComposer()
                 
                 if !context.composerFormattingEnabled {
                     KeyboardMediaToggleButton(inputMode: context.viewState.inputMode) {
@@ -197,7 +259,7 @@ struct ComposerToolbar: View {
             .accessibilityIdentifier(A11yIdentifiers.roomScreen.sendButton)
     }
     
-    private var messageComposer: some View {
+    private func messageComposer(showsBackground: Bool = true) -> some View {
         MessageComposer(plainComposerText: $context.plainComposerText,
                         presendCallback: $context.presendCallback,
                         selectedRange: $context.selectedRange,
@@ -206,7 +268,8 @@ struct ComposerToolbar: View {
                         placeholder: placeholder,
                         composerFormattingEnabled: context.composerFormattingEnabled,
                         showResizeGrabber: context.composerFormattingEnabled,
-                        isExpanded: $context.composerExpanded) {
+                        isExpanded: $context.composerExpanded,
+                        showsBackground: showsBackground) {
             sendMessage()
         } editAction: {
             context.send(viewAction: .editLastMessage)
@@ -346,6 +409,12 @@ struct ComposerToolbar: View {
             context.send(viewAction: .voiceMessage(.scrubPlayback(scrubbing: isScrubbing)))
         }
     }
+}
+
+extension EnvironmentValues {
+    /// The vertical space available to the composer and its media panel, supplied by the room
+    /// screen so the panel can cap its height and never push the composer off-screen.
+    @Entry var availableComposerHeight: CGFloat = .infinity
 }
 
 struct ComposerToolbarButtonStyle: ButtonStyle {

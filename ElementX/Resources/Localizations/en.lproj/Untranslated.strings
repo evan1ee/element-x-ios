@@ -16,6 +16,7 @@
 "screen_media_input_emoji" = "Emoji";
 "screen_media_input_gifs" = "GIFs";
 "screen_media_input_no_results" = "No results";
+"screen_media_input_resize_handle" = "Resize panel";
 "screen_media_input_search_emojis" = "Search emoji";
 "screen_media_input_search_gifs" = "Search GIFs";
 "screen_media_input_stickers" = "Stickers";

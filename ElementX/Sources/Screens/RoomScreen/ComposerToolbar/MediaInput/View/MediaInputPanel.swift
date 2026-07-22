@@ -14,12 +14,22 @@ import SwiftUI
 struct MediaInputPanel: View {
     @ObservedObject var context: ComposerToolbarViewModel.Context
     
+    /// The panel's live height, owned by the composer so it survives tab switches and reopening.
+    @Binding var height: CGFloat
+    /// The heights the grabber snaps to, smallest first.
+    let detents: [CGFloat]
+    
+    /// The height when the current drag began, so the grabber tracks the finger from where it started.
+    @State private var dragStartHeight: CGFloat?
+    
     private var selectedTab: MediaTab {
         context.viewState.inputMode.mediaTab ?? .emoji
     }
     
     var body: some View {
         VStack(spacing: 8) {
+            grabber
+            
             MediaTabBar(selectedTab: selectedTab) { tab in
                 context.send(viewAction: .selectMediaTab(tab))
             }
@@ -32,9 +42,46 @@ struct MediaInputPanel: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(.easeInOut(duration: 0.15), value: selectedTab)
         }
-        // Clear the sheet's drag indicator so the tabs aren't cramped against it.
-        .padding(.top, 16)
         .background(Color.compound.bgCanvasDefault)
+    }
+    
+    /// A draggable handle that resizes the panel, snapping to the nearest detent on release.
+    private var grabber: some View {
+        Capsule()
+            .foregroundStyle(.tertiary)
+            .frame(width: 36, height: 5)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .gesture(dragGesture)
+            .accessibilityLabel(UntranslatedL10n.screenMediaInputResizeHandle)
+    }
+    
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                let start = dragStartHeight ?? height
+                dragStartHeight = start
+                // Dragging up (negative translation) grows the panel.
+                height = clampedHeight(start - value.translation.height)
+            }
+            .onEnded { value in
+                let start = dragStartHeight ?? height
+                dragStartHeight = nil
+                let predicted = start - value.predictedEndTranslation.height
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                    height = nearestDetent(to: clampedHeight(predicted))
+                }
+            }
+    }
+    
+    private func clampedHeight(_ value: CGFloat) -> CGFloat {
+        guard let min = detents.first, let max = detents.last else { return value }
+        return Swift.min(Swift.max(value, min), max)
+    }
+    
+    private func nearestDetent(to value: CGFloat) -> CGFloat {
+        detents.min { abs($0 - value) < abs($1 - value) } ?? value
     }
     
     @ViewBuilder

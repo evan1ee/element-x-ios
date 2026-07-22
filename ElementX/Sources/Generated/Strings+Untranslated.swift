@@ -46,6 +46,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenMediaInputGifs: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_gifs") }
   /// No results
   internal static var screenMediaInputNoResults: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_no_results") }
+  /// Resize panel
+  internal static var screenMediaInputResizeHandle: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_resize_handle") }
   /// Search emoji
   internal static var screenMediaInputSearchEmojis: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_search_emojis") }
   /// Search GIFs

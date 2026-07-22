@@ -26,6 +26,10 @@ struct RoomScreen: View {
     /// Set when the user long-presses one of the scroll buttons; the pill anchors to that button.
     @State private var markAsReadSource: MarkAsReadSource?
     
+    /// The vertical space between the navigation bar and the home indicator, used to cap how tall
+    /// the composer's media panel can grow so the composer stays fully visible.
+    @State private var availableComposerHeight: CGFloat = .infinity
+    
     init(context: RoomScreenViewModelType.Context,
          timelineContext: TimelineViewModelType.Context,
          composerToolbar: ComposerToolbar) {
@@ -36,6 +40,13 @@ struct RoomScreen: View {
     
     var body: some View {
         TimelineView(timelineContext: timelineContext)
+            // Any SwiftUI geometry here is reduced by the composer's own bottom inset, which would
+            // feed back into the panel's height cap. The window's dimensions are stable, so we
+            // derive the space available to the composer from it instead. `width` is only a trigger
+            // that changes on rotation; the value itself comes from the window.
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
+                updateAvailableComposerHeight()
+            }
             .overlay {
                 // Sits below the bottom-trailing overlay in z-order, so taps on the pill or
                 // buttons still go to them; taps anywhere else dismiss the pill.
@@ -248,9 +259,25 @@ struct RoomScreen: View {
         } else if context.viewState.canSendMessage, !ProcessInfo.isRunningAccessibilityTests {
             // We are not sure why but when wrapped in the room screen the composer toolbar breaks the accessibility tests
             composerToolbar
+                .environment(\.availableComposerHeight, availableComposerHeight)
         } else {
             ComposerDisabledView()
         }
+    }
+    
+    /// The vertical space the composer and its media panel may occupy: the window minus the status
+    /// bar / notch, the home indicator, and the floating navigation bar (which isn't part of the
+    /// window's safe area).
+    private func updateAvailableComposerHeight() {
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive })?
+            .windows.first else { return }
+        let navigationBarReserve: CGFloat = 56
+        availableComposerHeight = window.bounds.height
+            - window.safeAreaInsets.top
+            - window.safeAreaInsets.bottom
+            - navigationBarReserve
     }
     
     private var tombstonedDialogue: some View {

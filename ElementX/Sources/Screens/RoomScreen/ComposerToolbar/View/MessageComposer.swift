@@ -25,6 +25,9 @@ struct MessageComposer: View {
     let composerFormattingEnabled: Bool
     let showResizeGrabber: Bool
     @Binding var isExpanded: Bool
+    /// Whether the field draws its own rounded background. Set to false when it lives inside a
+    /// shared container (e.g. the two-line composer).
+    var showsBackground = true
     
     let sendAction: () -> Void
     let editAction: () -> Void
@@ -42,7 +45,7 @@ struct MessageComposer: View {
             }
             
             composerTextField
-                .messageComposerStyle(header: header)
+                .messageComposerStyle(header: header, showsBackground: showsBackground)
                 // Explicitly disable all animations to fix weirdness with the header immediately
                 // appearing whilst the text field and keyboard are still animating up to it.
                 .animation(.noAnimation, value: mode)
@@ -196,8 +199,8 @@ private struct MessageComposerHeaderLabelStyle: LabelStyle {
 // MARK: - Style
 
 extension View {
-    func messageComposerStyle(header: some View = EmptyView()) -> some View {
-        modifier(MessageComposerStyleModifier(header: header))
+    func messageComposerStyle(header: some View = EmptyView(), showsBackground: Bool = true) -> some View {
+        modifier(MessageComposerStyleModifier(header: header, showsBackground: showsBackground))
     }
 }
 
@@ -205,11 +208,14 @@ private struct MessageComposerStyleModifier<Header: View>: ViewModifier {
     @Environment(\.isEnabled) private var isEnabled
     
     let header: Header
+    var showsBackground = true
     
     private let composerShape = RoundedRectangle(cornerRadius: 21, style: .circular)
     
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
+        if !showsBackground {
+            mainContent(content: content)
+        } else if #available(iOS 26, *) {
             if isEnabled {
                 mainContent(content: content)
                     .snapshotableGlassEffect(.regular.interactive(), // Doesn't need to be interactive but Apple does it 🤷‍♂️
