@@ -328,6 +328,34 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         }
     }
     
+    /// Downloads a discovered GIF and adds it to the user's sticker pack (preserving animation),
+    /// then refreshes the sticker grid. Mirrors the discover screen's "Add to My Stickers" action.
+    private func addMediaGIF(_ gif: KlipySticker) {
+        guard let gifService, let stickerService, !state.isAddingStickers else { return }
+        state.isAddingStickers = true
+        
+        Task { [weak self] in
+            guard let self else { return }
+            defer { state.isAddingStickers = false }
+            
+            guard case let .success(data) = await gifService.downloadImage(from: gif.fileURL) else {
+                showStickerAddSummary(StickerBatchSummary(failed: 1))
+                return
+            }
+            let body = gif.title.isEmpty ? "GIF" : gif.title
+            let summary = await stickerService.addExternalSticker(imageData: data,
+                                                                  body: body,
+                                                                  width: gif.width,
+                                                                  height: gif.height,
+                                                                  mimeType: gif.mimeType)
+            if summary.added > 0 {
+                let collection = await stickerService.loadStickers()
+                state.mediaStickers = collection.userStickers + collection.builtInStickers
+            }
+            showStickerAddSummary(summary)
+        }
+    }
+    
     // MARK: Stickers
     
     private func loadStickers() {
@@ -490,6 +518,8 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             insertEmoji(emoji)
         case .sendMediaGIF(let gif):
             sendMediaGIF(gif)
+        case .addMediaGIF(let gif):
+            addMediaGIF(gif)
         case .loadMoreGIFs:
             loadMoreGIFs()
         case .sendMediaSticker(let sticker):

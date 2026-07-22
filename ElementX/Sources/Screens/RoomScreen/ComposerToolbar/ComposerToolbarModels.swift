@@ -71,6 +71,8 @@ enum ComposerToolbarViewAction {
     case insertEmoji(String)
     /// Sends a discovered GIF into the timeline, keeping the panel open.
     case sendMediaGIF(KlipySticker)
+    /// Adds a discovered GIF to the user's sticker pack (with dedup), keeping the panel open.
+    case addMediaGIF(KlipySticker)
     /// Loads the next page of GIF results (infinite scroll).
     case loadMoreGIFs
     /// Sends one of the user's stickers into the timeline, keeping the panel open.

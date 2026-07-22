@@ -15,6 +15,7 @@ struct GIFTabView: View {
     let isLoading: Bool
     let sendingID: String?
     let onSelect: (KlipySticker) -> Void
+    let onAddToStickers: (KlipySticker) -> Void
     let onLoadMore: () -> Void
     
     private let columns = [GridItem(.adaptive(minimum: 100), spacing: 8)]
@@ -47,6 +48,13 @@ struct GIFTabView: View {
                                 }
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                onAddToStickers(gif)
+                            } label: {
+                                Label(UntranslatedL10n.screenStickerDiscoveryAddToMyStickers, icon: \.plus)
+                            }
+                        }
                         .onAppear {
                             if gif.id == gifs.last?.id {
                                 onLoadMore()

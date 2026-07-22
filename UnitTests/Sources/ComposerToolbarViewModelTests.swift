@@ -172,6 +172,33 @@ final class ComposerToolbarViewModelTests {
     }
     
     @Test
+    func addingAGIFToStickersDownloadsUploadsAndRefreshesThePack() async throws {
+        stickerServiceMock.addExternalStickerImageDataBodyWidthHeightMimeTypeReturnValue = StickerBatchSummary(added: 1)
+        let added = Sticker(id: "a", body: "GIF a", source: .media(url: "mxc://example.com/a"),
+                            width: 200, height: 200, fileSize: 5000, mimeType: "image/gif")
+        stickerServiceMock.loadStickersReturnValue = StickerCollection(userStickers: [added], builtInStickers: [])
+        
+        viewModel.process(viewAction: .toggleMediaInput)
+        viewModel.process(viewAction: .selectMediaTab(.gif))
+        
+        viewModel.process(viewAction: .addMediaGIF(makeGIF(id: "a")))
+        
+        while !stickerServiceMock.addExternalStickerImageDataBodyWidthHeightMimeTypeCalled {
+            await Task.yield()
+        }
+        
+        #expect(gifServiceMock.downloadImageFromCalled)
+        let arguments = try #require(stickerServiceMock.addExternalStickerImageDataBodyWidthHeightMimeTypeReceivedArguments)
+        #expect(arguments.mimeType == "image/gif")
+        // A successful add refreshes the grid and keeps the panel open.
+        while viewModel.state.mediaStickers.isEmpty {
+            await Task.yield()
+        }
+        #expect(viewModel.state.mediaStickers.map(\.id) == ["a"])
+        #expect(viewModel.state.inputMode == .media(.gif))
+    }
+    
+    @Test
     func openingTheStickerTabLoadsTheUserPack() async throws {
         let sticker = Sticker(id: "party", body: "Party", source: .media(url: "mxc://example.com/party"),
                               width: 512, height: 512, fileSize: 1024, mimeType: "image/png")
