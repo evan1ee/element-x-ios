@@ -29,6 +29,9 @@ struct RoomScreen: View {
     /// The vertical space between the navigation bar and the home indicator, used to cap how tall
     /// the composer's media panel can grow so the composer stays fully visible.
     @State private var availableComposerHeight: CGFloat = .infinity
+    /// The window's bottom safe-area inset, forwarded to the composer so its media panel can
+    /// compensate for the keyboard covering the home-indicator area while the panel sits above it.
+    @State private var composerBottomSafeAreaInset: CGFloat = 0
     
     init(context: RoomScreenViewModelType.Context,
          timelineContext: TimelineViewModelType.Context,
@@ -260,6 +263,7 @@ struct RoomScreen: View {
             // We are not sure why but when wrapped in the room screen the composer toolbar breaks the accessibility tests
             composerToolbar
                 .environment(\.availableComposerHeight, availableComposerHeight)
+                .environment(\.composerBottomSafeAreaInset, composerBottomSafeAreaInset)
         } else {
             ComposerDisabledView()
         }
@@ -269,15 +273,20 @@ struct RoomScreen: View {
     /// bar / notch, the home indicator, and the floating navigation bar (which isn't part of the
     /// window's safe area).
     private func updateAvailableComposerHeight() {
-        guard let window = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive })?
-            .windows.first else { return }
+        // Don't filter by `activationState == .foregroundActive`: the scene (and its
+        // `keyWindow`) can report as not-yet-active for the first few layout passes even though
+        // its window is already attached and sized — see `WindowManager.configure(withScene:)`.
+        // Filtering on it left this stuck at the `.infinity` "no cap yet" default for the media
+        // panel's first render, letting it grow to the hardcoded 720pt fallback and overflow
+        // off-screen before ever being measured.
+        guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first,
+              let window = scene.keyWindow ?? scene.windows.first else { return }
         let navigationBarReserve: CGFloat = 56
         availableComposerHeight = window.bounds.height
             - window.safeAreaInsets.top
             - window.safeAreaInsets.bottom
             - navigationBarReserve
+        composerBottomSafeAreaInset = window.safeAreaInsets.bottom
     }
     
     private var tombstonedDialogue: some View {

@@ -18,10 +18,12 @@ struct MessageComposerTextField: View {
     let maxHeight: CGFloat
     let keyHandler: GenericKeyHandler
     let pasteHandler: PasteHandler
-    /// When true, the field stays first responder (caret/selection keep working) but its
-    /// `inputView` is swapped for an empty placeholder so the system keyboard doesn't appear —
-    /// used while the media panel is occupying the keyboard's place.
-    var isSystemKeyboardSuppressed = false
+    /// When set, the field presents this view as its keyboard instead of the system one — used
+    /// to show the media panel in the keyboard's place as a native keyboard swap.
+    var customInputView: UIView?
+    /// The custom input view's current height. Changing it makes the field reload its input
+    /// views, which is what makes the input system animate the keyboard to the new size.
+    var customInputViewHeight: CGFloat = 0
     
     var body: some View {
         UITextViewWrapper(text: $text,
@@ -30,7 +32,8 @@ struct MessageComposerTextField: View {
                           maxHeight: maxHeight,
                           keyHandler: keyHandler,
                           pasteHandler: pasteHandler,
-                          isSystemKeyboardSuppressed: isSystemKeyboardSuppressed)
+                          customInputView: customInputView,
+                          customInputViewHeight: customInputViewHeight)
             .accessibilityLabel(placeholder)
             .background(placeholderView, alignment: .topLeading)
             .background { keyboardShortcuts }
@@ -66,7 +69,8 @@ private struct UITextViewWrapper: UIViewRepresentable {
     
     let keyHandler: GenericKeyHandler
     let pasteHandler: PasteHandler
-    let isSystemKeyboardSuppressed: Bool
+    let customInputView: UIView?
+    let customInputViewHeight: CGFloat
     
     private let font = UIFont.preferredFont(forTextStyle: .body)
     
@@ -113,10 +117,16 @@ private struct UITextViewWrapper: UIViewRepresentable {
         textView.typingAttributes = [.font: font,
                                      .foregroundColor: UIColor.compound.textPrimary]
         
-        // Swap in an empty placeholder inputView while the media panel is up, so the field stays
-        // first responder (caret/selection keep working) without the system keyboard appearing.
-        if (textView.inputView != nil) != isSystemKeyboardSuppressed {
-            textView.inputView = isSystemKeyboardSuppressed ? context.coordinator.blankInputView : nil
+        // Swapping the inputView is a native keyboard change (like switching to the system emoji
+        // keyboard): when the heights match the content just swaps in place, and any height
+        // difference is animated by the system itself. Height changes of the presented view also
+        // need a reload for the input system to re-measure and animate the keyboard frame.
+        if textView.inputView !== customInputView {
+            textView.inputView = customInputView
+            context.coordinator.lastReloadedInputViewHeight = customInputViewHeight
+            textView.reloadInputViews()
+        } else if customInputView != nil, context.coordinator.lastReloadedInputViewHeight != customInputViewHeight {
+            context.coordinator.lastReloadedInputViewHeight = customInputViewHeight
             textView.reloadInputViews()
         }
         
@@ -175,9 +185,9 @@ private struct UITextViewWrapper: UIViewRepresentable {
         private let keyHandler: GenericKeyHandler
         private let pasteHandler: PasteHandler
         
-        /// A reusable, empty placeholder `inputView` used to suppress the system keyboard while
-        /// keeping the text view first responder — see `updateUIView`.
-        let blankInputView = UIView(frame: .zero)
+        /// The custom input view height at the last `reloadInputViews()`, so height changes can
+        /// be detected across renders — see `updateUIView`.
+        var lastReloadedInputViewHeight: CGFloat = 0
         
         init(text: Binding<NSAttributedString>,
              selectedRange: Binding<NSRange>,

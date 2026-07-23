@@ -17,9 +17,9 @@ struct EmojiTabView: View {
     /// Deletes one character/emoji before the composer's caret. Called once per tap, and
     /// repeatedly while the delete key is held (like the system keyboard's backspace).
     let onDeleteBackward: () -> Void
-    /// Reports whether the grid is scrolled to its very top, so the panel can expand/collapse
-    /// when the user keeps dragging past the edge.
-    var onIsAtTopChange: (Bool) -> Void = { _ in }
+    /// Reports the grid's vertical scroll offset, so the panel can auto-expand when the user
+    /// scrolls into the content and collapse when they pull down past the top.
+    var onScrollOffsetChange: (CGFloat) -> Void = { _ in }
     
     private let columns = [GridItem(.adaptive(minimum: 40), spacing: 8)]
     
@@ -54,10 +54,10 @@ struct EmojiTabView: View {
                     }
                     .padding(.horizontal, 12)
                 }
-                .onScrollGeometryChange(for: Bool.self) { geometry in
-                    geometry.contentOffset.y <= 0
-                } action: { _, isAtTop in
-                    onIsAtTopChange(isAtTop)
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.contentOffset.y
+                } action: { _, offset in
+                    onScrollOffsetChange(offset)
                 }
                 
                 bottomBar(proxy: proxy)

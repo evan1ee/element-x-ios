@@ -19,9 +19,9 @@ struct StickerTabView: View {
     let mediaProvider: MediaProviderProtocol?
     let onSelect: (Sticker) -> Void
     let onAddPhotos: () -> Void
-    /// Reports whether the grid is scrolled to its very top, so the panel can expand/collapse
-    /// when the user keeps dragging past the edge.
-    var onIsAtTopChange: (Bool) -> Void = { _ in }
+    /// Reports the grid's vertical scroll offset, so the panel can auto-expand when the user
+    /// scrolls into the content and collapse when they pull down past the top.
+    var onScrollOffsetChange: (CGFloat) -> Void = { _ in }
     
     private let columns = [GridItem(.adaptive(minimum: 80), spacing: 12)]
     
@@ -48,10 +48,10 @@ struct StickerTabView: View {
             }
             .padding(12)
         }
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y <= 0
-        } action: { _, isAtTop in
-            onIsAtTopChange(isAtTop)
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y
+        } action: { _, offset in
+            onScrollOffsetChange(offset)
         }
     }
     

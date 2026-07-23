@@ -8,15 +8,16 @@
 import Combine
 import UIKit
 
-/// Observes the system keyboard so a replacement view (e.g. the composer's media panel) can match
-/// its height and transition timing instead of guessing at both.
+/// Observes the system keyboard so the composer's media panel can present itself as a keyboard of
+/// exactly matching size.
 @MainActor
 final class KeyboardHeightObserver: ObservableObject {
-    /// The most recently reported system keyboard height, `nil` until it has appeared at least once.
+    /// The height of the last real keyboard, `nil` until one has appeared. Heights under 200pt
+    /// are ignored so that placeholder input views are never mistaken for the real keyboard.
     @Published private(set) var height: CGFloat?
-    /// The duration of the most recent keyboard show/hide animation, so a replacement view's own
-    /// transition can run on the same clock.
-    @Published private(set) var animationDuration: TimeInterval = 0.25
+    /// How much of the screen the keyboard currently covers: 0 when hidden, its full height when
+    /// fully shown. Unlike `height` this follows the keyboard's live state, including dismissal.
+    @Published private(set) var overlap: CGFloat = 0
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -25,16 +26,20 @@ final class KeyboardHeightObserver: ObservableObject {
             .merge(with: NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification))
             .sink { [weak self] in self?.handle($0) }
             .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
+            .sink { [weak self] _ in self?.overlap = 0 }
+            .store(in: &cancellables)
     }
     
     private func handle(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let frame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
-              frame.height > 0 else { return }
-        height = frame.height
+        guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
         
-        if let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval, duration > 0 {
-            animationDuration = duration
+        let screenBounds = UIScreen.main.bounds
+        overlap = min(max(screenBounds.maxY - frame.minY, 0), frame.height)
+        
+        if frame.height >= 200, overlap > 0 {
+            height = frame.height
         }
     }
 }

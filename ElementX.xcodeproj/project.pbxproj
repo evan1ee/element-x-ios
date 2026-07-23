@@ -269,6 +269,7 @@
 		29491EE7AE37E239E839C5A3 /* LocationSharingScreenModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BEBF0E59F25E842EDB6FD11 /* LocationSharingScreenModels.swift */; };
 		2955F4C160CFD7794D819C64 /* EffectsScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024F7398C5FC12586FB10E9D /* EffectsScene.swift */; };
 		298F9EC30E918F12AB7F1EE8 /* TypingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F0325E252B057FAEEE1B2D /* TypingIndicatorView.swift */; };
+		29BF62E85D7843B309E1AF3C /* MediaPanelInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 865917243927DED573A9653B /* MediaPanelInputView.swift */; };
 		29E411E37D3FBF3899B3ED69 /* UserDefaultsProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCA4547BE58E17899E95CDE /* UserDefaultsProtocol.swift */; };
 		29EE1791E0AFA1ABB7F23D2F /* GZIP in Frameworks */ = {isa = PBXBuildFile; productRef = 1BCD21310B997A6837B854D6 /* GZIP */; };
 		2A4B7856611589DD7B1B36CA /* SearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A79A78330B9329E3A99E4105 /* SearchScreen.swift */; };
@@ -2500,6 +2501,7 @@
 		8610C1D21565C950BCA6A454 /* AppLockSetupSettingsScreenViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockSetupSettingsScreenViewModelProtocol.swift; sourceTree = "<group>"; };
 		86376BEE425704AEE197CA54 /* PillContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillContext.swift; sourceTree = "<group>"; };
 		8642512079EEFD622E3AA66B /* BlockedUsersScreenModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockedUsersScreenModels.swift; sourceTree = "<group>"; };
+		865917243927DED573A9653B /* MediaPanelInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaPanelInputView.swift; sourceTree = "<group>"; };
 		867DC9530C42F7B5176BE465 /* JoinedRoomProxyMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinedRoomProxyMock.swift; sourceTree = "<group>"; };
 		869A8A4632E511351BFE2EC4 /* JoinRoomScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinRoomScreen.swift; sourceTree = "<group>"; };
 		86A6F283BC574FDB96ABBB07 /* DeveloperOptionsScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperOptionsScreenViewModel.swift; sourceTree = "<group>"; };
@@ -4909,6 +4911,7 @@
 			isa = PBXGroup;
 			children = (
 				28256B372723488635782E2F /* MediaInputMode.swift */,
+				865917243927DED573A9653B /* MediaPanelInputView.swift */,
 				68EA7697C3505DD1C69EFD73 /* View */,
 			);
 			path = MediaInput;
@@ -8927,6 +8930,7 @@
 				236BFEE826B3E2F629447FA1 /* MediaInputPanel.swift in Sources */,
 				208C19811613F9A10F8A7B75 /* MediaLoader.swift in Sources */,
 				A2434D4DFB49A68E5CD0F53C /* MediaLoaderProtocol.swift in Sources */,
+				29BF62E85D7843B309E1AF3C /* MediaPanelInputView.swift in Sources */,
 				4E0D9E09B52CEC4C0E6211A8 /* MediaPickerScreenCoordinator.swift in Sources */,
 				F66BCCC825D6CA51724A94D0 /* MediaPlayerProvider.swift in Sources */,
 				762DAF94846C7AC8550F1CC1 /* MediaPlayerProviderProtocol.swift in Sources */,

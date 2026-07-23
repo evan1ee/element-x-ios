@@ -25,9 +25,11 @@ struct MessageComposer: View {
     let composerFormattingEnabled: Bool
     let showResizeGrabber: Bool
     @Binding var isExpanded: Bool
-    /// Whether the media panel is occupying the keyboard's place, so the plain-text field should
-    /// stay first responder (caret/selection keep working) without showing the system keyboard.
-    var isSystemKeyboardSuppressed = false
+    /// When set, the plain-text field presents this view as its keyboard instead of the system
+    /// one — used to show the media panel in the keyboard's place as a native keyboard swap.
+    var customInputView: UIView?
+    /// The custom input view's current height — see `MessageComposerTextField`.
+    var customInputViewHeight: CGFloat = 0
     /// Whether the field draws its own rounded background. Set to false when it lives inside a
     /// shared container (e.g. the two-line composer).
     var showsBackground = true
@@ -81,7 +83,8 @@ struct MessageComposer: View {
                                      maxHeight: ComposerConstant.maxHeight,
                                      keyHandler: { handleKeyPress($0) },
                                      pasteHandler: pasteAction,
-                                     isSystemKeyboardSuppressed: isSystemKeyboardSuppressed)
+                                     customInputView: customInputView,
+                                     customInputViewHeight: customInputViewHeight)
         }
     }
     

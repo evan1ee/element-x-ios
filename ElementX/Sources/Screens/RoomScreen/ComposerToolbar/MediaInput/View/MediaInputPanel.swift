@@ -16,28 +16,36 @@ struct MediaInputPanel: View {
     
     /// The panel's live height, owned by the composer so it survives tab switches and reopening.
     @Binding var height: CGFloat
-    /// The two heights the grabber/edge-drag snap to: compact first, expanded second.
+    /// The two heights the grabber snaps to: compact first, expanded second.
     let detents: [CGFloat]
+    /// Whether the search field is focused, owned by the composer so it can lift the panel above
+    /// the system keyboard that the focused field summons.
+    @Binding var isSearchFocused: Bool
+    /// See `MediaSearchBar.tapOverride` — set while the panel is presented as an input view.
+    var searchTapOverride: (() -> Void)?
+    /// See `MediaSearchBar.autoFocus` — set while the panel is presented inline for searching.
+    var searchAutoFocus = false
     
-    /// The height when the current drag began, so a drag tracks the finger from where it started.
+    /// The height when the current grabber drag began, so it tracks the finger from where it started.
     @State private var dragStartHeight: CGFloat?
-    /// Whether the in-progress content-edge drag (if any) is allowed to resize the panel — decided
-    /// once, at the start of that drag, from whether the visible tab was already at its scroll top.
-    @State private var contentDragEngaged = false
     
-    @State private var isEmojiAtTop = true
-    @State private var isGIFAtTop = true
-    @State private var isStickerAtTop = true
+    /// How far the user must pull down past a grid's top before the panel collapses back to
+    /// its compact height.
+    private let collapsePullThreshold: CGFloat = 40
+    
+    @State private var emojiScrollOffset: CGFloat = 0
+    @State private var gifScrollOffset: CGFloat = 0
+    @State private var stickerScrollOffset: CGFloat = 0
     
     private var selectedTab: MediaTab {
         context.viewState.inputMode.mediaTab ?? .emoji
     }
     
-    private var isSelectedTabAtTop: Bool {
+    private var selectedTabScrollOffset: CGFloat {
         switch selectedTab {
-        case .emoji: isEmojiAtTop
-        case .gif: isGIFAtTop
-        case .sticker: isStickerAtTop
+        case .emoji: emojiScrollOffset
+        case .gif: gifScrollOffset
+        case .sticker: stickerScrollOffset
         }
     }
     
@@ -50,21 +58,32 @@ struct MediaInputPanel: View {
             }
             
             if selectedTab != .sticker {
-                MediaSearchBar(query: $context.mediaSearchQuery, tab: selectedTab) { isFocused in
-                    // The one case where the real system keyboard is allowed to appear: expand to
-                    // make room for it instead of overlapping the search field.
-                    guard isFocused, let expanded = detents.last else { return }
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                        height = expanded
-                    }
+                MediaSearchBar(query: $context.mediaSearchQuery,
+                               tab: selectedTab,
+                               autoFocus: searchAutoFocus,
+                               tapOverride: searchTapOverride) { isFocused in
+                    isSearchFocused = isFocused
                 }
             }
             
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .simultaneousGesture(edgeDragGesture)
         }
         .background(Color.compound.bgCanvasDefault)
+        .onChange(of: selectedTabScrollOffset) { _, offset in
+            guard dragStartHeight == nil, let compact = detents.first, let expanded = detents.last else { return }
+            
+            // The height change resizes the keyboard the panel presents as; the system animates
+            // that frame change itself, so no SwiftUI animation is needed here.
+            if offset > 0, height < expanded {
+                // The user scrolled into the visible grid: grow to the expanded detent so the
+                // content gets the room it clearly needs.
+                height = expanded
+            } else if offset < -collapsePullThreshold, height > compact {
+                // The user pulled down past the grid's top: return to the compact height.
+                height = compact
+            }
+        }
     }
     
     /// A draggable handle that resizes the panel, snapping to the nearest detent on release.
@@ -79,14 +98,15 @@ struct MediaInputPanel: View {
             .accessibilityLabel(UntranslatedL10n.screenMediaInputResizeHandle)
     }
     
-    /// The grabber's drag: always active, tracking the finger 1:1 from wherever it started.
+    /// The grabber's drag: the panel snaps to the nearest detent on release. It deliberately
+    /// doesn't resize live under the finger — the panel presents as a keyboard, and keyboard
+    /// frames animate between fixed sizes rather than tracking a drag.
     private var dragGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in
-                let start = dragStartHeight ?? height
-                dragStartHeight = start
-                // Dragging up (negative translation) grows the panel.
-                height = clampedHeight(start - value.translation.height)
+        DragGesture(coordinateSpace: .global)
+            .onChanged { _ in
+                if dragStartHeight == nil {
+                    dragStartHeight = height
+                }
             }
             .onEnded { value in
                 snap(from: dragStartHeight, predictedTranslation: value.predictedEndTranslation.height)
@@ -94,35 +114,11 @@ struct MediaInputPanel: View {
             }
     }
     
-    /// A drag anywhere in the visible grid: only resizes the panel when that grid was already
-    /// scrolled to its top when the drag began (checked once, so a drag that starts mid-scroll
-    /// doesn't suddenly jump the panel height once the list happens to reach the top) — otherwise
-    /// the `ScrollView` scrolls normally, since this is a `.simultaneousGesture`.
-    private var edgeDragGesture: some Gesture {
-        DragGesture()
-            .onChanged { value in
-                if dragStartHeight == nil {
-                    contentDragEngaged = isSelectedTabAtTop
-                    dragStartHeight = height
-                }
-                guard contentDragEngaged, let start = dragStartHeight else { return }
-                height = clampedHeight(start - value.translation.height)
-            }
-            .onEnded { value in
-                if contentDragEngaged {
-                    snap(from: dragStartHeight, predictedTranslation: value.predictedEndTranslation.height)
-                }
-                dragStartHeight = nil
-                contentDragEngaged = false
-            }
-    }
-    
     private func snap(from startHeight: CGFloat?, predictedTranslation: CGFloat) {
         let start = startHeight ?? height
         let predicted = start - predictedTranslation
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-            height = nearestDetent(to: clampedHeight(predicted))
-        }
+        // The system animates the resulting keyboard frame change itself.
+        height = nearestDetent(to: clampedHeight(predicted))
     }
     
     private func clampedHeight(_ value: CGFloat) -> CGFloat {
@@ -142,7 +138,7 @@ struct MediaInputPanel: View {
             EmojiTabView(categories: context.viewState.mediaEmojiCategories,
                          onSelect: { context.send(viewAction: .insertEmoji($0)) },
                          onDeleteBackward: { context.send(viewAction: .deleteBackward) },
-                         onIsAtTopChange: { isEmojiAtTop = $0 })
+                         onScrollOffsetChange: { emojiScrollOffset = $0 })
                 .opacity(selectedTab == .emoji ? 1 : 0)
                 .allowsHitTesting(selectedTab == .emoji)
             
@@ -152,7 +148,7 @@ struct MediaInputPanel: View {
                        onSelect: { context.send(viewAction: .sendMediaGIF($0)) },
                        onAddToStickers: { context.send(viewAction: .addMediaGIF($0)) },
                        onLoadMore: { context.send(viewAction: .loadMoreGIFs) },
-                       onIsAtTopChange: { isGIFAtTop = $0 })
+                       onScrollOffsetChange: { gifScrollOffset = $0 })
                 .opacity(selectedTab == .gif ? 1 : 0)
                 .allowsHitTesting(selectedTab == .gif)
             
@@ -163,7 +159,7 @@ struct MediaInputPanel: View {
                            mediaProvider: context.mediaProvider,
                            onSelect: { context.send(viewAction: .sendMediaSticker($0)) },
                            onAddPhotos: { context.send(viewAction: .addStickerPhotos) },
-                           onIsAtTopChange: { isStickerAtTop = $0 })
+                           onScrollOffsetChange: { stickerScrollOffset = $0 })
                 .opacity(selectedTab == .sticker ? 1 : 0)
                 .allowsHitTesting(selectedTab == .sticker)
         }
