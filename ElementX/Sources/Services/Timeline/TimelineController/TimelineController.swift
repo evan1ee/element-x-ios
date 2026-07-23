@@ -21,7 +21,8 @@ class TimelineController: TimelineControllerProtocol {
     
     let callbacks = PassthroughSubject<TimelineControllerCallback, Never>()
     
-    private var activeTimeline: TimelineProxyProtocol
+    // Not private so the sticker-sending extension (in the fork's own file) can reach it.
+    var activeTimeline: TimelineProxyProtocol
     private var activeTimelineItemProvider: TimelineItemProviderProtocol {
         didSet {
             configureActiveTimelineItemProvider()
@@ -408,18 +409,6 @@ class TimelineController: TimelineControllerProtocol {
         await activeTimeline.sendGallery(itemInfos: itemInfos,
                                          caption: caption,
                                          inReplyToEventID: inReplyToEventID).mapError(TimelineControllerError.timelineProxyError)
-    }
-    
-    // MARK: - Stickers
-    
-    func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError> {
-        switch await activeTimeline.sendSticker(body: body, url: url, imageInfo: imageInfo).mapError(TimelineControllerError.timelineProxyError) {
-        case .success:
-            callbacks.send(.messageSentOrEdited)
-            return .success(())
-        case .failure(let error):
-            return .failure(error)
-        }
     }
     
     // MARK: - Polls

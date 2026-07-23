@@ -51,7 +51,7 @@ protocol StickerServiceProtocol {
     func loadStickers() async -> StickerCollection
     
     func send(_ sticker: Sticker,
-              in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError>
+              in timelineController: StickerSending) async -> Result<Void, StickerServiceError>
     
     /// Processes and uploads the images at the given URLs, adding them to the
     /// user's sticker pack in their account data. Files whose content hash is
@@ -66,7 +66,7 @@ protocol StickerServiceProtocol {
                              width: UInt64,
                              height: UInt64,
                              mimeType: String,
-                             in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError>
+                             in timelineController: StickerSending) async -> Result<Void, StickerServiceError>
     
     /// Uploads the given image bytes as-is (preserving animation) and adds them to
     /// the user's pack. Bytes whose content hash is already in the pack are skipped

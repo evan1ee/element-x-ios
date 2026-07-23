@@ -45,7 +45,7 @@ class StickerService: StickerServiceProtocol {
     }
     
     func send(_ sticker: Sticker,
-              in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+              in timelineController: StickerSending) async -> Result<Void, StickerServiceError> {
         let mediaURI: String
         switch sticker.source {
         case .media(let url):
@@ -130,7 +130,7 @@ class StickerService: StickerServiceProtocol {
                              width: UInt64,
                              height: UInt64,
                              mimeType: String,
-                             in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+                             in timelineController: StickerSending) async -> Result<Void, StickerServiceError> {
         switch await uploadRawImage(data: imageData, mimeType: mimeType, width: width, height: height) {
         case .failure(let error):
             return .failure(error)

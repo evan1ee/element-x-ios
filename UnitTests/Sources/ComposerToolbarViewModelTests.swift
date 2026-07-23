@@ -1018,10 +1018,10 @@ final class ComposerToolbarViewModelTests {
                                              analyticsService: AnalyticsServiceMock(.init()),
                                              composerDraftService: draftServiceMock,
                                              emojiProvider: emojiProviderSpy,
-                                             stickerService: stickerServiceMock,
-                                             gifService: gifServiceMock,
-                                             timelineController: timelineControllerMock,
-                                             mediaUserIndicatorController: UserIndicatorControllerMock())
+                                             mediaServices: .init(stickerService: stickerServiceMock,
+                                                                  gifService: gifServiceMock,
+                                                                  timelineController: timelineControllerMock,
+                                                                  userIndicatorController: UserIndicatorControllerMock()))
         viewModel.context.composerFormattingEnabled = true
     }
 }

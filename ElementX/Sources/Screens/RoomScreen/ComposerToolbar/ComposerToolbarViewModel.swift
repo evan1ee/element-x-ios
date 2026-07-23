@@ -29,7 +29,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     /// that don't wire up sticker/GIF sending yet.
     private let stickerService: StickerServiceProtocol?
     private let gifService: KlipyServiceProtocol?
-    private let timelineController: TimelineControllerProtocol?
+    private let timelineController: StickerSending?
     private let mediaUserIndicatorController: UserIndicatorControllerProtocol?
     private var identityPinningViolations = [String: RoomMemberProxyProtocol]()
     
@@ -63,10 +63,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
          analyticsService: AnalyticsServiceProtocol,
          composerDraftService: ComposerDraftServiceProtocol,
          emojiProvider: EmojiProviderProtocol? = nil,
-         stickerService: StickerServiceProtocol? = nil,
-         gifService: KlipyServiceProtocol? = nil,
-         timelineController: TimelineControllerProtocol? = nil,
-         mediaUserIndicatorController: UserIndicatorControllerProtocol? = nil) {
+         mediaServices: ComposerMediaServices? = nil) {
         self.initialText = initialText
         self.wysiwygViewModel = wysiwygViewModel
         self.completionSuggestionService = completionSuggestionService
@@ -74,10 +71,10 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         self.roomProxy = roomProxy
         draftService = composerDraftService
         self.emojiProvider = emojiProvider ?? EmojiProvider(appSettings: appSettings)
-        self.stickerService = stickerService
-        self.gifService = gifService
-        self.timelineController = timelineController
-        self.mediaUserIndicatorController = mediaUserIndicatorController
+        stickerService = mediaServices?.stickerService
+        gifService = mediaServices?.gifService
+        timelineController = mediaServices?.timelineController
+        mediaUserIndicatorController = mediaServices?.userIndicatorController
         
         mentionBuilder = MentionBuilder()
         attributedStringBuilder = AttributedStringBuilder(cacheKey: "Composer", mentionBuilder: mentionBuilder)

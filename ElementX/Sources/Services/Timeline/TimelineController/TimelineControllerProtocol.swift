@@ -43,7 +43,7 @@ enum TimelineControllerError: Error {
 /// It, for example, permits switching from a live timeline to an event focused one, building view specific
 /// timeline items, grouping together state events, donating intents to the larger system etc.
 @MainActor
-protocol TimelineControllerProtocol: Sendable {
+protocol TimelineControllerProtocol: Sendable, StickerSending {
     var timelineKind: TimelineKind { get }
     
     /// The currently known items, use only for setting up the intial state.
@@ -138,10 +138,8 @@ protocol TimelineControllerProtocol: Sendable {
                      caption: String?,
                      inReplyToEventID: String?) async -> Result<Void, TimelineControllerError>
     
-    // MARK: - Stickers
-    
-    /// Sends an `m.sticker` event for already uploaded media, `url` being its `mxc://` URI.
-    func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError>
+    // Sticker sending is required via the StickerSending protocol (in the fork's own file), so it
+    // isn't declared inline here — keeping this upstream file untouched below its declaration.
     
     // MARK: - Poll
     

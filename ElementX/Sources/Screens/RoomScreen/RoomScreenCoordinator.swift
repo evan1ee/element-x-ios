@@ -116,10 +116,10 @@ final class RoomScreenCoordinator: CoordinatorProtocol {
                                                          analyticsService: parameters.analytics,
                                                          composerDraftService: parameters.composerDraftService,
                                                          emojiProvider: parameters.emojiProvider,
-                                                         stickerService: stickerService,
-                                                         gifService: gifService,
-                                                         timelineController: parameters.timelineController,
-                                                         mediaUserIndicatorController: parameters.userIndicatorController)
+                                                         mediaServices: .init(stickerService: stickerService,
+                                                                              gifService: gifService,
+                                                                              timelineController: parameters.timelineController,
+                                                                              userIndicatorController: parameters.userIndicatorController))
         self.composerViewModel = composerViewModel
     }
     

@@ -90,6 +90,16 @@ enum ComposerAttachmentType {
     case sticker
 }
 
+/// The services the media panel needs to send/collect stickers and GIFs. Bundled so the composer's
+/// dependency injection threads a single value instead of several parameters through the coordinators,
+/// keeping the diff against upstream small.
+struct ComposerMediaServices {
+    let stickerService: StickerServiceProtocol
+    let gifService: KlipyServiceProtocol
+    let timelineController: StickerSending
+    let userIndicatorController: UserIndicatorControllerProtocol
+}
+
 struct ComposerToolbarViewState: BindableState {
     let wysiwygViewModel: WysiwygComposerViewModel
     

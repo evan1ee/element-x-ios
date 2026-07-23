@@ -30,6 +30,7 @@
 		01373C1AC4839604C4FDA404 /* test_apple_image.heic in Resources */ = {isa = PBXBuildFile; fileRef = BB576F4118C35E6B5124FA22 /* test_apple_image.heic */; };
 		01681E8B20AD6F0D237F2DC1 /* IdentityConfirmedScreenViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6624240FFD32B7F0834229 /* IdentityConfirmedScreenViewModel.swift */; };
 		0180C44B997EDA8D21F883AC /* RoomNotificationSettingsCustomSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B746EFA112532A7B701FB914 /* RoomNotificationSettingsCustomSectionView.swift */; };
+		019DF8CFE5C5D5BC55E77100 /* StickerSending.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41FE9971E4C08A7B25CB3DC /* StickerSending.swift */; };
 		01A082C59070E809C3F97118 /* sticker_cool.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B7039C26BC212F2E4A79FAB /* sticker_cool.png */; };
 		01B63F1A04A276B39AC17014 /* CallInviteRoomTimelineItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A3D3CFA199FA7897364547 /* CallInviteRoomTimelineItem.swift */; };
 		020F7E70167FB2833266F2F0 /* AnalyticsSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39D7F513A36C9C1951DB44C /* AnalyticsSettingsScreen.swift */; };
@@ -304,6 +305,7 @@
 		2E6AD068D7767BDC33626F1C /* SnapshotableGlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB04B2D794885025DACFCEFB /* SnapshotableGlassEffect.swift */; };
 		2E8C6672D0EE7D5B1BEDB8E2 /* ServerConfirmationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7478623CECC9438014244BA /* ServerConfirmationScreen.swift */; };
 		2EAA1B35D9CA24F090F48792 /* SpaceRoomListProxyProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACD4855BDAD0799FD86B7B5 /* SpaceRoomListProxyProtocol.swift */; };
+		2ECEC92829ADA2897FAF1A21 /* TimelineController+Stickers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270BE26F8665569643BB21ED /* TimelineController+Stickers.swift */; };
 		2F2906AE9BC3D0E79A6F98F8 /* Bundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6E89E530A8E92EC44301CA1 /* Bundle.swift */; };
 		2F6207CB5C4715FE313B1E95 /* TimelineViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6509708F54FC883604DFDC95 /* TimelineViewModelTests.swift */; };
 		2F623DA1122140A987B34D08 /* NotificationSettingsEditScreenViewModelProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA7BB497B2F539C17E88F6B7 /* NotificationSettingsEditScreenViewModelProtocol.swift */; };
@@ -1939,6 +1941,7 @@
 		267BB1D5B08A9511F894CB57 /* PreviewTests.xctestplan */ = {isa = PBXFileReference; path = PreviewTests.xctestplan; sourceTree = "<group>"; };
 		26B0A96B8FE4849227945067 /* VoiceMessageRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceMessageRecorder.swift; sourceTree = "<group>"; };
 		26EAAB54C6CE91D64B69A9F8 /* AppLockServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockServiceProtocol.swift; sourceTree = "<group>"; };
+		270BE26F8665569643BB21ED /* TimelineController+Stickers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineController+Stickers.swift"; sourceTree = "<group>"; };
 		2711E5996016ABD6EAAEB58A /* LogLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLevel.swift; sourceTree = "<group>"; };
 		2721D7B051F0159AA919DA05 /* RoomChangePermissionsScreenViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomChangePermissionsScreenViewModelProtocol.swift; sourceTree = "<group>"; };
 		2757B1BE23DF8AA239937243 /* AudioConverterProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConverterProtocol.swift; sourceTree = "<group>"; };
@@ -2663,6 +2666,7 @@
 		A3FBD9C2B9A5479526920399 /* BugReportScreenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BugReportScreenCoordinator.swift; sourceTree = "<group>"; };
 		A40C19719687984FD9478FBE /* Task.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Task.swift; sourceTree = "<group>"; };
 		A40F1985065500F0E7F61A27 /* PollFormScreenViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PollFormScreenViewModelProtocol.swift; sourceTree = "<group>"; };
+		A41FE9971E4C08A7B25CB3DC /* StickerSending.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerSending.swift; sourceTree = "<group>"; };
 		A4216C12C0369A8AB059EDE9 /* TimelineController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineController.swift; sourceTree = "<group>"; };
 		A433BE28B40D418237BE37B5 /* ReportContentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportContentScreen.swift; sourceTree = "<group>"; };
 		A443FAE2EE820A5790C35C8D /* et */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = et; path = et.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -3896,6 +3900,7 @@
 			isa = PBXGroup;
 			children = (
 				A4216C12C0369A8AB059EDE9 /* TimelineController.swift */,
+				270BE26F8665569643BB21ED /* TimelineController+Stickers.swift */,
 				8C0D5AE752AF87DA0A920812 /* TimelineControllerFactory.swift */,
 				7AC1E3FE9B59EA094867863E /* TimelineControllerFactoryProtocol.swift */,
 				B6C585CE1F721A2770C70D47 /* TimelineControllerProtocol.swift */,
@@ -6689,6 +6694,7 @@
 			children = (
 				70185E27C239C1048F5C2DBD /* KlipyService.swift */,
 				114B0952F7F1140F6F7ED911 /* KlipyServiceProtocol.swift */,
+				A41FE9971E4C08A7B25CB3DC /* StickerSending.swift */,
 				9B6B0FADFC2D5123EC1EBDE0 /* StickerService.swift */,
 				248466D3322209170A19EB53 /* StickerServiceProtocol.swift */,
 				CC673C58F13AB19EF9A46E18 /* UserStickerPack.swift */,
@@ -9374,6 +9380,7 @@
 				37B5B6232B2CC958759A2D74 /* StickerPickerScreenViewModelProtocol.swift in Sources */,
 				C58E305C380D3ADDF7912180 /* StickerRoomTimelineItem.swift in Sources */,
 				197441F1EF23A5DABACCA79F /* StickerRoomTimelineView.swift in Sources */,
+				019DF8CFE5C5D5BC55E77100 /* StickerSending.swift in Sources */,
 				1D3D9111B124EC896BD8274F /* StickerService.swift in Sources */,
 				CF98C632C9AFED6302233109 /* StickerServiceProtocol.swift in Sources */,
 				35F6D25C653B51F05147F096 /* StickerSettingsScreen.swift in Sources */,
@@ -9409,6 +9416,7 @@
 				738288EAEE235CAC0893AB9E /* ThreadTimelineScreenViewModel.swift in Sources */,
 				87E8C31FCF9276F15CB0B408 /* ThreadTimelineScreenViewModelProtocol.swift in Sources */,
 				2AED12987603157C32C2114D /* TimelineBubbleLayout.swift in Sources */,
+				2ECEC92829ADA2897FAF1A21 /* TimelineController+Stickers.swift in Sources */,
 				2BFA4C6D5B3D327B02C66AB0 /* TimelineController.swift in Sources */,
 				7DCFC31B49BDD2BC32184E58 /* TimelineControllerFactory.swift in Sources */,
 				63FD7DBE7BBA149B4B8B99D7 /* TimelineControllerFactoryMock.swift in Sources */,

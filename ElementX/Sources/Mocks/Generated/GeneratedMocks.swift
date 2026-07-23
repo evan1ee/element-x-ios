@@ -11458,14 +11458,14 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
         return sendInCallsCount > 0
     }
     private let sendInReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var sendInUnderlyingReceivedArguments: (sticker: Sticker, timelineController: TimelineControllerProtocol)?
-    var sendInReceivedArguments: (sticker: Sticker, timelineController: TimelineControllerProtocol)? {
+    private nonisolated(unsafe) var sendInUnderlyingReceivedArguments: (sticker: Sticker, timelineController: StickerSending)?
+    var sendInReceivedArguments: (sticker: Sticker, timelineController: StickerSending)? {
         get { sendInReceivedArgumentsLock.withLock { sendInUnderlyingReceivedArguments } }
         set { sendInReceivedArgumentsLock.withLock { sendInUnderlyingReceivedArguments = newValue } }
     }
     private let sendInReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var sendInUnderlyingReceivedInvocations: [(sticker: Sticker, timelineController: TimelineControllerProtocol)] = []
-    var sendInReceivedInvocations: [(sticker: Sticker, timelineController: TimelineControllerProtocol)] {
+    private nonisolated(unsafe) var sendInUnderlyingReceivedInvocations: [(sticker: Sticker, timelineController: StickerSending)] = []
+    var sendInReceivedInvocations: [(sticker: Sticker, timelineController: StickerSending)] {
         get { sendInReceivedInvocationsLock.withLock { sendInUnderlyingReceivedInvocations } }
         set { sendInReceivedInvocationsLock.withLock { sendInUnderlyingReceivedInvocations = newValue } }
     }
@@ -11476,9 +11476,9 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
         get { sendInReturnValueLock.withLock { sendInUnderlyingReturnValue } }
         set { sendInReturnValueLock.withLock { sendInUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var sendInClosure: ((Sticker, TimelineControllerProtocol) async -> Result<Void, StickerServiceError>)?
+    nonisolated(unsafe) var sendInClosure: ((Sticker, StickerSending) async -> Result<Void, StickerServiceError>)?
 
-    @concurrent func send(_ sticker: Sticker, in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+    @concurrent func send(_ sticker: Sticker, in timelineController: StickerSending) async -> Result<Void, StickerServiceError> {
         sendInCallsCountLock.withLock { sendInUnderlyingCallsCount += 1 }
         sendInReceivedArguments = (sticker: sticker, timelineController: timelineController)
         sendInReceivedInvocationsLock.withLock { sendInUnderlyingReceivedInvocations.append((sticker: sticker, timelineController: timelineController)) }
@@ -11542,14 +11542,14 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
         return sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCount > 0
     }
     private let sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)?
-    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)? {
+    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: StickerSending)?
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments: (imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: StickerSending)? {
         get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArgumentsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments } }
         set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArgumentsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedArguments = newValue } }
     }
     private let sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)] = []
-    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: TimelineControllerProtocol)] {
+    private nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: StickerSending)] = []
+    var sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocations: [(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, timelineController: StickerSending)] {
         get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations } }
         set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations = newValue } }
     }
@@ -11560,9 +11560,9 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
         get { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValueLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReturnValue } }
         set { sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValueLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInClosure: ((Data, String, UInt64, UInt64, String, TimelineControllerProtocol) async -> Result<Void, StickerServiceError>)?
+    nonisolated(unsafe) var sendExternalStickerImageDataBodyWidthHeightMimeTypeInClosure: ((Data, String, UInt64, UInt64, String, StickerSending) async -> Result<Void, StickerServiceError>)?
 
-    @concurrent func sendExternalSticker(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, in timelineController: TimelineControllerProtocol) async -> Result<Void, StickerServiceError> {
+    @concurrent func sendExternalSticker(imageData: Data, body: String, width: UInt64, height: UInt64, mimeType: String, in timelineController: StickerSending) async -> Result<Void, StickerServiceError> {
         sendExternalStickerImageDataBodyWidthHeightMimeTypeInCallsCountLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingCallsCount += 1 }
         sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments = (imageData: imageData, body: body, width: width, height: height, mimeType: mimeType, timelineController: timelineController)
         sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedInvocationsLock.withLock { sendExternalStickerImageDataBodyWidthHeightMimeTypeInUnderlyingReceivedInvocations.append((imageData: imageData, body: body, width: width, height: height, mimeType: mimeType, timelineController: timelineController)) }
@@ -12764,48 +12764,6 @@ nonisolated class TimelineControllerMock: TimelineControllerProtocol, @unchecked
             return sendGalleryItemInfosCaptionInReplyToEventIDReturnValue
         }
     }
-    //MARK: - sendSticker
-
-    private let sendStickerBodyUrlImageInfoCallsCountLock = NSLock()
-    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingCallsCount = 0
-    var sendStickerBodyUrlImageInfoCallsCount: Int {
-        get { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount } }
-        set { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount = newValue } }
-    }
-    var sendStickerBodyUrlImageInfoCalled: Bool {
-        return sendStickerBodyUrlImageInfoCallsCount > 0
-    }
-    private let sendStickerBodyUrlImageInfoReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)?
-    var sendStickerBodyUrlImageInfoReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)? {
-        get { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments } }
-        set { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments = newValue } }
-    }
-    private let sendStickerBodyUrlImageInfoReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] = []
-    var sendStickerBodyUrlImageInfoReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] {
-        get { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations } }
-        set { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations = newValue } }
-    }
-
-    private let sendStickerBodyUrlImageInfoReturnValueLock = NSLock()
-    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReturnValue: Result<Void, TimelineControllerError>!
-    var sendStickerBodyUrlImageInfoReturnValue: Result<Void, TimelineControllerError>! {
-        get { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue } }
-        set { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue = newValue } }
-    }
-    nonisolated(unsafe) var sendStickerBodyUrlImageInfoClosure: ((String, String, ImageInfo) async -> Result<Void, TimelineControllerError>)?
-
-    @concurrent func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError> {
-        sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount += 1 }
-        sendStickerBodyUrlImageInfoReceivedArguments = (body: body, url: url, imageInfo: imageInfo)
-        sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations.append((body: body, url: url, imageInfo: imageInfo)) }
-        if let sendStickerBodyUrlImageInfoClosure = sendStickerBodyUrlImageInfoClosure {
-            return await sendStickerBodyUrlImageInfoClosure(body, url, imageInfo)
-        } else {
-            return sendStickerBodyUrlImageInfoReturnValue
-        }
-    }
     //MARK: - createPoll
 
     private let createPollQuestionAnswersMaxSelectionsPollKindCallsCountLock = NSLock()
@@ -12972,6 +12930,48 @@ nonisolated class TimelineControllerMock: TimelineControllerProtocol, @unchecked
             return await endPollPollStartIDTextClosure(pollStartID, text)
         } else {
             return endPollPollStartIDTextReturnValue
+        }
+    }
+    //MARK: - sendSticker
+
+    private let sendStickerBodyUrlImageInfoCallsCountLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingCallsCount = 0
+    var sendStickerBodyUrlImageInfoCallsCount: Int {
+        get { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount } }
+        set { sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount = newValue } }
+    }
+    var sendStickerBodyUrlImageInfoCalled: Bool {
+        return sendStickerBodyUrlImageInfoCallsCount > 0
+    }
+    private let sendStickerBodyUrlImageInfoReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)?
+    var sendStickerBodyUrlImageInfoReceivedArguments: (body: String, url: String, imageInfo: ImageInfo)? {
+        get { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments } }
+        set { sendStickerBodyUrlImageInfoReceivedArgumentsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedArguments = newValue } }
+    }
+    private let sendStickerBodyUrlImageInfoReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] = []
+    var sendStickerBodyUrlImageInfoReceivedInvocations: [(body: String, url: String, imageInfo: ImageInfo)] {
+        get { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations } }
+        set { sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let sendStickerBodyUrlImageInfoReturnValueLock = NSLock()
+    private nonisolated(unsafe) var sendStickerBodyUrlImageInfoUnderlyingReturnValue: Result<Void, TimelineControllerError>!
+    var sendStickerBodyUrlImageInfoReturnValue: Result<Void, TimelineControllerError>! {
+        get { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue } }
+        set { sendStickerBodyUrlImageInfoReturnValueLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var sendStickerBodyUrlImageInfoClosure: ((String, String, ImageInfo) async -> Result<Void, TimelineControllerError>)?
+
+    @concurrent func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError> {
+        sendStickerBodyUrlImageInfoCallsCountLock.withLock { sendStickerBodyUrlImageInfoUnderlyingCallsCount += 1 }
+        sendStickerBodyUrlImageInfoReceivedArguments = (body: body, url: url, imageInfo: imageInfo)
+        sendStickerBodyUrlImageInfoReceivedInvocationsLock.withLock { sendStickerBodyUrlImageInfoUnderlyingReceivedInvocations.append((body: body, url: url, imageInfo: imageInfo)) }
+        if let sendStickerBodyUrlImageInfoClosure = sendStickerBodyUrlImageInfoClosure {
+            return await sendStickerBodyUrlImageInfoClosure(body, url, imageInfo)
+        } else {
+            return sendStickerBodyUrlImageInfoReturnValue
         }
     }
 }
