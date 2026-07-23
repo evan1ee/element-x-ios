@@ -9,10 +9,17 @@ import Compound
 import SwiftUI
 
 /// The emoji tab: a sectioned grid (recents first, then categories) with sticky headers, and a
-/// category jump bar pinned to the bottom. Tapping an emoji inserts it and keeps the panel open.
+/// bottom bar (category jump + delete key) pinned to the bottom. Tapping an emoji inserts it and
+/// keeps the panel open.
 struct EmojiTabView: View {
     let categories: [EmojiCategory]
     let onSelect: (String) -> Void
+    /// Deletes one character/emoji before the composer's caret. Called once per tap, and
+    /// repeatedly while the delete key is held (like the system keyboard's backspace).
+    let onDeleteBackward: () -> Void
+    /// Reports whether the grid is scrolled to its very top, so the panel can expand/collapse
+    /// when the user keeps dragging past the edge.
+    var onIsAtTopChange: (Bool) -> Void = { _ in }
     
     private let columns = [GridItem(.adaptive(minimum: 40), spacing: 8)]
     
@@ -47,31 +54,40 @@ struct EmojiTabView: View {
                     }
                     .padding(.horizontal, 12)
                 }
-                
-                if categories.count > 1 {
-                    categoryBar(proxy: proxy)
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentOffset.y <= 0
+                } action: { _, isAtTop in
+                    onIsAtTopChange(isAtTop)
                 }
+                
+                bottomBar(proxy: proxy)
             }
         }
     }
     
-    private func categoryBar(proxy: ScrollViewProxy) -> some View {
+    /// Category jump buttons (when there's more than one category) plus a delete key, always
+    /// available while the emoji tab is showing — mirrors the system emoji keyboard's layout.
+    private func bottomBar(proxy: ScrollViewProxy) -> some View {
         HStack(spacing: 0) {
-            ForEach(categories) { category in
-                Button {
-                    withAnimation {
-                        proxy.scrollTo(category.id, anchor: .top)
+            if categories.count > 1 {
+                ForEach(categories) { category in
+                    Button {
+                        withAnimation {
+                            proxy.scrollTo(category.id, anchor: .top)
+                        }
+                    } label: {
+                        Image(systemName: EmojiTabView.symbol(for: category))
+                            .font(.system(size: 18))
+                            .foregroundStyle(.compound.iconSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                     }
-                } label: {
-                    Image(systemName: EmojiTabView.symbol(for: category))
-                        .font(.system(size: 18))
-                        .foregroundStyle(.compound.iconSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .contentShape(Rectangle())
+                    .accessibilityLabel(EmojiTabView.title(for: category))
                 }
-                .accessibilityLabel(EmojiTabView.title(for: category))
             }
+            
+            DeleteBackwardButton(action: onDeleteBackward)
         }
         .background {
             Color.compound.bgCanvasDefault
@@ -114,5 +130,49 @@ struct EmojiTabView: View {
         case "flags": "flag"
         default: "questionmark"
         }
+    }
+}
+
+/// A backspace key matching the system emoji keyboard's: one tap deletes once, holding it down
+/// repeats the deletion until released.
+private struct DeleteBackwardButton: View {
+    let action: () -> Void
+    
+    @State private var isPressing = false
+    @State private var repeatTask: Task<Void, Never>?
+    
+    var body: some View {
+        Image(systemName: "delete.left")
+            .font(.system(size: 18))
+            .foregroundStyle(.compound.iconSecondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .accessibilityLabel(L10n.a11yDelete)
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in beginPress() }
+                .onEnded { _ in endPress() })
+    }
+    
+    private func beginPress() {
+        guard !isPressing else { return }
+        isPressing = true
+        action()
+        
+        repeatTask?.cancel()
+        repeatTask = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            while !Task.isCancelled {
+                action()
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+    }
+    
+    private func endPress() {
+        isPressing = false
+        repeatTask?.cancel()
+        repeatTask = nil
     }
 }

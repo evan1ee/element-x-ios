@@ -115,6 +115,106 @@ final class ComposerToolbarViewModelTests {
     }
     
     @Test
+    func openingTheMediaPanelKeepsTheComposerFocused() {
+        // The panel is a keyboard replacement, not a separate popup — the composer stays first
+        // responder throughout (only the system keyboard gets suppressed).
+        #expect(!viewModel.state.bindings.composerFocused)
+        
+        viewModel.process(viewAction: .toggleMediaInput)
+        
+        #expect(viewModel.state.bindings.composerFocused)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+    }
+    
+    @Test
+    func focusingTheComposerWhileTheMediaPanelIsOpenDoesNotCloseIt() {
+        viewModel.process(viewAction: .toggleMediaInput)
+        #expect(viewModel.state.inputMode == .media(.emoji))
+        
+        // Simulates the user tapping the composer, or placing the caret, while the panel is up —
+        // this used to force the system keyboard back and close the panel.
+        viewModel.context.composerFocused = true
+        
+        #expect(viewModel.state.inputMode == .media(.emoji))
+        #expect(viewModel.state.bindings.composerFocused)
+    }
+    
+    @Test
+    func reopeningTheMediaPanelRestoresTheLastSelectedTab() {
+        viewModel.process(viewAction: .toggleMediaInput)
+        viewModel.process(viewAction: .selectMediaTab(.sticker))
+        viewModel.process(viewAction: .toggleMediaInput) // closes, back to the keyboard
+        #expect(viewModel.state.inputMode == .none)
+        
+        viewModel.process(viewAction: .toggleMediaInput) // reopens
+        
+        #expect(viewModel.state.inputMode == .media(.sticker))
+    }
+    
+    @Test
+    func deletingBackwardWithASelectionRemovesTheSelection() {
+        viewModel.context.composerFormattingEnabled = false
+        viewModel.context.plainComposerText = .init(string: "Hello world!")
+        viewModel.context.selectedRange = NSRange(location: 6, length: 5) // "world"
+        
+        viewModel.process(viewAction: .deleteBackward)
+        
+        #expect(viewModel.context.plainComposerText.string == "Hello !")
+        #expect(viewModel.context.selectedRange == NSRange(location: 6, length: 0))
+    }
+    
+    @Test
+    func deletingBackwardAtTheCaretRemovesOnePlainCharacter() {
+        viewModel.context.composerFormattingEnabled = false
+        viewModel.context.plainComposerText = .init(string: "Hello!")
+        viewModel.context.selectedRange = NSRange(location: 6, length: 0)
+        
+        viewModel.process(viewAction: .deleteBackward)
+        
+        #expect(viewModel.context.plainComposerText.string == "Hello")
+        #expect(viewModel.context.selectedRange == NSRange(location: 5, length: 0))
+    }
+    
+    @Test
+    func deletingBackwardRemovesOneCombinedEmojiAsASingleUnit() {
+        viewModel.context.composerFormattingEnabled = false
+        // Family emoji: a single extended grapheme cluster made of 4 code points joined by ZWJs.
+        let family = "👨‍👩‍👧‍👦"
+        viewModel.context.plainComposerText = .init(string: "Hi \(family)")
+        let caret = ("Hi \(family)" as NSString).length
+        viewModel.context.selectedRange = NSRange(location: caret, length: 0)
+        
+        viewModel.process(viewAction: .deleteBackward)
+        
+        #expect(viewModel.context.plainComposerText.string == "Hi ")
+    }
+    
+    @Test
+    func deletingBackwardRemovesOneSkinToneModifiedEmojiAsASingleUnit() {
+        viewModel.context.composerFormattingEnabled = false
+        // A thumbs-up with a skin tone modifier is still one extended grapheme cluster.
+        let thumbsUp = "👍🏽"
+        viewModel.context.plainComposerText = .init(string: thumbsUp)
+        let caret = (thumbsUp as NSString).length
+        viewModel.context.selectedRange = NSRange(location: caret, length: 0)
+        
+        viewModel.process(viewAction: .deleteBackward)
+        
+        #expect(viewModel.context.plainComposerText.string == "")
+    }
+    
+    @Test
+    func deletingBackwardAtTheStartDoesNothing() {
+        viewModel.context.composerFormattingEnabled = false
+        viewModel.context.plainComposerText = .init(string: "Hello")
+        viewModel.context.selectedRange = NSRange(location: 0, length: 0)
+        
+        viewModel.process(viewAction: .deleteBackward)
+        
+        #expect(viewModel.context.plainComposerText.string == "Hello")
+    }
+    
+    @Test
     func openingTheEmojiTabLoadsEmojis() async throws {
         let deferred = deferFulfillment(viewModel.context.$viewState.map(\.mediaEmojiCategories)) { !$0.isEmpty }
         viewModel.process(viewAction: .toggleMediaInput)

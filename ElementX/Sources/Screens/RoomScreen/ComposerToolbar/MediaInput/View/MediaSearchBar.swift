@@ -8,11 +8,15 @@
 import Compound
 import SwiftUI
 
-/// The media panel's search field. Because the panel is a sheet (not the keyboard slot), a
-/// normal text field works: focusing it raises the system keyboard over the sheet.
+/// The media panel's search field. Unlike the composer, this is a normal, independent text
+/// field: focusing it is the one case where the real system keyboard is allowed to appear while
+/// the panel is up (the panel then expands to make room, per `onFocusChange`).
 struct MediaSearchBar: View {
     @Binding var query: String
     let tab: MediaTab
+    var onFocusChange: (Bool) -> Void = { _ in }
+    
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         HStack(spacing: 8) {
@@ -23,6 +27,10 @@ struct MediaSearchBar: View {
                 .textFieldStyle(.plain)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
+                .focused($isFocused)
+                .onChange(of: isFocused) { _, newValue in
+                    onFocusChange(newValue)
+                }
             
             if !query.isEmpty {
                 Button {

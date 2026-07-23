@@ -7,13 +7,13 @@
 
 import Foundation
 
-/// The composer's current input source. The media panel occupies the keyboard slot
-/// via the editor's `inputView`, so switching between keyboard and panel never moves
-/// the composer or the caret (the panel *is* the keyboard).
+/// The composer's current input source. The editor stays first responder throughout; opening the
+/// media panel only swaps its `inputView` for an empty placeholder (suppressing the system
+/// keyboard) while the panel renders below, so the composer and the caret never move.
 enum ComposerInputMode: Equatable {
     /// The editor is first responder with the system keyboard (`inputView == nil`).
     case keyboard
-    /// The editor is first responder with the media panel in the keyboard slot.
+    /// The editor is first responder with the system keyboard suppressed and the media panel visible.
     case media(MediaTab)
     /// No first responder.
     case none

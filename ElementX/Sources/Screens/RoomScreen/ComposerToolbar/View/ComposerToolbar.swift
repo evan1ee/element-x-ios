@@ -19,6 +19,9 @@ struct ComposerToolbar: View {
     @Environment(\.availableComposerHeight) private var availableComposerHeight
     
     @ObservedObject var context: ComposerToolbarViewModel.Context
+    /// Measures the real system keyboard so the media panel's compact height and open/close
+    /// transition can match it instead of guessing at both.
+    @StateObject private var keyboardHeightObserver = KeyboardHeightObserver()
     
     @FocusState private var composerFocused: Bool
     @State private var frame: CGRect = .zero
@@ -40,45 +43,53 @@ struct ComposerToolbar: View {
         Compound.supportsGlass ? 0 : 3
     }
     
-    /// The heights the media panel snaps to when the grabber is dragged, smallest first.
-    /// The first matches the keyboard it replaces; the others reveal more content. Any detent
-    /// taller than the screen allows is capped so the composer is never pushed off-screen.
-    private let mediaPanelDetents: [CGFloat] = [336, 520, 720]
-    /// The media panel's current height, remembered across opening/closing the panel.
-    @State private var mediaPanelHeight: CGFloat = 336
+    /// The media panel's compact height: the real system keyboard's height once it has been
+    /// measured this session, otherwise a reasonable guess.
+    private var compactMediaPanelHeight: CGFloat {
+        keyboardHeightObserver.height ?? 336
+    }
     
     /// The tallest the media panel may grow while keeping the composer fully visible.
     /// `availableComposerHeight` is the space between the nav bar and the home indicator, so we
     /// just reserve the composer bar's own height and a little breathing room.
-    private var maxMediaPanelHeight: CGFloat {
-        let smallest = mediaPanelDetents.first ?? 336
-        guard availableComposerHeight.isFinite else { return mediaPanelDetents.last ?? smallest }
+    private var expandedMediaPanelHeight: CGFloat {
+        let smallest = compactMediaPanelHeight
+        guard availableComposerHeight.isFinite else { return max(smallest, 720) }
         return max(smallest, availableComposerHeight - composerBarHeight - 8)
     }
     
-    /// The detents clamped to what fits on the current screen.
-    private var cappedDetents: [CGFloat] {
-        mediaPanelDetents.map { min($0, maxMediaPanelHeight) }
+    /// The only two heights the media panel snaps to: matching the keyboard it replaces, and as
+    /// tall as the screen allows. (No intermediate stop — Discord-style panels only have two.)
+    private var mediaPanelDetents: [CGFloat] {
+        [min(compactMediaPanelHeight, expandedMediaPanelHeight), expandedMediaPanelHeight]
     }
+    
+    /// The media panel's current height, remembered across opening/closing the panel.
+    @State private var mediaPanelHeight: CGFloat = 336
     
     var body: some View {
         VStack(spacing: 0) {
             composerBar
                 .readHeight($composerBarHeight)
             
-            // The media panel takes the keyboard's place below the composer, so the composer
-            // stays visible (Discord behaviour) rather than being covered by a sheet.
-            if context.viewState.inputMode.isMedia {
-                MediaInputPanel(context: context, height: $mediaPanelHeight, detents: cappedDetents)
-                    .frame(height: mediaPanelHeight)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            // The panel stays mounted at all times (rather than being added/removed) so its tabs'
+            // scroll positions and content survive open/close, and so opening/closing is a pure
+            // height/opacity change that can run in lockstep with the keyboard's own animation,
+            // instead of a separate view transition racing it.
+            MediaInputPanel(context: context, height: $mediaPanelHeight, detents: mediaPanelDetents)
+                .frame(height: context.viewState.inputMode.isMedia ? mediaPanelHeight : 0)
+                .clipped()
+                .opacity(context.viewState.inputMode.isMedia ? 1 : 0)
+                .allowsHitTesting(context.viewState.inputMode.isMedia)
         }
-        .onChange(of: maxMediaPanelHeight, initial: true) { _, newMax in
+        .onChange(of: expandedMediaPanelHeight, initial: true) { _, newMax in
             // Keep the remembered height within what the current screen allows.
             mediaPanelHeight = min(mediaPanelHeight, newMax)
         }
-        .animation(.easeInOut(duration: 0.2), value: context.viewState.inputMode.isMedia)
+        // Matches the real keyboard's own animation duration, so opening/closing the panel reads
+        // as one continuous morph rather than a keyboard dismiss followed by a separate panel
+        // transition on its own clock.
+        .animation(.easeInOut(duration: keyboardHeightObserver.animationDuration), value: context.viewState.inputMode.isMedia)
     }
     
     private var composerBar: some View {
@@ -167,6 +178,10 @@ struct ComposerToolbar: View {
             .padding(8)
             .background(Color.compound.bgCanvasDefault,
                         in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            // Without this the card has no visible edge in dark mode, where the shadow alone
+            // doesn't read against a dark background.
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.compound.borderInteractiveSecondary, lineWidth: 0.5))
             .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
             .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
         } else {
@@ -269,6 +284,7 @@ struct ComposerToolbar: View {
                         composerFormattingEnabled: context.composerFormattingEnabled,
                         showResizeGrabber: context.composerFormattingEnabled,
                         isExpanded: $context.composerExpanded,
+                        isSystemKeyboardSuppressed: context.viewState.inputMode.isMedia,
                         showsBackground: showsBackground) {
             sendMessage()
         } editAction: {

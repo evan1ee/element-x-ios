@@ -69,6 +69,8 @@ enum ComposerToolbarViewAction {
     case mediaSearchQueryChanged
     /// Inserts the given emoji at the caret and keeps the panel open.
     case insertEmoji(String)
+    /// Deletes one character/grapheme cluster before the caret (or the current selection).
+    case deleteBackward
     /// Sends a discovered GIF into the timeline, keeping the panel open.
     case sendMediaGIF(KlipySticker)
     /// Adds a discovered GIF to the user's sticker pack (with dedup), keeping the panel open.
@@ -106,6 +108,9 @@ struct ComposerToolbarViewState: BindableState {
     var composerMode: ComposerMode = .default
     /// The current input source (system keyboard vs media panel). Drives the composer's media toggle glyph.
     var inputMode: ComposerInputMode = .none
+    /// The tab the media panel was last showing, so reopening it (or toggling back) restores it
+    /// instead of always resetting to Emoji.
+    var lastMediaTab: MediaTab = .emoji
     /// The emoji grid shown in the media panel's emoji tab (recents first, then categories).
     var mediaEmojiCategories: [EmojiCategory] = []
     /// The GIF results shown in the media panel's GIF tab (trending, or search matches).

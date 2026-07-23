@@ -17,7 +17,11 @@ struct KeyboardMediaToggleButton: View {
     
     var body: some View {
         Button(action: action) {
-            CompoundIcon(inputMode.isMedia ? \.keyboard : \.reaction)
+            // Explicitly sized (matching the "+" attachment button) so the frame doesn't shift
+            // between the two glyphs, which otherwise have slightly different intrinsic bounds.
+            CompoundIcon(inputMode.isMedia ? \.keyboard : \.reaction,
+                         size: Compound.supportsGlass ? .medium : .small,
+                         relativeTo: .compound.headingLG)
         }
         .buttonStyle(ComposerToolbarButtonStyle())
         .accessibilityLabel(inputMode.isMedia ? UntranslatedL10n.a11yShowKeyboard : UntranslatedL10n.a11yShowMediaInput)

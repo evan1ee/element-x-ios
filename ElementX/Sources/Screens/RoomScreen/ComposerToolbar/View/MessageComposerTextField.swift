@@ -18,6 +18,10 @@ struct MessageComposerTextField: View {
     let maxHeight: CGFloat
     let keyHandler: GenericKeyHandler
     let pasteHandler: PasteHandler
+    /// When true, the field stays first responder (caret/selection keep working) but its
+    /// `inputView` is swapped for an empty placeholder so the system keyboard doesn't appear —
+    /// used while the media panel is occupying the keyboard's place.
+    var isSystemKeyboardSuppressed = false
     
     var body: some View {
         UITextViewWrapper(text: $text,
@@ -25,7 +29,8 @@ struct MessageComposerTextField: View {
                           selectedRange: $selectedRange,
                           maxHeight: maxHeight,
                           keyHandler: keyHandler,
-                          pasteHandler: pasteHandler)
+                          pasteHandler: pasteHandler,
+                          isSystemKeyboardSuppressed: isSystemKeyboardSuppressed)
             .accessibilityLabel(placeholder)
             .background(placeholderView, alignment: .topLeading)
             .background { keyboardShortcuts }
@@ -61,6 +66,7 @@ private struct UITextViewWrapper: UIViewRepresentable {
     
     let keyHandler: GenericKeyHandler
     let pasteHandler: PasteHandler
+    let isSystemKeyboardSuppressed: Bool
     
     private let font = UIFont.preferredFont(forTextStyle: .body)
     
@@ -106,6 +112,13 @@ private struct UITextViewWrapper: UIViewRepresentable {
         // Prevent the textView from inheriting attributes from mention pills
         textView.typingAttributes = [.font: font,
                                      .foregroundColor: UIColor.compound.textPrimary]
+        
+        // Swap in an empty placeholder inputView while the media panel is up, so the field stays
+        // first responder (caret/selection keep working) without the system keyboard appearing.
+        if (textView.inputView != nil) != isSystemKeyboardSuppressed {
+            textView.inputView = isSystemKeyboardSuppressed ? context.coordinator.blankInputView : nil
+            textView.reloadInputViews()
+        }
         
         if textView.attributedText != text {
             // Remember the selection if only the attributes have changed.
@@ -161,6 +174,10 @@ private struct UITextViewWrapper: UIViewRepresentable {
         
         private let keyHandler: GenericKeyHandler
         private let pasteHandler: PasteHandler
+        
+        /// A reusable, empty placeholder `inputView` used to suppress the system keyboard while
+        /// keeping the text view first responder — see `updateUIView`.
+        let blankInputView = UIView(frame: .zero)
         
         init(text: Binding<NSAttributedString>,
              selectedRange: Binding<NSRange>,

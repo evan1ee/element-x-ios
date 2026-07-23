@@ -1219,6 +1219,7 @@
 		C16E25C41B858BF27E0C4FC6 /* LinkNewDeviceScreenViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D3DA6959C041E212A718DD3 /* LinkNewDeviceScreenViewModel.swift */; };
 		C1910A16BDF131FECA77BE22 /* EmojiPickerScreenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEA38B9851CFCC4D67F5587D /* EmojiPickerScreenCoordinator.swift */; };
 		C1A5C386319835FB0C77736B /* ReportContentScreenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16CD2C62CB7DB78A4238485 /* ReportContentScreenCoordinator.swift */; };
+		C1CDF92A02DCDF980C312F4F /* KeyboardHeightObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD3690A19F1B6B3D1983E4AC /* KeyboardHeightObserver.swift */; };
 		C1D0AB8222D7BAFC9AF9C8C0 /* MapLibreMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 622D09D4ECE759189009AEAF /* MapLibreMapView.swift */; };
 		C26DB49C06C00B5DF1A991A5 /* InviteUsersScreenModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1454CF3AABD242F55C8A2615 /* InviteUsersScreenModels.swift */; };
 		C2879369106A419A5071F1F8 /* VoiceMessageRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B0A96B8FE4849227945067 /* VoiceMessageRecorder.swift */; };
@@ -2723,6 +2724,7 @@
 		ACD7BD6BEE21264F6677904A /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AD0FF64B0E6470F66F42E182 /* EstimatedWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimatedWaveformView.swift; sourceTree = "<group>"; };
 		AD3521DF92391551E02004D8 /* VoiceMessageMediaEventsTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceMessageMediaEventsTimelineView.swift; sourceTree = "<group>"; };
+		AD3690A19F1B6B3D1983E4AC /* KeyboardHeightObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHeightObserver.swift; sourceTree = "<group>"; };
 		AD378D580A41E42560C60E9C /* sk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sk; path = sk.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AD529C89924EE32CE307F36F /* VisualListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualListItem.swift; sourceTree = "<group>"; };
 		AD558A898847C179E4B7A237 /* SecureBackupKeyBackupScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureBackupKeyBackupScreen.swift; sourceTree = "<group>"; };
@@ -3409,6 +3411,7 @@
 			children = (
 				76A46ABD27628CB5FC402541 /* Backports.swift */,
 				F03AEAA2F66E796C365EFD58 /* ElementNavigationStack.swift */,
+				AD3690A19F1B6B3D1983E4AC /* KeyboardHeightObserver.swift */,
 				5DB56ABD78E60920ACE43087 /* PreviewScrollView.swift */,
 				D2C513A6CD99E6C3C163DA1E /* RowDivider.swift */,
 				693E16574C6F7F9FA1015A8C /* Search.swift */,
@@ -8809,6 +8812,7 @@
 				261261778DEFAEFC042B875E /* JoinedRoomProxy.swift in Sources */,
 				7D249465ED00988EEEC14E05 /* JoinedRoomProxyMock.swift in Sources */,
 				E3CA565A4B9704F191B191F0 /* JoinedRoomSize+MemberCount.swift in Sources */,
+				C1CDF92A02DCDF980C312F4F /* KeyboardHeightObserver.swift in Sources */,
 				CE4EAE29BF5B6B9D0945985B /* KeyboardMediaToggleButton.swift in Sources */,
 				1FE593ECEC40A43789105D80 /* KeychainController.swift in Sources */,
 				FD29471C72872F8B7580E3E1 /* KeychainControllerMock.swift in Sources */,

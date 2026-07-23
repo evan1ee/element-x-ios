@@ -25,6 +25,9 @@ struct MessageComposer: View {
     let composerFormattingEnabled: Bool
     let showResizeGrabber: Bool
     @Binding var isExpanded: Bool
+    /// Whether the media panel is occupying the keyboard's place, so the plain-text field should
+    /// stay first responder (caret/selection keep working) without showing the system keyboard.
+    var isSystemKeyboardSuppressed = false
     /// Whether the field draws its own rounded background. Set to false when it lives inside a
     /// shared container (e.g. the two-line composer).
     var showsBackground = true
@@ -77,7 +80,8 @@ struct MessageComposer: View {
                                      selectedRange: $selectedRange,
                                      maxHeight: ComposerConstant.maxHeight,
                                      keyHandler: { handleKeyPress($0) },
-                                     pasteHandler: pasteAction)
+                                     pasteHandler: pasteAction,
+                                     isSystemKeyboardSuppressed: isSystemKeyboardSuppressed)
         }
     }
     

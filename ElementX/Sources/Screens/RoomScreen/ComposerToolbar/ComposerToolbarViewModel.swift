@@ -208,10 +208,9 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     }
     
     private func handleComposerFocusChange(_ focused: Bool) {
-        // Focusing the composer (tapping the field) brings the keyboard back, so close the media panel.
-        if focused, state.inputMode.isMedia {
-            state.inputMode = .none
-        }
+        // Tapping the composer (or moving the caret) while the media panel is up no longer closes
+        // it — the panel behaves like a keyboard replacement, so the composer stays first responder
+        // throughout (see presentMediaPanel/showKeyboard) and this is purely a notification.
         actionsSubject.send(.composerFocusedChanged(isFocused: focused))
     }
     
@@ -219,34 +218,54 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         if state.inputMode.isMedia {
             showKeyboard()
         } else {
-            presentMediaPanel(.emoji)
+            presentMediaPanel(state.lastMediaTab)
         }
     }
     
-    /// Presents the media panel below the composer, dismissing the keyboard so the panel takes
-    /// its place (the composer stays visible above it).
+    /// Presents the media panel in the keyboard's place. The composer stays (or becomes) first
+    /// responder — only the system keyboard is suppressed — so the caret/selection remain live and
+    /// tapping the composer or inserting emoji never has to re-summon the keyboard.
     private func presentMediaPanel(_ tab: MediaTab) {
         state.inputMode = .media(tab)
+        state.lastMediaTab = tab
         loadContent(for: tab)
-        state.bindings.composerFocused = false
+        state.bindings.composerFocused = true
+        setSystemKeyboardSuppressed(true)
     }
     
-    /// Hides the media panel and brings the keyboard back.
+    /// Hides the media panel and restores the system keyboard.
     private func showKeyboard() {
         state.inputMode = .none
         state.bindings.composerFocused = true
+        setSystemKeyboardSuppressed(false)
     }
     
     private func dismissMediaPanel() {
         state.inputMode = .none
+        setSystemKeyboardSuppressed(false)
     }
     
-    /// Switches the visible tab in place while the sheet stays presented.
+    /// Switches the visible tab in place while the panel stays presented.
     private func selectMediaTab(_ tab: MediaTab) {
         guard state.inputMode.isMedia, state.inputMode.mediaTab != tab else { return }
         state.inputMode = .media(tab)
+        state.lastMediaTab = tab
         loadContent(for: tab)
     }
+    
+    /// Suppresses the system keyboard for the Wysiwyg editor while keeping it first responder, by
+    /// swapping in an empty `inputView` — nothing is hosted in it, it's just a placeholder so no
+    /// keyboard appears. The plain-text path applies the equivalent suppression itself in
+    /// `MessageComposerTextField`, driven directly by `inputMode.isMedia`.
+    private func setSystemKeyboardSuppressed(_ suppressed: Bool) {
+        let textView = wysiwygViewModel.textView
+        guard (textView.inputView != nil) != suppressed else { return }
+        textView.inputView = suppressed ? blankInputView : nil
+        textView.reloadInputViews()
+    }
+    
+    /// A reusable, empty placeholder `inputView` — see `setSystemKeyboardSuppressed`.
+    private let blankInputView = UIView(frame: .zero)
     
     private func loadContent(for tab: MediaTab) {
         switch tab {
@@ -481,6 +500,37 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         }
     }
     
+    /// Deletes the current selection, or the one extended grapheme cluster before the caret —
+    /// working like a keyboard backspace key, including for combined/skin-toned emoji.
+    private func deleteBackward() {
+        if context.composerFormattingEnabled {
+            // An empty replacement over a zero-length selection is the package's own backspace path
+            // (it deletes one grapheme per the Rust engine's definition); a real selection is removed.
+            wysiwygViewModel.replaceText(range: state.bindings.selectedRange, replacementText: "")
+            return
+        }
+        
+        let attributedString = NSMutableAttributedString(attributedString: state.bindings.plainComposerText)
+        let selection = state.bindings.selectedRange
+        
+        let deletionRange: NSRange
+        if selection.length > 0 {
+            deletionRange = selection
+        } else {
+            guard selection.location > 0, selection.location <= attributedString.length else { return }
+            // Swift's `Character` is already one full extended grapheme cluster, so stepping back
+            // one correctly removes combined/ZWJ emoji and skin-tone modifiers as a single unit.
+            let string = attributedString.string
+            let caretIndex = String.Index(utf16Offset: selection.location, in: string)
+            let previousIndex = string.index(before: caretIndex)
+            deletionRange = NSRange(previousIndex..<caretIndex, in: string)
+        }
+        
+        attributedString.deleteCharacters(in: deletionRange)
+        state.bindings.plainComposerText = attributedString
+        state.bindings.selectedRange = NSRange(location: deletionRange.location, length: 0)
+    }
+    
     // MARK: - Public
     
     func start() {
@@ -510,6 +560,8 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             break // Handled by the debounced observer in setupMediaInput().
         case .insertEmoji(let emoji):
             insertEmoji(emoji)
+        case .deleteBackward:
+            deleteBackward()
         case .sendMediaGIF(let gif):
             sendMediaGIF(gif)
         case .addMediaGIF(let gif):
