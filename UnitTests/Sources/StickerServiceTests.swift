@@ -201,7 +201,7 @@ struct StickerServiceTests {
     @Test
     mutating func packSaveFailureCountsAllAddedAsFailed() async throws {
         try setup()
-        clientProxy.setAccountDataEventTypeContentReturnValue = .failure(.invalidResponse)
+        clientProxy.setAccountDataEventTypeContentReturnValue = .failure(.sdkError(ClientProxyMockError.generic))
         let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
         
         let summary = await service.addUserStickers(fromMediaAt: [imageURL])
