@@ -126,6 +126,10 @@ struct RoomScreen: View {
                         .environment(\.shouldAutomaticallyLoadImages, !timelineContext.viewState.hideTimelineMedia)
                 }
             }
+            // The composer makes its own room for the keyboard, so that the keyboard and its media
+            // panel resolve to a single animated height rather than two that have to cancel each
+            // other out — see `ComposerToolbar.inputAreaHeight`.
+            .ignoresSafeArea(.keyboard, edges: .bottom)
             .toolbarRole(RoomHeaderView.toolbarRole)
             .navigationTitle(L10n.screenRoomTitle) // Hidden but used for back button text.
             .navigationBarTitleDisplayMode(.inline)

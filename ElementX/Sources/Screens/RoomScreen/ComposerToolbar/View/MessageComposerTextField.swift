@@ -18,12 +18,8 @@ struct MessageComposerTextField: View {
     let maxHeight: CGFloat
     let keyHandler: GenericKeyHandler
     let pasteHandler: PasteHandler
-    /// When set, the field presents this view as its keyboard instead of the system one — used
-    /// to show the media panel in the keyboard's place as a native keyboard swap.
-    var customInputView: UIView?
-    /// The custom input view's current height. Changing it makes the field reload its input
-    /// views, which is what makes the input system animate the keyboard to the new size.
-    var customInputViewHeight: CGFloat = 0
+    /// Whether the field keeps first responder without showing a keyboard — see `UITextViewWrapper`.
+    var suppressesSystemKeyboard = false
     
     var body: some View {
         UITextViewWrapper(text: $text,
@@ -32,8 +28,7 @@ struct MessageComposerTextField: View {
                           maxHeight: maxHeight,
                           keyHandler: keyHandler,
                           pasteHandler: pasteHandler,
-                          customInputView: customInputView,
-                          customInputViewHeight: customInputViewHeight)
+                          suppressesSystemKeyboard: suppressesSystemKeyboard)
             .accessibilityLabel(placeholder)
             .background(placeholderView, alignment: .topLeading)
             .background { keyboardShortcuts }
@@ -69,8 +64,10 @@ private struct UITextViewWrapper: UIViewRepresentable {
     
     let keyHandler: GenericKeyHandler
     let pasteHandler: PasteHandler
-    let customInputView: UIView?
-    let customInputViewHeight: CGFloat
+    /// Whether the field keeps first responder while showing no keyboard at all, by swapping in an
+    /// empty `inputView`. The media panel takes the keyboard's place on screen, and the composer
+    /// holding on to first responder is what keeps the caret and selection alive behind it.
+    let suppressesSystemKeyboard: Bool
     
     private let font = UIFont.preferredFont(forTextStyle: .body)
     
@@ -117,16 +114,9 @@ private struct UITextViewWrapper: UIViewRepresentable {
         textView.typingAttributes = [.font: font,
                                      .foregroundColor: UIColor.compound.textPrimary]
         
-        // Swapping the inputView is a native keyboard change (like switching to the system emoji
-        // keyboard): when the heights match the content just swaps in place, and any height
-        // difference is animated by the system itself. Height changes of the presented view also
-        // need a reload for the input system to re-measure and animate the keyboard frame.
-        if textView.inputView !== customInputView {
-            textView.inputView = customInputView
-            context.coordinator.lastReloadedInputViewHeight = customInputViewHeight
-            textView.reloadInputViews()
-        } else if customInputView != nil, context.coordinator.lastReloadedInputViewHeight != customInputViewHeight {
-            context.coordinator.lastReloadedInputViewHeight = customInputViewHeight
+        let inputView: UIView? = suppressesSystemKeyboard ? context.coordinator.blankInputView : nil
+        if textView.inputView !== inputView {
+            textView.inputView = inputView
             textView.reloadInputViews()
         }
         
@@ -185,9 +175,8 @@ private struct UITextViewWrapper: UIViewRepresentable {
         private let keyHandler: GenericKeyHandler
         private let pasteHandler: PasteHandler
         
-        /// The custom input view height at the last `reloadInputViews()`, so height changes can
-        /// be detected across renders — see `updateUIView`.
-        var lastReloadedInputViewHeight: CGFloat = 0
+        /// An empty placeholder `inputView` — see `suppressesSystemKeyboard`.
+        let blankInputView = UIView(frame: .zero)
         
         init(text: Binding<NSAttributedString>,
              selectedRange: Binding<NSRange>,

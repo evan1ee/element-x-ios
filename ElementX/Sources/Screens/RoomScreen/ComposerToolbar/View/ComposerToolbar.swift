@@ -21,8 +21,8 @@ struct ComposerToolbar: View {
     @Environment(\.composerBottomSafeAreaInset) private var composerBottomSafeAreaInset
     
     @ObservedObject var context: ComposerToolbarViewModel.Context
-    /// Measures the real system keyboard so the media panel can present itself as a keyboard of
-    /// exactly matching size.
+    /// Measures the real system keyboard: its height, so the media panel can size itself to take
+    /// the keyboard's place exactly, and its animation, so everything here moves on its clock.
     @StateObject private var keyboardHeightObserver = KeyboardHeightObserver()
     
     @FocusState private var composerFocused: Bool
@@ -50,13 +50,31 @@ struct ComposerToolbar: View {
     /// very first launch.
     @AppStorage("composerLastKeyboardHeight") private var lastKeyboardHeight = 336.0
     
-    /// The panel's compact height, captured from the live keyboard at the moment the panel opens
-    /// so the keyboard→panel swap is exactly height-neutral.
+    /// The panel's compact height: whatever the keyboard measures, so that the panel can take the
+    /// keyboard's place without the composer moving by so much as a point.
     @State private var compactMediaPanelHeight: CGFloat = 336
     
+    /// Whether the panel sits at its expanded detent.
+    @State private var isMediaPanelExpanded = false
+    
+    /// Whether the panel is claiming space below the composer. Owned locally rather than read
+    /// straight from `isMediaMode` so that both opening and closing animate: the panel is mounted
+    /// (at zero height) one update before this turns on, and stays mounted until `isMediaPanelMounted`
+    /// lets go of it, one animation after it turns off.
+    @State private var isMediaPanelOpen = false
+    
+    /// Keeps the panel alive while it animates away — see `closeMediaPanel`.
+    @State private var isMediaPanelMounted = false
+    
+    /// Unmounts the panel once it has finished animating away — see `closeMediaPanel`.
+    @State private var mediaPanelUnmountTask: Task<Void, Never>?
+    
+    /// Whether the media panel's search field is focused.
+    @State private var isMediaSearchFocused = false
+    
     /// The tallest the media panel may grow while keeping the composer fully visible. The panel
-    /// presents as a keyboard, which reaches the bottom of the screen — hence adding the bottom
-    /// safe-area inset to the space between the nav bar and the home indicator.
+    /// reaches the bottom of the screen — hence adding the bottom safe-area inset to the space
+    /// between the nav bar and the home indicator.
     private var expandedMediaPanelHeight: CGFloat {
         let smallest = compactMediaPanelHeight
         guard availableComposerHeight.isFinite else { return max(smallest, 720) }
@@ -69,18 +87,34 @@ struct ComposerToolbar: View {
         [min(compactMediaPanelHeight, expandedMediaPanelHeight), expandedMediaPanelHeight]
     }
     
-    /// The media panel's current height while open. Reset to the compact detent on every open so
-    /// the panel always starts exactly where the keyboard was.
-    @State private var mediaPanelHeight: CGFloat = 336
+    /// How much of the screen the panel claims, measured from the bottom; zero when it's closed.
+    private var mediaPanelFootprint: CGFloat {
+        guard isMediaPanelOpen else { return 0 }
+        return isMediaPanelExpanded ? expandedMediaPanelHeight : compactMediaPanelHeight
+    }
     
-    /// Creates and retains the `UIInputView` that presents the media panel as the composer's
-    /// keyboard — see `MediaPanelInputView` for why this makes toggling jump-free.
-    @State private var panelInputViewProvider = MediaPanelInputViewProvider()
+    /// The whole input area below the composer bar, measured from the bottom of the screen: the
+    /// panel, the keyboard, or whichever of the two is taller — the keyboard simply lies over the
+    /// panel rather than displacing it.
+    ///
+    /// This single number is the composer's distance from the bottom of the screen, and it is the
+    /// only thing that ever moves the composer. Every transition is one change to it, animated
+    /// once on the keyboard's own clock, which is why focus handoffs (into search, out of search,
+    /// back to the composer) move nothing at all: the taller of the two simply stays taller.
+    private var inputAreaHeight: CGFloat {
+        max(keyboardHeightObserver.overlap, mediaPanelFootprint)
+    }
     
-    /// Whether the media panel's search field is focused. Fields inside an input view can't take
-    /// focus (that would dismiss the keyboard hosting them), so while searching the panel is
-    /// re-hosted inline below the composer instead, above the real keyboard.
-    @State private var isMediaSearchFocused = false
+    /// The panel's height within the composer's container, which already sits above the home
+    /// indicator.
+    private var mediaPanelInsetHeight: CGFloat {
+        max(mediaPanelFootprint - composerBottomSafeAreaInset, 0)
+    }
+    
+    /// Whatever the keyboard needs beyond the space the panel already provides.
+    private var keyboardInsetHeight: CGFloat {
+        max(inputAreaHeight - composerBottomSafeAreaInset - mediaPanelInsetHeight, 0)
+    }
     
     private var isMediaMode: Bool {
         context.viewState.inputMode.isMedia
@@ -91,81 +125,99 @@ struct ComposerToolbar: View {
             composerBar
                 .readHeight($composerBarHeight)
             
-            if isMediaMode, isMediaSearchFocused {
-                inlineSearchPanel
+            if isMediaMode || isMediaPanelMounted {
+                mediaPanel
             }
         }
+        // The composer makes its own room for the keyboard (the screen opts out of SwiftUI's
+        // automatic avoidance) so that the keyboard and the panel resolve to one animated height
+        // instead of two that have to cancel each other out.
+        .padding(.bottom, keyboardInsetHeight)
+        .animation(keyboardHeightObserver.animation, value: keyboardInsetHeight)
+        .onAppear {
+            guard keyboardHeightObserver.height == nil else { return }
+            compactMediaPanelHeight = lastKeyboardHeight
+        }
         .onChange(of: keyboardHeightObserver.height) { _, newHeight in
-            // Remember the real keyboard's height for opens that happen before it has shown.
+            // Follow the real keyboard while it's the one on screen, so the panel is always
+            // pre-sized to the keyboard whose place it takes.
             guard let newHeight, !isMediaMode else { return }
             lastKeyboardHeight = newHeight
+            compactMediaPanelHeight = newHeight
         }
-        .onChange(of: mediaPanelHeight) { _, newHeight in
-            // Forward height changes to the input view's constraint; the composer's text field
-            // then reloads its input views (it receives the height too), which is what makes the
-            // input system animate the keyboard frame to the new size.
-            panelInputViewProvider.view?.setHeight(newHeight)
-        }
-        .onChange(of: expandedMediaPanelHeight) { _, newMax in
-            // Keep the height within what the current screen allows (e.g. after rotation).
-            guard isMediaMode else { return }
-            mediaPanelHeight = min(mediaPanelHeight, newMax)
-        }
-        .onChange(of: context.viewState.inputMode.isMedia) { _, isMedia in
+        .onChange(of: isMediaMode) { _, isMedia in
             if isMedia {
-                // Match the panel to the keyboard it's replacing, measured live when possible,
-                // so the swap doesn't change the input area's height at all.
-                let keyboardOverlap = keyboardHeightObserver.overlap
-                compactMediaPanelHeight = keyboardOverlap > 200 ? keyboardOverlap : lastKeyboardHeight
-                mediaPanelHeight = compactMediaPanelHeight
-                panelInputViewProvider.view?.setHeight(compactMediaPanelHeight)
-                // The panel only shows while the composer holds focus (it's the composer's
-                // keyboard), e.g. when the panel is opened without the keyboard on screen.
-                composerFocused = true
+                openMediaPanel()
             } else {
-                isMediaSearchFocused = false
+                closeMediaPanel()
             }
         }
         .onChange(of: isMediaSearchFocused) { _, isFocused in
-            // Leaving search returns focus to the composer, re-presenting the panel (which was
-            // inline while searching) as its keyboard.
-            guard !isFocused, isMediaMode else { return }
-            composerFocused = true
+            // The search keyboard is about to cover the panel, so expand it to keep the results in
+            // view. At the expanded detent this is already true and nothing moves at all.
+            guard isMediaMode, isFocused, !isMediaPanelExpanded else { return }
+            withAnimation(keyboardHeightObserver.animation) {
+                isMediaPanelExpanded = true
+            }
         }
     }
     
-    /// The media panel presented as the composer's keyboard.
-    private var panelInputView: UIView {
-        panelInputViewProvider.view(updatedWith: AnyView(keyboardHostedPanel), height: mediaPanelHeight)
-    }
-    
-    private var keyboardHostedPanel: some View {
-        MediaInputPanel(context: context,
-                        height: $mediaPanelHeight,
-                        detents: mediaPanelDetents,
-                        isSearchFocused: $isMediaSearchFocused) {
-            isMediaSearchFocused = true
+    /// Opens the panel at exactly the height of the keyboard it replaces, so that dismissing the
+    /// keyboard doesn't move the composer — the keyboard slides away and uncovers the panel that
+    /// is already sitting behind it.
+    private func openMediaPanel() {
+        let keyboardOverlap = keyboardHeightObserver.overlap
+        if keyboardOverlap > 200 {
+            compactMediaPanelHeight = keyboardOverlap
         }
-        .background(Color.compound.bgCanvasDefault)
+        
+        mediaPanelUnmountTask?.cancel()
+        isMediaPanelMounted = true
+        
+        withAnimation(keyboardHeightObserver.animation) {
+            isMediaPanelExpanded = false
+            isMediaPanelOpen = true
+        }
+        
+        // The composer stays first responder with its keyboard suppressed, so the caret and any
+        // selection survive browsing the panel.
+        composerFocused = true
     }
     
-    /// The panel while its search field is in use: hosted inline below the composer (the system
-    /// keyboard serves the search field), sized so its bottom meets the top of the keyboard.
-    private var inlineSearchPanel: some View {
+    /// Closes the panel. It collapses to the compact detent — the keyboard's own height, which the
+    /// keyboard is rising into at that very moment — so the composer makes one continuous move
+    /// down and then stops dead. Only once that has finished does the panel give up its space, by
+    /// which point the keyboard is already holding it and nothing moves.
+    private func closeMediaPanel() {
+        isMediaSearchFocused = false
+        
+        withAnimation(keyboardHeightObserver.animation) {
+            isMediaPanelExpanded = false
+        }
+        
+        mediaPanelUnmountTask?.cancel()
+        mediaPanelUnmountTask = Task {
+            try? await Task.sleep(for: .seconds(keyboardHeightObserver.animationDuration))
+            guard !Task.isCancelled else { return }
+            withAnimation(keyboardHeightObserver.animation) {
+                isMediaPanelOpen = false
+            }
+            
+            try? await Task.sleep(for: .seconds(keyboardHeightObserver.animationDuration))
+            guard !Task.isCancelled else { return }
+            isMediaPanelMounted = false
+        }
+    }
+    
+    private var mediaPanel: some View {
         MediaInputPanel(context: context,
-                        height: $mediaPanelHeight,
+                        isExpanded: $isMediaPanelExpanded,
+                        height: mediaPanelFootprint,
                         detents: mediaPanelDetents,
-                        isSearchFocused: $isMediaSearchFocused,
-                        searchAutoFocus: true)
-            .frame(height: inlineSearchPanelHeight)
+                        searchFocus: $isMediaSearchFocused)
+            .frame(height: mediaPanelInsetHeight, alignment: .top)
             .clipped()
-            .animation(.easeInOut(duration: 0.25), value: inlineSearchPanelHeight)
-    }
-    
-    private var inlineSearchPanelHeight: CGFloat {
-        let keyboardSpacing = max(keyboardHeightObserver.overlap - composerBottomSafeAreaInset, 0)
-        let available = availableComposerHeight - composerBarHeight - 8 - keyboardSpacing
-        return max(min(mediaPanelHeight - composerBottomSafeAreaInset, available), 150)
+            .animation(keyboardHeightObserver.animation, value: mediaPanelInsetHeight)
     }
     
     private var composerBar: some View {
@@ -360,8 +412,7 @@ struct ComposerToolbar: View {
                         composerFormattingEnabled: context.composerFormattingEnabled,
                         showResizeGrabber: context.composerFormattingEnabled,
                         isExpanded: $context.composerExpanded,
-                        customInputView: isMediaMode ? panelInputView : nil,
-                        customInputViewHeight: mediaPanelHeight,
+                        suppressesSystemKeyboard: isMediaMode,
                         showsBackground: showsBackground) {
             sendMessage()
         } editAction: {

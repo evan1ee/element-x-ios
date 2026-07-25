@@ -204,6 +204,16 @@ class TimelineTableViewController: UIViewController {
         
         // The tableview is flipped to display the newest items at the bottom.
         tableView.transform = CGAffineTransform(scaleX: 1, y: -1)
+        
+        // iOS 26 blurs the scroll view wherever it meets a bar, sized to that bar. The composer is
+        // a bottom bar as tall as the keyboard it makes room for, which turns the effect into a
+        // wash over the whole timeline. Nothing is lost by dropping it: the navigation bar and the
+        // composer both draw an opaque background of their own.
+        if #available(iOS 26.0, *) {
+            tableView.topEdgeEffect.isHidden = true
+            tableView.bottomEdgeEffect.isHidden = true
+        }
+        
         view.addSubview(tableView)
         
         // Prevents XCUITest from invoking the diffable dataSource's cellProvider

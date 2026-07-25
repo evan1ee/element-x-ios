@@ -17,11 +17,13 @@ struct KeyboardMediaToggleButton: View {
     
     var body: some View {
         Button(action: action) {
-            // Explicitly sized (matching the "+" attachment button) so the frame doesn't shift
-            // between the two glyphs, which otherwise have slightly different intrinsic bounds.
             CompoundIcon(inputMode.isMedia ? \.keyboard : \.reaction,
                          size: Compound.supportsGlass ? .medium : .small,
                          relativeTo: .compound.headingLG)
+                // The glyph swaps while the keyboard, panel and composer are mid-transition. Left
+                // to inherit that transaction the button interpolates its own change and reads as
+                // detached from the toolbar, so it opts out and swaps instantly like Voice/Send.
+                .transaction { $0.animation = nil }
         }
         .buttonStyle(ComposerToolbarButtonStyle())
         .accessibilityLabel(inputMode.isMedia ? UntranslatedL10n.a11yShowKeyboard : UntranslatedL10n.a11yShowMediaInput)

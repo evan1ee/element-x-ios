@@ -14,19 +14,18 @@ import SwiftUI
 struct MediaInputPanel: View {
     @ObservedObject var context: ComposerToolbarViewModel.Context
     
-    /// The panel's live height, owned by the composer so it survives tab switches and reopening.
-    @Binding var height: CGFloat
+    /// Whether the panel is at its expanded detent, owned by the composer so that the panel, the
+    /// keyboard and the composer all move as one.
+    @Binding var isExpanded: Bool
+    /// The panel's current height, so the grabber's drag is measured from where it started.
+    let height: CGFloat
     /// The two heights the grabber snaps to: compact first, expanded second.
     let detents: [CGFloat]
-    /// Whether the search field is focused, owned by the composer so it can lift the panel above
-    /// the system keyboard that the focused field summons.
-    @Binding var isSearchFocused: Bool
-    /// See `MediaSearchBar.tapOverride` — set while the panel is presented as an input view.
-    var searchTapOverride: (() -> Void)?
-    /// See `MediaSearchBar.autoFocus` — set while the panel is presented inline for searching.
-    var searchAutoFocus = false
+    /// See `MediaSearchBar.focus` — lets the composer expand the panel the moment the search
+    /// field takes focus, before the keyboard that would otherwise cover it appears.
+    var searchFocus: Binding<Bool>?
     
-    /// The height when the current grabber drag began, so it tracks the finger from where it started.
+    /// The height when the current grabber drag began, so it snaps relative to where it started.
     @State private var dragStartHeight: CGFloat?
     
     /// How far the user must pull down past a grid's top before the panel collapses back to
@@ -60,10 +59,7 @@ struct MediaInputPanel: View {
             if selectedTab != .sticker {
                 MediaSearchBar(query: $context.mediaSearchQuery,
                                tab: selectedTab,
-                               autoFocus: searchAutoFocus,
-                               tapOverride: searchTapOverride) { isFocused in
-                    isSearchFocused = isFocused
-                }
+                               focus: searchFocus)
             }
             
             content
@@ -71,17 +67,17 @@ struct MediaInputPanel: View {
         }
         .background(Color.compound.bgCanvasDefault)
         .onChange(of: selectedTabScrollOffset) { _, offset in
-            guard dragStartHeight == nil, let compact = detents.first, let expanded = detents.last else { return }
+            guard dragStartHeight == nil else { return }
             
-            // The height change resizes the keyboard the panel presents as; the system animates
-            // that frame change itself, so no SwiftUI animation is needed here.
-            if offset > 0, height < expanded {
+            // The composer animates the resulting height change, whether the panel is presenting
+            // as a keyboard (the system animates the frame) or hosted inline.
+            if offset > 0, !isExpanded {
                 // The user scrolled into the visible grid: grow to the expanded detent so the
                 // content gets the room it clearly needs.
-                height = expanded
-            } else if offset < -collapsePullThreshold, height > compact {
+                isExpanded = true
+            } else if offset < -collapsePullThreshold, isExpanded {
                 // The user pulled down past the grid's top: return to the compact height.
-                height = compact
+                isExpanded = false
             }
         }
     }
@@ -109,25 +105,17 @@ struct MediaInputPanel: View {
                 }
             }
             .onEnded { value in
-                snap(from: dragStartHeight, predictedTranslation: value.predictedEndTranslation.height)
+                isExpanded = expands(from: dragStartHeight ?? height,
+                                     predictedTranslation: value.predictedEndTranslation.height)
                 dragStartHeight = nil
             }
     }
     
-    private func snap(from startHeight: CGFloat?, predictedTranslation: CGFloat) {
-        let start = startHeight ?? height
-        let predicted = start - predictedTranslation
-        // The system animates the resulting keyboard frame change itself.
-        height = nearestDetent(to: clampedHeight(predicted))
-    }
-    
-    private func clampedHeight(_ value: CGFloat) -> CGFloat {
-        guard let min = detents.first, let max = detents.last else { return value }
-        return Swift.min(Swift.max(value, min), max)
-    }
-    
-    private func nearestDetent(to value: CGFloat) -> CGFloat {
-        detents.min { abs($0 - value) < abs($1 - value) } ?? value
+    /// Whether the drag's projected end lands nearer the expanded detent than the compact one.
+    private func expands(from startHeight: CGFloat, predictedTranslation: CGFloat) -> Bool {
+        guard let compact = detents.first, let expanded = detents.last else { return isExpanded }
+        let predicted = min(max(startHeight - predictedTranslation, compact), expanded)
+        return abs(expanded - predicted) < abs(compact - predicted)
     }
     
     /// All three tabs stay mounted the whole time the panel exists; only the selected one is

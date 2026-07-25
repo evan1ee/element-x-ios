@@ -9,19 +9,15 @@ import Compound
 import SwiftUI
 
 /// The media panel's search field. Unlike the composer, this is a normal, independent text
-/// field: focusing it is the one case where the real system keyboard is allowed to appear while
-/// the panel is up (the panel then lifts above the keyboard, per `onFocusChange`).
+/// field: focusing it is the one case where the real system keyboard appears while the panel is
+/// up, and the panel expands so the keyboard covers no more than its lower half.
 struct MediaSearchBar: View {
     @Binding var query: String
     let tab: MediaTab
-    /// Focus the field as soon as it appears — used when the panel is re-hosted inline so the
-    /// search the user just requested starts immediately.
-    var autoFocus = false
-    /// When set, the field itself can't be focused; tapping the bar calls this instead. Used
-    /// while the panel is presented as the composer's `inputView`, where focusing a field that
-    /// lives inside the keyboard would dismiss the very keyboard hosting it.
-    var tapOverride: (() -> Void)?
-    var onFocusChange: (Bool) -> Void = { _ in }
+    /// Two-way focus control. When bound, the field focuses/blurs to match it and reports its own
+    /// focus changes back into it, so the composer can expand the panel the moment focus moves —
+    /// before the keyboard appears — rather than a beat later.
+    var focus: Binding<Bool>?
     
     @FocusState private var isFocused: Bool
     
@@ -35,9 +31,8 @@ struct MediaSearchBar: View {
                 .autocorrectionDisabled()
                 .submitLabel(.search)
                 .focused($isFocused)
-                .allowsHitTesting(tapOverride == nil)
                 .onChange(of: isFocused) { _, newValue in
-                    onFocusChange(newValue)
+                    focus?.wrappedValue = newValue
                 }
             
             if !query.isEmpty {
@@ -55,15 +50,19 @@ struct MediaSearchBar: View {
         .modifier(GlassCapsuleBackground())
         .contentShape(Rectangle())
         .onTapGesture {
-            tapOverride?()
+            isFocused = true
         }
         .padding(.horizontal, 12)
         .padding(.top, 12)
         .padding(.bottom, 4)
         .onAppear {
-            guard autoFocus else { return }
-            // Deferred a beat so the field is fully in the hierarchy before taking focus.
-            Task { isFocused = true }
+            if focus?.wrappedValue == true {
+                isFocused = true
+            }
+        }
+        .onChange(of: focus?.wrappedValue) { _, newValue in
+            guard let newValue, newValue != isFocused else { return }
+            isFocused = newValue
         }
     }
     
