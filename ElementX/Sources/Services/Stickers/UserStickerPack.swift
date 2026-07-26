@@ -28,10 +28,21 @@ struct UserStickerPack: Codable, Equatable {
         var usage: [String]?
         /// SHA-256 of the originally uploaded file, used to avoid duplicate uploads.
         var sha256: String?
+        /// When the sticker was added, in milliseconds since the epoch, so the picker can show the
+        /// most recent first. The pack is a dictionary and MSC2545 defines no ordering, so without
+        /// this there's nothing to sort on. Absent on entries added before it was recorded, and on
+        /// packs written by other clients.
+        var addedAt: UInt64?
         
         enum CodingKeys: String, CodingKey {
             case url, body, info, usage
             case sha256 = "io.element.sha256"
+            case addedAt = "io.element.added_at"
+        }
+        
+        /// The value to stamp on a sticker being added right now.
+        static var currentTimestamp: UInt64 {
+            UInt64(Date().timeIntervalSince1970 * 1000)
         }
         
         var isUsableAsSticker: Bool {
@@ -64,9 +75,23 @@ struct UserStickerPack: Codable, Equatable {
         images = try container.decodeIfPresent([String: Image].self, forKey: .images) ?? [:]
     }
     
+    /// The pack's stickers, most recently added first.
     var stickers: [Sticker] {
         images
             .filter(\.value.isUsableAsSticker)
+            .sorted { lhs, rhs in
+                switch (lhs.value.addedAt, rhs.value.addedAt) {
+                case let (lhsAddedAt?, rhsAddedAt?):
+                    lhsAddedAt > rhsAddedAt
+                case (.some, nil):
+                    // Anything undated predates the first sticker that recorded a timestamp.
+                    true
+                case (nil, .some):
+                    false
+                case (nil, nil):
+                    lhs.key < rhs.key
+                }
+            }
             .map { shortcode, image in
                 Sticker(id: shortcode,
                         body: image.body ?? shortcode,

@@ -65,7 +65,10 @@ struct TimelineItemMenuActionProvider {
             actions.append(.forward(itemID: item.id))
         }
         
-        if timelineItem is StickerRoomTimelineItem, !item.isOutgoing {
+        // Stickers and GIFs can both be kept, whoever sent them — collecting one you sent yourself
+        // is the natural way to hold on to a GIF you found in the picker. The event has to exist on
+        // the server first, since the pack stores its `mxc://` URI.
+        if item.isRemoteMessage, timelineItem is StickerRoomTimelineItem || (timelineItem as? ImageRoomTimelineItem)?.content.isGIF == true {
             actions.append(.collectSticker)
         }
         

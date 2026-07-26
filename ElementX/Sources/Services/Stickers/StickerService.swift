@@ -112,7 +112,8 @@ class StickerService: StickerServiceProtocol {
                                                                                   size: imageInfo.size,
                                                                                   mimetype: imageInfo.mimetype),
                                                                       usage: [UserStickerPack.stickerUsage],
-                                                                      sha256: hash)
+                                                                      sha256: hash,
+                                                                      addedAt: UserStickerPack.Image.currentTimestamp)
             knownHashes.insert(hash)
             summary.added += 1
         }
@@ -208,7 +209,8 @@ class StickerService: StickerServiceProtocol {
                                                                                   size: imageInfo.size,
                                                                                   mimetype: imageInfo.mimetype),
                                                                       usage: [UserStickerPack.stickerUsage],
-                                                                      sha256: hash)
+                                                                      sha256: hash,
+                                                                      addedAt: UserStickerPack.Image.currentTimestamp)
             
             if case .failure = await save(pack) {
                 return StickerBatchSummary(failed: 1)
@@ -297,7 +299,8 @@ class StickerService: StickerServiceProtocol {
         pack.images[shortcode] = .init(url: url,
                                        body: body,
                                        info: .init(w: width, h: height, size: fileSize, mimetype: mimeType),
-                                       usage: [UserStickerPack.stickerUsage])
+                                       usage: [UserStickerPack.stickerUsage],
+                                       addedAt: UserStickerPack.Image.currentTimestamp)
         
         return await save(pack)
     }
@@ -317,7 +320,16 @@ class StickerService: StickerServiceProtocol {
     /// The last pack we loaded or saved. Account data reads lag writes (the change
     /// only lands locally once it syncs back), so within a session we trust this
     /// rather than re-reading a stale value straight after a mutation.
-    private var cachedPack: UserStickerPack?
+    ///
+    /// Shared by every instance for a given user: the timeline, the composer's panel, the picker
+    /// and the discovery screen each build their own service, so a per-instance cache meant a
+    /// sticker added on one screen stayed invisible to the others until the write synced back.
+    private static var cachedPacks: [String: UserStickerPack] = [:]
+    
+    private var cachedPack: UserStickerPack? {
+        get { Self.cachedPacks[clientProxy.userID] }
+        set { Self.cachedPacks[clientProxy.userID] = newValue }
+    }
     
     private func loadUserPack() async -> UserStickerPack {
         if let cachedPack {

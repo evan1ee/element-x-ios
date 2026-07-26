@@ -21,4 +21,14 @@ nonisolated struct ImageRoomTimelineItemContent: Hashable {
     
     var blurhash: String?
     var contentType: UTType?
+    
+    /// Whether this is an animated GIF, which the app treats like a sticker: tapping it opens
+    /// nothing, and it can be added to the user's pack. `contentType` is absent on events that
+    /// didn't declare a mimetype, so the filename is the fallback.
+    var isGIF: Bool {
+        if let contentType {
+            return contentType.conforms(to: .gif)
+        }
+        return (filename as NSString).pathExtension.lowercased() == "gif"
+    }
 }

@@ -200,8 +200,7 @@ class TimelineInteractionHandler {
         case .downloadMedia:
             break // Handled inline in the media preview screen.
         case .collectSticker:
-            guard let stickerItem = timelineItem as? StickerRoomTimelineItem else { return }
-            collectSticker(from: stickerItem)
+            collectSticker(from: timelineItem)
         case .translate:
             guard let messageTimelineItem = timelineItem as? EventBasedMessageTimelineItemProtocol else { return }
             actionsSubject.send(.showTranslation(text: messageTimelineItem.body))
@@ -212,14 +211,30 @@ class TimelineInteractionHandler {
         }
     }
     
-    private func collectSticker(from item: StickerRoomTimelineItem) {
+    /// Adds a sticker or a GIF to the user's pack. Both are images on the homeserver, so the two
+    /// item types unwrap to the same pair of values.
+    private func collectSticker(from timelineItem: RoomTimelineItemProtocol) {
+        let body: String
+        let imageInfo: ImageInfoProxy
+        
+        switch timelineItem {
+        case let stickerItem as StickerRoomTimelineItem:
+            body = stickerItem.body
+            imageInfo = stickerItem.imageInfo
+        case let imageItem as ImageRoomTimelineItem where imageItem.content.isGIF:
+            body = imageItem.content.filename
+            imageInfo = imageItem.content.imageInfo
+        default:
+            return
+        }
+        
         Task {
-            let result = await stickerService.collectSticker(body: item.body,
-                                                             url: item.imageInfo.source.url.absoluteString,
-                                                             width: (item.imageInfo.size?.width).map(UInt64.init),
-                                                             height: (item.imageInfo.size?.height).map(UInt64.init),
-                                                             fileSize: item.imageInfo.fileSize.map(UInt64.init),
-                                                             mimeType: item.imageInfo.mimeType)
+            let result = await stickerService.collectSticker(body: body,
+                                                             url: imageInfo.source.url.absoluteString,
+                                                             width: (imageInfo.size?.width).map(UInt64.init),
+                                                             height: (imageInfo.size?.height).map(UInt64.init),
+                                                             fileSize: imageInfo.fileSize.map(UInt64.init),
+                                                             mimeType: imageInfo.mimeType)
             switch result {
             case .success:
                 userIndicatorController.submitIndicator(UserIndicator(title: UntranslatedL10n.commonStickerAdded, icon: \.check))
@@ -568,6 +583,9 @@ class TimelineInteractionHandler {
                                                              timeoutDate: item.content.timeoutDate)
             return .displayLiveLocation(sender: item.sender, initialLiveLocationShare: initialLiveLocationShare)
         case let item as ImageRoomTimelineItem:
+            // A GIF behaves like a sticker rather than a photo: it already animates in place, so
+            // tapping it does nothing instead of opening a full-screen preview of a looping image.
+            guard !item.content.isGIF else { return .none }
             return await mediaPreviewAction(for: item, messageTypes: [.image, .video])
         case let item as VideoRoomTimelineItem:
             return await mediaPreviewAction(for: item, messageTypes: [.image, .video])
