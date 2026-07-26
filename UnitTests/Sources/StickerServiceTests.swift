@@ -426,7 +426,9 @@ struct StickerServiceTests {
         service = StickerService(clientProxy: clientProxy,
                                  mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: AppSettings.volatile()),
                                  bundle: bundle,
-                                 userDefaults: userDefaults)
+                                 userDefaults: userDefaults,
+                                 // Its own cache, so a pack written by one test can't leak into the next.
+                                 packCache: StickerPackCache())
     }
     
     private func makeTestImageFile(named name: String, color: UIColor = .red) throws -> URL {

@@ -10,6 +10,23 @@ import Foundation
 import ImageIO
 import MatrixRustSDK
 
+/// The last known pack per user, held outside `StickerService` because a session builds one of
+/// those per screen — the timeline, the composer's panel, the picker and the discovery screen —
+/// and a sticker added on any of them has to be visible to the rest straight away.
+///
+/// Passed in rather than reached for so that tests get an empty one; `.shared` is what the app
+/// itself uses.
+final class StickerPackCache {
+    static let shared = StickerPackCache()
+    
+    private var packs: [String: UserStickerPack] = [:]
+    
+    subscript(userID: String) -> UserStickerPack? {
+        get { packs[userID] }
+        set { packs[userID] = newValue }
+    }
+}
+
 /// Sends stickers and manages the user's own MSC2545 sticker pack.
 ///
 /// Bundled stickers are uploaded to the homeserver the first time they're sent
@@ -21,6 +38,7 @@ class StickerService: StickerServiceProtocol {
     private let clientProxy: ClientProxyProtocol
     private let mediaUploadingPreprocessor: MediaUploadingPreprocessor
     private let userDefaults: UserDefaults
+    private let packCache: StickerPackCache
     
     let builtInStickers: [Sticker]
     
@@ -32,10 +50,12 @@ class StickerService: StickerServiceProtocol {
     init(clientProxy: ClientProxyProtocol,
          mediaUploadingPreprocessor: MediaUploadingPreprocessor,
          bundle: Bundle = Bundle(for: StickerService.self),
-         userDefaults: UserDefaults = .standard) {
+         userDefaults: UserDefaults = .standard,
+         packCache: StickerPackCache = .shared) {
         self.clientProxy = clientProxy
         self.mediaUploadingPreprocessor = mediaUploadingPreprocessor
         self.userDefaults = userDefaults
+        self.packCache = packCache
         builtInStickers = Self.loadBuiltInStickers(from: bundle)
     }
     
@@ -321,14 +341,10 @@ class StickerService: StickerServiceProtocol {
     /// only lands locally once it syncs back), so within a session we trust this
     /// rather than re-reading a stale value straight after a mutation.
     ///
-    /// Shared by every instance for a given user: the timeline, the composer's panel, the picker
-    /// and the discovery screen each build their own service, so a per-instance cache meant a
-    /// sticker added on one screen stayed invisible to the others until the write synced back.
-    private static var cachedPacks: [String: UserStickerPack] = [:]
-    
+    /// Held in `StickerPackCache` rather than here so that every screen's service agrees on it.
     private var cachedPack: UserStickerPack? {
-        get { Self.cachedPacks[clientProxy.userID] }
-        set { Self.cachedPacks[clientProxy.userID] = newValue }
+        get { packCache[clientProxy.userID] }
+        set { packCache[clientProxy.userID] = newValue }
     }
     
     private func loadUserPack() async -> UserStickerPack {
