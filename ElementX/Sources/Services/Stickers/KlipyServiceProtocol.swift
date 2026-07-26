@@ -21,6 +21,20 @@ struct KlipySticker: Identifiable, Equatable {
     let mimeType: String
 }
 
+extension KlipySticker {
+    /// A filename for the downloaded bytes. The upload pipeline reads the media's type from the
+    /// path extension, so it has to keep the variant's own; the title only makes the resulting
+    /// event readable, hence stripping anything that can't sit in a path and capping the length.
+    var uploadFilename: String {
+        let fileExtension = fileURL.pathExtension.isEmpty ? "gif" : fileURL.pathExtension
+        let name = title.components(separatedBy: CharacterSet(charactersIn: "/:\\"))
+            .joined(separator: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .prefix(60)
+        return "\(name.isEmpty ? "GIF" : String(name)).\(fileExtension)"
+    }
+}
+
 struct KlipySearchResults: Equatable {
     var stickers: [KlipySticker] = []
     var hasNextPage = false

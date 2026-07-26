@@ -132,10 +132,10 @@ struct MediaInputPanel: View {
             
             GIFTabView(gifs: context.viewState.mediaGIFs,
                        isLoading: context.viewState.mediaGIFsLoading,
-                       sendingID: context.viewState.sendingMediaItemID,
                        onSelect: { context.send(viewAction: .sendMediaGIF($0)) },
                        onAddToStickers: { context.send(viewAction: .addMediaGIF($0)) },
                        onLoadMore: { context.send(viewAction: .loadMoreGIFs) },
+                       onPrefetch: { context.send(viewAction: .prefetchMediaGIF($0)) },
                        onScrollOffsetChange: { gifScrollOffset = $0 })
                 .opacity(selectedTab == .gif ? 1 : 0)
                 .allowsHitTesting(selectedTab == .gif)

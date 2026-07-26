@@ -11572,6 +11572,48 @@ nonisolated class StickerServiceMock: StickerServiceProtocol, @unchecked Sendabl
             return sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValue
         }
     }
+    //MARK: - sendImage
+
+    private let sendImageDataFilenameInCallsCountLock = NSLock()
+    private nonisolated(unsafe) var sendImageDataFilenameInUnderlyingCallsCount = 0
+    var sendImageDataFilenameInCallsCount: Int {
+        get { sendImageDataFilenameInCallsCountLock.withLock { sendImageDataFilenameInUnderlyingCallsCount } }
+        set { sendImageDataFilenameInCallsCountLock.withLock { sendImageDataFilenameInUnderlyingCallsCount = newValue } }
+    }
+    var sendImageDataFilenameInCalled: Bool {
+        return sendImageDataFilenameInCallsCount > 0
+    }
+    private let sendImageDataFilenameInReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var sendImageDataFilenameInUnderlyingReceivedArguments: (data: Data, filename: String, timelineController: StickerSending)?
+    var sendImageDataFilenameInReceivedArguments: (data: Data, filename: String, timelineController: StickerSending)? {
+        get { sendImageDataFilenameInReceivedArgumentsLock.withLock { sendImageDataFilenameInUnderlyingReceivedArguments } }
+        set { sendImageDataFilenameInReceivedArgumentsLock.withLock { sendImageDataFilenameInUnderlyingReceivedArguments = newValue } }
+    }
+    private let sendImageDataFilenameInReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var sendImageDataFilenameInUnderlyingReceivedInvocations: [(data: Data, filename: String, timelineController: StickerSending)] = []
+    var sendImageDataFilenameInReceivedInvocations: [(data: Data, filename: String, timelineController: StickerSending)] {
+        get { sendImageDataFilenameInReceivedInvocationsLock.withLock { sendImageDataFilenameInUnderlyingReceivedInvocations } }
+        set { sendImageDataFilenameInReceivedInvocationsLock.withLock { sendImageDataFilenameInUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let sendImageDataFilenameInReturnValueLock = NSLock()
+    private nonisolated(unsafe) var sendImageDataFilenameInUnderlyingReturnValue: Result<Void, StickerServiceError>!
+    var sendImageDataFilenameInReturnValue: Result<Void, StickerServiceError>! {
+        get { sendImageDataFilenameInReturnValueLock.withLock { sendImageDataFilenameInUnderlyingReturnValue } }
+        set { sendImageDataFilenameInReturnValueLock.withLock { sendImageDataFilenameInUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var sendImageDataFilenameInClosure: ((Data, String, StickerSending) async -> Result<Void, StickerServiceError>)?
+
+    @concurrent func sendImage(data: Data, filename: String, in timelineController: StickerSending) async -> Result<Void, StickerServiceError> {
+        sendImageDataFilenameInCallsCountLock.withLock { sendImageDataFilenameInUnderlyingCallsCount += 1 }
+        sendImageDataFilenameInReceivedArguments = (data: data, filename: filename, timelineController: timelineController)
+        sendImageDataFilenameInReceivedInvocationsLock.withLock { sendImageDataFilenameInUnderlyingReceivedInvocations.append((data: data, filename: filename, timelineController: timelineController)) }
+        if let sendImageDataFilenameInClosure = sendImageDataFilenameInClosure {
+            return await sendImageDataFilenameInClosure(data, filename, timelineController)
+        } else {
+            return sendImageDataFilenameInReturnValue
+        }
+    }
     //MARK: - addExternalSticker
 
     private let addExternalStickerImageDataBodyWidthHeightMimeTypeCallsCountLock = NSLock()

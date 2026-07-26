@@ -71,8 +71,10 @@ enum ComposerToolbarViewAction {
     case insertEmoji(String)
     /// Deletes one character/grapheme cluster before the caret (or the current selection).
     case deleteBackward
-    /// Sends a discovered GIF into the timeline, keeping the panel open.
+    /// Sends a discovered GIF as an ordinary attachment, closing the panel straight away.
     case sendMediaGIF(KlipySticker)
+    /// Downloads a GIF that has scrolled into view, so tapping it can send without a round trip.
+    case prefetchMediaGIF(KlipySticker)
     /// Adds a discovered GIF to the user's sticker pack (with dedup), keeping the panel open.
     case addMediaGIF(KlipySticker)
     /// Loads the next page of GIF results (infinite scroll).
@@ -119,7 +121,8 @@ struct ComposerToolbarViewState: BindableState {
     var mediaGIFsLoading = false
     /// The stickers shown in the media panel's sticker tab (built-in + the user's own pack).
     var mediaStickers: [Sticker] = []
-    /// The id of the GIF/sticker currently being uploaded and sent, for a per-item spinner.
+    /// The id of the sticker currently being uploaded and sent, for a per-item spinner. GIFs don't
+    /// use it — they report their progress in the timeline like any other attachment.
     var sendingMediaItemID: String?
     /// Whether images picked from the library are currently being added to the user's pack.
     var isAddingStickers = false

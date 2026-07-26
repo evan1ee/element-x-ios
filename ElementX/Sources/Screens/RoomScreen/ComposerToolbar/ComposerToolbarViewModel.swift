@@ -27,10 +27,10 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     private let emojiProvider: EmojiProviderProtocol
     /// Media-panel services. Optional because the composer is also used in contexts (e.g. threads)
     /// that don't wire up sticker/GIF sending yet.
-    private let stickerService: StickerServiceProtocol?
-    private let gifService: KlipyServiceProtocol?
-    private let timelineController: StickerSending?
-    private let mediaUserIndicatorController: UserIndicatorControllerProtocol?
+    let stickerService: StickerServiceProtocol?
+    let gifService: KlipyServiceProtocol?
+    let timelineController: StickerSending?
+    let mediaUserIndicatorController: UserIndicatorControllerProtocol?
     private var identityPinningViolations = [String: RoomMemberProxyProtocol]()
     
     private let mentionBuilder: MentionBuilderProtocol
@@ -185,8 +185,25 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     // MARK: - Media input
     
     private var mediaEmojiLoadTask: Task<Void, Never>?
-    private var mediaGIFLoadTask: Task<Void, Never>?
-    private var mediaGIFPage = 1
+    // The GIF state below is driven from ComposerToolbarViewModel+MediaInput, which can't declare
+    // stored properties of its own, so it can't be private.
+    var mediaGIFLoadTask: Task<Void, Never>?
+    var mediaGIFPage = 1
+    
+    /// The last trending results, reused so that reopening the GIF tab is instant rather than a
+    /// round trip, and refreshed in the background once older than `trendingGIFCacheLifetime`.
+    var cachedTrendingGIFs: KlipySearchResults?
+    var trendingGIFsFetchDate: Date?
+    var trendingGIFPrefetchTask: Task<Void, Never>?
+    static let trendingGIFCacheLifetime: TimeInterval = 300
+    
+    /// Upload-quality bytes for GIFs the user has scrolled past, so tapping one starts the send
+    /// immediately and the timeline's local echo appears with it. Capped because these are
+    /// full-size GIFs — a few hundred KB each.
+    var preloadedGIFs: [String: Data] = [:]
+    var queuedGIFPrefetches: [KlipySticker] = []
+    var gifPrefetchTask: Task<Void, Never>?
+    static let maxPreloadedGIFs = 24
     
     private func setupMediaInput() {
         context.$viewState
@@ -229,12 +246,17 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         state.inputMode = .media(tab)
         state.lastMediaTab = tab
         loadContent(for: tab)
+        if tab != .gif {
+            // Have trending ready in case the user switches over.
+            prefetchTrendingGIFs()
+        }
         state.bindings.composerFocused = true
         setSystemKeyboardSuppressed(true)
     }
     
-    /// Hides the media panel and restores the system keyboard.
-    private func showKeyboard() {
+    /// Hides the media panel and restores the system keyboard. Also called from
+    /// `ComposerToolbarViewModel+MediaInput`, where sending a GIF closes the panel.
+    func showKeyboard() {
         state.inputMode = .none
         state.bindings.composerFocused = true
         setSystemKeyboardSuppressed(false)
@@ -276,194 +298,6 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         case .sticker:
             loadStickers()
         }
-    }
-    
-    // MARK: GIFs
-    
-    private func loadGIFs(reset: Bool) {
-        guard let gifService else { return }
-        if reset {
-            mediaGIFPage = 1
-            state.mediaGIFsLoading = true
-        }
-        let query = state.bindings.mediaSearchQuery
-        let page = reset ? 1 : mediaGIFPage + 1
-        
-        mediaGIFLoadTask?.cancel()
-        mediaGIFLoadTask = Task { [weak self] in
-            guard let self else { return }
-            let result = await gifService.search(query: query, page: page)
-            guard !Task.isCancelled, query == state.bindings.mediaSearchQuery else { return }
-            
-            if case let .success(results) = result {
-                mediaGIFPage = page
-                if reset {
-                    state.mediaGIFs = results.stickers
-                } else {
-                    let existingIDs = Set(state.mediaGIFs.map(\.id))
-                    state.mediaGIFs += results.stickers.filter { !existingIDs.contains($0.id) }
-                }
-                state.mediaGIFsHasMore = results.hasNextPage
-            } else if reset {
-                state.mediaGIFs = []
-                state.mediaGIFsHasMore = false
-            }
-            state.mediaGIFsLoading = false
-        }
-    }
-    
-    private func loadMoreGIFs() {
-        guard state.inputMode.mediaTab == .gif, state.mediaGIFsHasMore, !state.mediaGIFsLoading else { return }
-        loadGIFs(reset: false)
-    }
-    
-    private func sendMediaGIF(_ gif: KlipySticker) {
-        guard let gifService, let stickerService, let timelineController, state.sendingMediaItemID == nil else { return }
-        state.sendingMediaItemID = gif.id
-        
-        Task { [weak self] in
-            guard let self else { return }
-            defer { state.sendingMediaItemID = nil }
-            
-            guard case let .success(data) = await gifService.downloadImage(from: gif.fileURL) else {
-                showMediaFailureIndicator()
-                return
-            }
-            let body = gif.title.isEmpty ? "GIF" : gif.title
-            if case .failure = await stickerService.sendExternalSticker(imageData: data,
-                                                                        body: body,
-                                                                        width: gif.width,
-                                                                        height: gif.height,
-                                                                        mimeType: gif.mimeType,
-                                                                        in: timelineController) {
-                showMediaFailureIndicator()
-            }
-        }
-    }
-    
-    /// Downloads a discovered GIF and adds it to the user's sticker pack (preserving animation),
-    /// then refreshes the sticker grid. Mirrors the discover screen's "Add to My Stickers" action.
-    private func addMediaGIF(_ gif: KlipySticker) {
-        guard let gifService, let stickerService, !state.isAddingStickers else { return }
-        state.isAddingStickers = true
-        
-        Task { [weak self] in
-            guard let self else { return }
-            defer { state.isAddingStickers = false }
-            
-            guard case let .success(data) = await gifService.downloadImage(from: gif.fileURL) else {
-                showStickerAddSummary(StickerBatchSummary(failed: 1))
-                return
-            }
-            let body = gif.title.isEmpty ? "GIF" : gif.title
-            let summary = await stickerService.addExternalSticker(imageData: data,
-                                                                  body: body,
-                                                                  width: gif.width,
-                                                                  height: gif.height,
-                                                                  mimeType: gif.mimeType)
-            if summary.added > 0 {
-                let collection = await stickerService.loadStickers()
-                state.mediaStickers = collection.userStickers + collection.builtInStickers
-            }
-            showStickerAddSummary(summary)
-        }
-    }
-    
-    // MARK: Stickers
-    
-    private func loadStickers() {
-        guard let stickerService else { return }
-        Task { [weak self] in
-            guard let self else { return }
-            let collection = await stickerService.loadStickers()
-            state.mediaStickers = collection.userStickers + collection.builtInStickers
-        }
-    }
-    
-    private func sendMediaSticker(_ sticker: Sticker) {
-        guard let stickerService, let timelineController, state.sendingMediaItemID == nil else { return }
-        state.sendingMediaItemID = sticker.id
-        
-        Task { [weak self] in
-            guard let self else { return }
-            defer { state.sendingMediaItemID = nil }
-            
-            if case .failure = await stickerService.send(sticker, in: timelineController) {
-                showMediaFailureIndicator()
-            }
-        }
-    }
-    
-    private func showMediaFailureIndicator() {
-        mediaUserIndicatorController?.submitIndicator(UserIndicator(title: L10n.errorUnknown, icon: \.close))
-    }
-    
-    /// Adds the images/GIFs picked in the sticker tab to the user's pack, reusing the batch
-    /// upload with content-hash dedup, then refreshes the grid so the new stickers appear.
-    private func addStickerPhotos() {
-        guard let stickerService else { return }
-        let items = state.bindings.stickerPhotosPickerItems
-        // Resetting the binding below re-triggers the view's onChange.
-        guard !items.isEmpty else { return }
-        state.bindings.stickerPhotosPickerItems = []
-        state.isAddingStickers = true
-        
-        Task { [weak self] in
-            guard let self else { return }
-            defer { state.isAddingStickers = false }
-            
-            var fileURLs = [URL]()
-            var failedToLoadCount = 0
-            for item in items {
-                let fileExtension = item.supportedContentTypes.first?.preferredFilenameExtension ?? "png"
-                guard let data = try? await item.loadTransferable(type: Data.self),
-                      UIImage(data: data) != nil,
-                      let fileURL = try? writeStickerToTemporaryFile(data, fileExtension: fileExtension) else {
-                    failedToLoadCount += 1
-                    continue
-                }
-                fileURLs.append(fileURL)
-            }
-            defer {
-                for fileURL in fileURLs {
-                    try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent())
-                }
-            }
-            
-            var summary = await stickerService.addUserStickers(fromMediaAt: fileURLs)
-            summary.failed += failedToLoadCount
-            
-            if summary.added > 0 {
-                let collection = await stickerService.loadStickers()
-                state.mediaStickers = collection.userStickers + collection.builtInStickers
-            }
-            showStickerAddSummary(summary)
-        }
-    }
-    
-    private func writeStickerToTemporaryFile(_ data: Data, fileExtension: String) throws -> URL {
-        let directory = URL(filePath: NSTemporaryDirectory()).appending(path: "sticker-import-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let fileURL = directory.appending(path: "Sticker.\(fileExtension)")
-        try data.write(to: fileURL)
-        return fileURL
-    }
-    
-    private func showStickerAddSummary(_ summary: StickerBatchSummary) {
-        var parts = [String]()
-        if summary.added > 0 {
-            parts.append(UntranslatedL10n.screenStickerPickerAddedCount(summary.added))
-        }
-        if summary.duplicates > 0 {
-            parts.append(UntranslatedL10n.screenStickerPickerDuplicateCount(summary.duplicates))
-        }
-        if summary.failed > 0 {
-            parts.append(UntranslatedL10n.screenStickerPickerFailedCount(summary.failed))
-        }
-        guard !parts.isEmpty else { return }
-        
-        mediaUserIndicatorController?.submitIndicator(UserIndicator(title: parts.formatted(.list(type: .and, width: .narrow)),
-                                                                    icon: summary.failed == 0 ? \.check : \.close))
     }
     
     private func loadMediaEmojis() {
@@ -564,6 +398,8 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
             deleteBackward()
         case .sendMediaGIF(let gif):
             sendMediaGIF(gif)
+        case .prefetchMediaGIF(let gif):
+            prefetchMediaGIF(gif)
         case .addMediaGIF(let gif):
             addMediaGIF(gif)
         case .loadMoreGIFs:

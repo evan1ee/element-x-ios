@@ -68,6 +68,13 @@ protocol StickerServiceProtocol {
                              mimeType: String,
                              in timelineController: StickerSending) async -> Result<Void, StickerServiceError>
     
+    /// Sends the given image bytes as an ordinary attachment rather than a sticker, so the
+    /// timeline shows a local echo, upload progress, retry and failure exactly as it does for a
+    /// picked image. `filename`'s extension determines the media type.
+    func sendImage(data: Data,
+                   filename: String,
+                   in timelineController: StickerSending) async -> Result<Void, StickerServiceError>
+    
     /// Uploads the given image bytes as-is (preserving animation) and adds them to
     /// the user's pack. Bytes whose content hash is already in the pack are skipped
     /// as duplicates.

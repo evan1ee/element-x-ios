@@ -253,22 +253,43 @@ final class ComposerToolbarViewModelTests {
     }
     
     @Test
-    func sendingAGIFDownloadsUploadsAndSendsIt() async throws {
+    func sendingAGIFDownloadsItAndSendsItAsAnAttachment() async throws {
         viewModel.process(viewAction: .toggleMediaInput)
         viewModel.process(viewAction: .selectMediaTab(.gif))
         
         viewModel.process(viewAction: .sendMediaGIF(makeGIF(id: "a")))
-        #expect(viewModel.state.sendingMediaItemID == "a")
         
-        while !stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInCalled {
+        // The panel gets out of the way immediately and shows no progress of its own — the
+        // timeline's local echo carries it from here.
+        #expect(viewModel.state.inputMode == .none)
+        #expect(viewModel.state.sendingMediaItemID == nil)
+        
+        while !stickerServiceMock.sendImageDataFilenameInCalled {
             await Task.yield()
         }
         
         #expect(gifServiceMock.downloadImageFromCalled)
-        let arguments = try #require(stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInReceivedArguments)
-        #expect(arguments.mimeType == "image/gif")
-        // The panel stays open so several GIFs can be sent in a row.
-        #expect(viewModel.state.inputMode == .media(.gif))
+        let arguments = try #require(stickerServiceMock.sendImageDataFilenameInReceivedArguments)
+        #expect(arguments.filename.hasSuffix(".gif"))
+        #expect(!stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInCalled)
+    }
+    
+    @Test
+    func reopeningTheGIFTabReusesTheCachedTrendingResults() async throws {
+        gifServiceMock.searchQueryPageReturnValue = .success(.init(stickers: [makeGIF(id: "a")], hasNextPage: false, nextPage: 2))
+        
+        let deferred = deferFulfillment(viewModel.context.$viewState.map(\.mediaGIFs)) { !$0.isEmpty }
+        viewModel.process(viewAction: .toggleMediaInput)
+        viewModel.process(viewAction: .selectMediaTab(.gif))
+        try await deferred.fulfill()
+        
+        let searchCount = gifServiceMock.searchQueryPageCallsCount
+        
+        viewModel.process(viewAction: .toggleMediaInput)
+        viewModel.process(viewAction: .toggleMediaInput)
+        
+        #expect(viewModel.state.mediaGIFs.map(\.id) == ["a"])
+        #expect(gifServiceMock.searchQueryPageCallsCount == searchCount)
     }
     
     @Test
@@ -1101,6 +1122,7 @@ final class ComposerToolbarViewModelTests {
         stickerServiceMock.loadStickersReturnValue = StickerCollection()
         stickerServiceMock.sendInReturnValue = .success(())
         stickerServiceMock.sendExternalStickerImageDataBodyWidthHeightMimeTypeInReturnValue = .success(())
+        stickerServiceMock.sendImageDataFilenameInReturnValue = .success(())
         gifServiceMock = KlipyServiceMock()
         gifServiceMock.searchQueryPageReturnValue = .success(.init(stickers: [], hasNextPage: false, nextPage: 2))
         gifServiceMock.downloadImageFromReturnValue = .success(Data("gif".utf8))

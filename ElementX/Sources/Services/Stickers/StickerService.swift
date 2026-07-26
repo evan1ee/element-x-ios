@@ -145,6 +145,46 @@ class StickerService: StickerServiceProtocol {
         }
     }
     
+    func sendImage(data: Data,
+                   filename: String,
+                   in timelineController: StickerSending) async -> Result<Void, StickerServiceError> {
+        guard case let .success(maxUploadSize) = await clientProxy.maxMediaUploadSize else {
+            return .failure(.uploadFailed)
+        }
+        
+        let directory = URL(filePath: NSTemporaryDirectory()).appending(path: "media-send-\(UUID().uuidString)")
+        let fileURL = directory.appending(path: filename)
+        guard (try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)) != nil,
+              (try? data.write(to: fileURL)) != nil else {
+            return .failure(.processingFailed)
+        }
+        defer { try? FileManager.default.removeItem(at: directory) }
+        
+        // The preprocessor leaves GIFs alone (it only re-encodes still images), so animation
+        // survives and the thumbnail and image info come out the same as for a picked attachment.
+        guard case let .success(mediaInfo) = await mediaUploadingPreprocessor.processMedia(at: fileURL, maxUploadSize: maxUploadSize),
+              case let .image(imageURL, thumbnailURL, imageInfo) = mediaInfo else {
+            MXLog.error("Failed processing \(filename) for sending.")
+            return .failure(.processingFailed)
+        }
+        
+        // Nothing here holds on to the join handle: cancelling and retrying a GIF is the
+        // timeline's job now, the same as for any other attachment. Bound to a local first
+        // because a trailing closure in a `switch` subject reads as the statement's own body.
+        let result = await timelineController.sendImage(url: imageURL,
+                                                        thumbnailURL: thumbnailURL,
+                                                        imageInfo: imageInfo,
+                                                        caption: nil) { _ in }
+        
+        switch result {
+        case .success:
+            return .success(())
+        case .failure(let error):
+            MXLog.error("Failed sending image with error: \(error)")
+            return .failure(.sendFailed)
+        }
+    }
+    
     func addExternalSticker(imageData: Data,
                             body: String,
                             width: UInt64,

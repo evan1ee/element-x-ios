@@ -18,4 +18,13 @@ import MatrixRustSDK
 protocol StickerSending: Sendable {
     /// Sends an `m.sticker` event for already uploaded media, `url` being its `mxc://` URI.
     func sendSticker(body: String, url: String, imageInfo: ImageInfo) async -> Result<Void, TimelineControllerError>
+    
+    /// Sends a local image file as an attachment. Declared here (it is also part of
+    /// `TimelineControllerProtocol`) so the media panel can put a GIF through the room's ordinary
+    /// upload pipeline — local echo first, then progress, retry and failure all in the timeline.
+    func sendImage(url: URL,
+                   thumbnailURL: URL,
+                   imageInfo: ImageInfo,
+                   caption: String?,
+                   requestHandle: @MainActor (SendAttachmentJoinHandleProtocol) -> Void) async -> Result<Void, TimelineControllerError>
 }
