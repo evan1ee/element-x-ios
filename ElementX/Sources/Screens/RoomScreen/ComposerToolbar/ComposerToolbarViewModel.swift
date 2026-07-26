@@ -315,7 +315,10 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         // The panel is a sheet, so the composer isn't first responder — insert into the model
         // that drives the on-screen editor (plain text by default, WYSIWYG when formatting is on).
         if context.composerFormattingEnabled {
-            wysiwygViewModel.replaceText(range: state.bindings.selectedRange, replacementText: emoji)
+            // The result is the editor's `shouldChangeTextIn` answer — whether its text view still
+            // has to apply the change itself. That only concerns the delegate it was written for,
+            // not a programmatic edit like this one, so it's deliberately dropped.
+            _ = wysiwygViewModel.replaceText(range: state.bindings.selectedRange, replacementText: emoji)
         } else {
             let attributedString = NSMutableAttributedString(attributedString: state.bindings.plainComposerText)
             let location = min(state.bindings.selectedRange.location, attributedString.length)
@@ -338,9 +341,24 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
     /// working like a keyboard backspace key, including for combined/skin-toned emoji.
     private func deleteBackward() {
         if context.composerFormattingEnabled {
-            // An empty replacement over a zero-length selection is the package's own backspace path
-            // (it deletes one grapheme per the Rust engine's definition); a real selection is removed.
-            wysiwygViewModel.replaceText(range: state.bindings.selectedRange, replacementText: "")
+            // `replaceText` is the editor's text-view delegate hook, so it wants the range of the
+            // text to remove exactly as the keyboard passes it. An empty replacement over a
+            // *zero-length* range is how the system signals an autocomplete no-op, and the editor
+            // returns early without deleting anything — so a caret has to be spelled out as the
+            // grapheme cluster behind it. A real selection is already a range and goes as-is.
+            let selection = state.bindings.selectedRange
+            let deletionRange: NSRange
+            if selection.length > 0 {
+                deletionRange = selection
+            } else {
+                let string = wysiwygViewModel.attributedContent.text.string
+                guard selection.location > 0, selection.location <= (string as NSString).length else { return }
+                let caretIndex = String.Index(utf16Offset: selection.location, in: string)
+                deletionRange = NSRange(string.index(before: caretIndex)..<caretIndex, in: string)
+            }
+            
+            // The result is a delegate answer about the editor's own text view — see `insertEmoji`.
+            _ = wysiwygViewModel.replaceText(range: deletionRange, replacementText: "")
             return
         }
         
