@@ -163,7 +163,8 @@ extension LinkNewDeviceService.LinkMobileProgress: CustomStringConvertible {
                 throw Error.invalidQRCodeData
             }
         case .qrScanned(let checkCodeSender): .qrScanned(.init(underlyingSender: checkCodeSender))
-        case .waitingForAuth(let verificationURI):
+        // The SDK also hands over a sender for cancelling the grant, which nothing here exposes yet.
+        case .waitingForAuth(let verificationURI, _):
             // verificationURI is a String; ASWebAuthenticationSession requires a URL.
             if let url = URL(string: verificationURI) {
                 .waitingForAuthorisation(verificationURL: url)
@@ -194,7 +195,8 @@ extension LinkNewDeviceService.LinkDesktopProgress: CustomStringConvertible {
         self = switch rustProgress {
         case .starting: .starting
         case .establishingSecureChannel(_, let checkCodeString): .establishingSecureChannel(checkCodeString: checkCodeString)
-        case .waitingForAuth(let verificationURI):
+        // The SDK also hands over a sender for cancelling the grant, which nothing here exposes yet.
+        case .waitingForAuth(let verificationURI, _):
             // verificationURI is a String; ASWebAuthenticationSession requires a URL.
             if let url = URL(string: verificationURI) {
                 .waitingForAuthorisation(verificationURL: url)

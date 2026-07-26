@@ -378,7 +378,8 @@ private extension HumanQrLoginError {
             .qrCodeError(.deviceNotSignedIn)
         case .UnsupportedQrCodeType:
             .qrCodeError(.invalidQRCode)
-        case .Unknown, .OAuthMetadataInvalid, .CheckCodeAlreadySent, .CheckCodeCannotBeSent:
+        case .Unknown, .OAuthMetadataInvalid, .CheckCodeAlreadySent, .CheckCodeCannotBeSent,
+             .ContinuationAlreadySent, .ContinuationCannotBeSent:
             .qrCodeError(.unknown)
         }
     }
