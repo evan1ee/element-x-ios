@@ -224,7 +224,9 @@ final nonisolated class AppSettings: @unchecked Sendable {
         #endif
     }
     
-    private(set) var pushGatewayBaseURL: URL = "https://matrix.org"
+    /// Fork: matrix.org's gateway only serves Element's own `pusherAppID`s, so it drops
+    /// notifications for this app. This Sygnal instance holds our APNs key instead.
+    private(set) var pushGatewayBaseURL: URL = "https://sygnal.mbm.one"
     var pushGatewayNotifyEndpoint: URL {
         pushGatewayBaseURL.appending(path: "_matrix/push/v1/notify")
     }

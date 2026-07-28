@@ -23,6 +23,43 @@ Element X's primary authentication method is to use OIDC against [Matrix Authent
 - Add an [apple-app-site-association](https://developer.apple.com/documentation/xcode/supporting-associated-domains) file on your website with your app included in the `webcredentials` section.
 - Update the [webcredentials](https://github.com/element-hq/element-x-ios/blob/b2a37ec9d39622586754f58a98dcda35e0e8cf7e/ElementX/SupportingFiles/target.yml#L122) associated domain entitlement in the app to match your domain and re-run `xcodegen`.
 
+### Push Notifications
+
+Forks can't use matrix.org's push gateway. It only holds APNs credentials for Element's own `pusherAppID`s (`io.element.elementx.ios.dev`/`.prod`), so it drops notifications for any other app ID. You need to run your own [Sygnal](https://github.com/matrix-org/sygnal) instance and point [pushGatewayBaseURL](../ElementX/Sources/Application/Settings/AppSettings.swift) at it.
+
+A free personal team isn't enough — Push Notifications and App Groups both require the paid Developer Program.
+
+**Apple Developer portal.** On the `BASE_BUNDLE_IDENTIFIER` App ID enable Push Notifications, App Groups and Communication Notifications; on the `.nse` and `.shareextension` App IDs enable App Groups. Then create an APNs Auth Key (Keys → Apple Push Notifications service) and keep the `.p8` — it's only downloadable once. Note its Key ID alongside your Team ID.
+
+**Sygnal.** Add one app per build configuration, because `pusherAppID` is `#if DEBUG` based:
+
+```yaml
+apps:
+  com.example.myapp.ios.dev:
+    type: apns
+    keyfile: /path/to/AuthKey_KEYID.p8
+    key_id: KEYID
+    team_id: TEAMID
+    topic: com.example.myapp # the app's bundle ID, *not* the pusher app ID
+    platform: sandbox        # pairs with aps-environment: development
+    push_type: alert         # the NSE only runs for alert pushes
+
+  com.example.myapp.ios.prod:
+    # ...as above, but platform: production
+```
+
+`topic` is the main app's bundle identifier — using the pusher app ID here is the most common cause of APNs rejecting every push. Sygnal must be reachable over HTTPS from your homeserver, which is what actually calls it; the app only records the URL when registering the pusher.
+
+**Verifying.** Look for `Set pusher succeeded` in the app logs, then confirm the homeserver stored it:
+
+```
+curl -H "Authorization: Bearer $TOKEN" https://your.homeserver/_matrix/client/v3/pushers
+```
+
+Check `data.url` and `app_id` match your gateway, then watch Sygnal's logs as a message arrives. An `Unregistered` response from APNs almost always means a wrong `topic`, or a `platform` that doesn't match the build's `aps-environment`.
+
+**Notification filtering.** `com.apple.developer.usernotifications.filtering` lets the NSE discard notifications outright. It needs a per-team request to Apple, and without it the NSE must always deliver something, so already-read or undecryptable events can surface as placeholder notifications.
+
 ### Setup the location sharing
 
 The location sharing feature on Element X is currently integrated with [MapLibre](https://maplibre.org).

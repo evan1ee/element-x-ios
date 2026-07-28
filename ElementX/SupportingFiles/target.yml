@@ -113,7 +113,8 @@ targets:
     entitlements:
       path: ElementX.entitlements
       properties:
-        aps-environment: development
+        # Must track pusherAppID's .ios.dev/.ios.prod suffix, which is also #if DEBUG based.
+        aps-environment: $(APS_ENVIRONMENT)
         com.apple.developer.associated-domains:
         - applinks:element.io
         - applinks:app.element.io
@@ -155,6 +156,11 @@ targets:
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
         OTHER_SWIFT_FLAGS:
         - "-DIS_MAIN_APP"
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
 
     preBuildScripts:
     - name: 🛠 SwiftGen
