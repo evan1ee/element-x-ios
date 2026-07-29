@@ -6,6 +6,7 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
+import CryptoKit
 import Foundation
 
 // MARK: - Custom URLs
@@ -75,6 +76,26 @@ nonisolated extension URL {
         // https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html
         
         return url
+    }
+    
+    /// Where a session keeps its local search index.
+    ///
+    /// Under caches because the index is derived: losing it costs a re-index, not data,
+    /// and it shouldn't be backed up or count against the user's iCloud storage.
+    static func searchIndexURL(for userID: String) -> URL {
+        // A digest rather than the ID itself: user IDs carry ':' and '@', and simply
+        // replacing those would let '@a_b:c' and '@a:b_c' land in the same directory.
+        let digest = SHA256.hash(data: Data(userID.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+        
+        let directory = sessionCachesBaseDirectory
+            .appending(component: "SearchIndex", directoryHint: .isDirectory)
+            .appending(component: digest, directoryHint: .isDirectory)
+        
+        try? FileManager.default.createDirectoryIfNeeded(at: directory)
+        
+        return directory.appending(component: "index.sqlite3")
     }
     
     /// The app group temporary directory (useful for transferring files between different bundles).

@@ -28,6 +28,9 @@ protocol UserSessionProtocol: Sendable {
     /// Scans media content, `nil` when no content scanner is configured for the server.
     var contentScannerService: ContentScannerServiceProtocol? { get }
     
+    /// The local index of attachments and links, kept warm in the background.
+    var searchIndexService: SearchIndexServiceProtocol { get }
+    
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> { get }
     
     var callbacks: PassthroughSubject<UserSessionCallback, Never> { get }

@@ -14808,6 +14808,11 @@ nonisolated class UserSessionMock: UserSessionProtocol, @unchecked Sendable {
     }
     nonisolated(unsafe) var underlyingLiveLocationManager: LiveLocationManagerProtocol!
     nonisolated(unsafe) var contentScannerService: ContentScannerServiceProtocol?
+    var searchIndexService: SearchIndexServiceProtocol {
+        get { return underlyingSearchIndexService }
+        set(value) { underlyingSearchIndexService = value }
+    }
+    nonisolated(unsafe) var underlyingSearchIndexService: SearchIndexServiceProtocol!
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> {
         get { return underlyingSessionSecurityStatePublisher }
         set(value) { underlyingSessionSecurityStatePublisher = value }

@@ -23,6 +23,11 @@ class UserSession: UserSessionProtocol {
     /// Scans media content, `nil` when no content scanner is configured for the server.
     let contentScannerService: ContentScannerServiceProtocol?
     
+    /// The local index of attachments and links. Message bodies come from the SDK's
+    /// own index instead, which the client builder configures.
+    let searchIndexService: SearchIndexServiceProtocol
+    private let searchIndexBackfillService: SearchIndexBackfillService
+    
     let callbacks = PassthroughSubject<UserSessionCallback, Never>()
     
     let sessionSecurityStateSubject = CurrentValueSubject<SessionSecurityState, Never>(.init(verificationState: .unknown, recoveryState: .unknown))
@@ -36,6 +41,16 @@ class UserSession: UserSessionProtocol {
         self.voiceMessageMediaManager = voiceMessageMediaManager
         self.liveLocationManager = liveLocationManager
         contentScannerService = clientProxy.contentScanner.map(ContentScannerService.init)
+        
+        let searchIndexService = SearchIndexService(databaseURL: .searchIndexURL(for: clientProxy.userID))
+        self.searchIndexService = searchIndexService
+        searchIndexBackfillService = SearchIndexBackfillService(clientProxy: clientProxy,
+                                                                roomSummaryProvider: clientProxy.roomSummaryProvider,
+                                                                timelineItemFactory: RoomTimelineItemFactory(userID: clientProxy.userID,
+                                                                                                             attributedStringBuilder: AttributedStringBuilder(mentionBuilder: PlainMentionBuilder()),
+                                                                                                             stateEventStringBuilder: RoomStateEventStringBuilder(userID: clientProxy.userID)),
+                                                                indexService: searchIndexService)
+        searchIndexBackfillService.start()
         
         authErrorCancellable = clientProxy.actionsPublisher
             .receive(on: DispatchQueue.main)
