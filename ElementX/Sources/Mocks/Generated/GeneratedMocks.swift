@@ -10494,6 +10494,213 @@ nonisolated class RoomThreadListServiceProxyMock: RoomThreadListServiceProxyProt
         }
     }
 }
+nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked Sendable {
+
+    //MARK: - index
+
+    nonisolated(unsafe) var indexThrowableError: Error?
+    private let indexCallsCountLock = NSLock()
+    private nonisolated(unsafe) var indexUnderlyingCallsCount = 0
+    var indexCallsCount: Int {
+        get { indexCallsCountLock.withLock { indexUnderlyingCallsCount } }
+        set { indexCallsCountLock.withLock { indexUnderlyingCallsCount = newValue } }
+    }
+    var indexCalled: Bool {
+        return indexCallsCount > 0
+    }
+    private let indexReceivedEntriesLock = NSLock()
+    private nonisolated(unsafe) var indexUnderlyingReceivedEntries: [SearchIndexEntry]?
+    var indexReceivedEntries: [SearchIndexEntry]? {
+        get { indexReceivedEntriesLock.withLock { indexUnderlyingReceivedEntries } }
+        set { indexReceivedEntriesLock.withLock { indexUnderlyingReceivedEntries = newValue } }
+    }
+    private let indexReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var indexUnderlyingReceivedInvocations: [[SearchIndexEntry]] = []
+    var indexReceivedInvocations: [[SearchIndexEntry]] {
+        get { indexReceivedInvocationsLock.withLock { indexUnderlyingReceivedInvocations } }
+        set { indexReceivedInvocationsLock.withLock { indexUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var indexClosure: (([SearchIndexEntry]) async throws -> Void)?
+
+    @concurrent func index(_ entries: [SearchIndexEntry]) async throws {
+        if let error = indexThrowableError {
+            throw error
+        }
+        indexCallsCountLock.withLock { indexUnderlyingCallsCount += 1 }
+        indexReceivedEntries = entries
+        indexReceivedInvocationsLock.withLock { indexUnderlyingReceivedInvocations.append(entries) }
+        try await indexClosure?(entries)
+    }
+    //MARK: - remove
+
+    nonisolated(unsafe) var removeEventIDsThrowableError: Error?
+    private let removeEventIDsCallsCountLock = NSLock()
+    private nonisolated(unsafe) var removeEventIDsUnderlyingCallsCount = 0
+    var removeEventIDsCallsCount: Int {
+        get { removeEventIDsCallsCountLock.withLock { removeEventIDsUnderlyingCallsCount } }
+        set { removeEventIDsCallsCountLock.withLock { removeEventIDsUnderlyingCallsCount = newValue } }
+    }
+    var removeEventIDsCalled: Bool {
+        return removeEventIDsCallsCount > 0
+    }
+    private let removeEventIDsReceivedEventIDsLock = NSLock()
+    private nonisolated(unsafe) var removeEventIDsUnderlyingReceivedEventIDs: [String]?
+    var removeEventIDsReceivedEventIDs: [String]? {
+        get { removeEventIDsReceivedEventIDsLock.withLock { removeEventIDsUnderlyingReceivedEventIDs } }
+        set { removeEventIDsReceivedEventIDsLock.withLock { removeEventIDsUnderlyingReceivedEventIDs = newValue } }
+    }
+    private let removeEventIDsReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var removeEventIDsUnderlyingReceivedInvocations: [[String]] = []
+    var removeEventIDsReceivedInvocations: [[String]] {
+        get { removeEventIDsReceivedInvocationsLock.withLock { removeEventIDsUnderlyingReceivedInvocations } }
+        set { removeEventIDsReceivedInvocationsLock.withLock { removeEventIDsUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var removeEventIDsClosure: (([String]) async throws -> Void)?
+
+    @concurrent func remove(eventIDs: [String]) async throws {
+        if let error = removeEventIDsThrowableError {
+            throw error
+        }
+        removeEventIDsCallsCountLock.withLock { removeEventIDsUnderlyingCallsCount += 1 }
+        removeEventIDsReceivedEventIDs = eventIDs
+        removeEventIDsReceivedInvocationsLock.withLock { removeEventIDsUnderlyingReceivedInvocations.append(eventIDs) }
+        try await removeEventIDsClosure?(eventIDs)
+    }
+    //MARK: - removeAll
+
+    nonisolated(unsafe) var removeAllInRoomThrowableError: Error?
+    private let removeAllInRoomCallsCountLock = NSLock()
+    private nonisolated(unsafe) var removeAllInRoomUnderlyingCallsCount = 0
+    var removeAllInRoomCallsCount: Int {
+        get { removeAllInRoomCallsCountLock.withLock { removeAllInRoomUnderlyingCallsCount } }
+        set { removeAllInRoomCallsCountLock.withLock { removeAllInRoomUnderlyingCallsCount = newValue } }
+    }
+    var removeAllInRoomCalled: Bool {
+        return removeAllInRoomCallsCount > 0
+    }
+    private let removeAllInRoomReceivedRoomIDLock = NSLock()
+    private nonisolated(unsafe) var removeAllInRoomUnderlyingReceivedRoomID: String?
+    var removeAllInRoomReceivedRoomID: String? {
+        get { removeAllInRoomReceivedRoomIDLock.withLock { removeAllInRoomUnderlyingReceivedRoomID } }
+        set { removeAllInRoomReceivedRoomIDLock.withLock { removeAllInRoomUnderlyingReceivedRoomID = newValue } }
+    }
+    private let removeAllInRoomReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var removeAllInRoomUnderlyingReceivedInvocations: [String] = []
+    var removeAllInRoomReceivedInvocations: [String] {
+        get { removeAllInRoomReceivedInvocationsLock.withLock { removeAllInRoomUnderlyingReceivedInvocations } }
+        set { removeAllInRoomReceivedInvocationsLock.withLock { removeAllInRoomUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var removeAllInRoomClosure: ((String) async throws -> Void)?
+
+    @concurrent func removeAll(inRoom roomID: String) async throws {
+        if let error = removeAllInRoomThrowableError {
+            throw error
+        }
+        removeAllInRoomCallsCountLock.withLock { removeAllInRoomUnderlyingCallsCount += 1 }
+        removeAllInRoomReceivedRoomID = roomID
+        removeAllInRoomReceivedInvocationsLock.withLock { removeAllInRoomUnderlyingReceivedInvocations.append(roomID) }
+        try await removeAllInRoomClosure?(roomID)
+    }
+    //MARK: - search
+
+    nonisolated(unsafe) var searchThrowableError: Error?
+    private let searchCallsCountLock = NSLock()
+    private nonisolated(unsafe) var searchUnderlyingCallsCount = 0
+    var searchCallsCount: Int {
+        get { searchCallsCountLock.withLock { searchUnderlyingCallsCount } }
+        set { searchCallsCountLock.withLock { searchUnderlyingCallsCount = newValue } }
+    }
+    var searchCalled: Bool {
+        return searchCallsCount > 0
+    }
+    private let searchReceivedQueryLock = NSLock()
+    private nonisolated(unsafe) var searchUnderlyingReceivedQuery: SearchIndexQuery?
+    var searchReceivedQuery: SearchIndexQuery? {
+        get { searchReceivedQueryLock.withLock { searchUnderlyingReceivedQuery } }
+        set { searchReceivedQueryLock.withLock { searchUnderlyingReceivedQuery = newValue } }
+    }
+    private let searchReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var searchUnderlyingReceivedInvocations: [SearchIndexQuery] = []
+    var searchReceivedInvocations: [SearchIndexQuery] {
+        get { searchReceivedInvocationsLock.withLock { searchUnderlyingReceivedInvocations } }
+        set { searchReceivedInvocationsLock.withLock { searchUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let searchReturnValueLock = NSLock()
+    private nonisolated(unsafe) var searchUnderlyingReturnValue: [SearchIndexResult]!
+    var searchReturnValue: [SearchIndexResult]! {
+        get { searchReturnValueLock.withLock { searchUnderlyingReturnValue } }
+        set { searchReturnValueLock.withLock { searchUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var searchClosure: ((SearchIndexQuery) async throws -> [SearchIndexResult])?
+
+    @concurrent func search(_ query: SearchIndexQuery) async throws -> [SearchIndexResult] {
+        if let error = searchThrowableError {
+            throw error
+        }
+        searchCallsCountLock.withLock { searchUnderlyingCallsCount += 1 }
+        searchReceivedQuery = query
+        searchReceivedInvocationsLock.withLock { searchUnderlyingReceivedInvocations.append(query) }
+        if let searchClosure = searchClosure {
+            return try await searchClosure(query)
+        } else {
+            return searchReturnValue
+        }
+    }
+    //MARK: - count
+
+    nonisolated(unsafe) var countThrowableError: Error?
+    private let countCallsCountLock = NSLock()
+    private nonisolated(unsafe) var countUnderlyingCallsCount = 0
+    var countCallsCount: Int {
+        get { countCallsCountLock.withLock { countUnderlyingCallsCount } }
+        set { countCallsCountLock.withLock { countUnderlyingCallsCount = newValue } }
+    }
+    var countCalled: Bool {
+        return countCallsCount > 0
+    }
+
+    private let countReturnValueLock = NSLock()
+    private nonisolated(unsafe) var countUnderlyingReturnValue: Int!
+    var countReturnValue: Int! {
+        get { countReturnValueLock.withLock { countUnderlyingReturnValue } }
+        set { countReturnValueLock.withLock { countUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var countClosure: (() async throws -> Int)?
+
+    @concurrent func count() async throws -> Int {
+        if let error = countThrowableError {
+            throw error
+        }
+        countCallsCountLock.withLock { countUnderlyingCallsCount += 1 }
+        if let countClosure = countClosure {
+            return try await countClosure()
+        } else {
+            return countReturnValue
+        }
+    }
+    //MARK: - clear
+
+    nonisolated(unsafe) var clearThrowableError: Error?
+    private let clearCallsCountLock = NSLock()
+    private nonisolated(unsafe) var clearUnderlyingCallsCount = 0
+    var clearCallsCount: Int {
+        get { clearCallsCountLock.withLock { clearUnderlyingCallsCount } }
+        set { clearCallsCountLock.withLock { clearUnderlyingCallsCount = newValue } }
+    }
+    var clearCalled: Bool {
+        return clearCallsCount > 0
+    }
+    nonisolated(unsafe) var clearClosure: (() async throws -> Void)?
+
+    @concurrent func clear() async throws {
+        if let error = clearThrowableError {
+            throw error
+        }
+        clearCallsCountLock.withLock { clearUnderlyingCallsCount += 1 }
+        try await clearClosure?()
+    }
+}
 nonisolated class SearchServiceProxyMock: SearchServiceProxyProtocol, @unchecked Sendable {
     var resultsPublisher: CurrentValuePublisher<[SearchServiceResult], Never> {
         get { return underlyingResultsPublisher }

@@ -41,6 +41,10 @@ struct AuthenticationClientFactory: AuthenticationClientFactoryProtocol {
                          threadsEnabled: appSettings.threadsEnabled)
             .sqliteStore(config: .init(dataPath: sessionDirectories.dataPath, cachePath: sessionDirectories.cachePath)
                 .passphrase(passphrase: passphrase))
+            // Without this the session runs on the builder's in-memory index, so search only
+            // covers what arrived while the app stayed alive. Restoration already sets it;
+            // a freshly logged in session needs it too or it indexes nothing until relaunch.
+            .withSearchIndexStore(path: sessionDirectories.dataPath, password: passphrase)
             .serverNameOrHomeserverUrl(serverNameOrUrl: homeserverAddress)
             .build()
     }
