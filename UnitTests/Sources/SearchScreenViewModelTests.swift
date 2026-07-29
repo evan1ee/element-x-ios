@@ -25,9 +25,14 @@ struct SearchScreenViewModelTests {
         let clientProxy = ClientProxyMock(.init())
         clientProxy.searchService = searchService
         
+        // These tests cover the SDK-backed side, so the local index stays empty.
+        let searchIndexService = SearchIndexServiceMock()
+        searchIndexService.searchReturnValue = []
+        
         viewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded(.mockRooms))),
                                           clientProxy: clientProxy,
-                                          mediaProvider: MediaProviderMock(.init()))
+                                          mediaProvider: MediaProviderMock(.init()),
+                                          searchIndexService: searchIndexService)
     }
     
     @Test

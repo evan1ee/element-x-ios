@@ -467,25 +467,37 @@ private final class KeyNavigatingSearchTextField: UISearchTextField {
 struct SearchScreen_Previews: PreviewProvider, TestablePreview {
     static let emptyViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                       clientProxy: makeClientProxy(),
-                                                      mediaProvider: MediaProviderMock(.init()))
+                                                      mediaProvider: MediaProviderMock(.init()),
+                                                      searchIndexService: makeSearchIndexService())
     static let noResultsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                           clientProxy: makeClientProxy(),
                                                           mediaProvider: MediaProviderMock(.init()),
+                                                          searchIndexService: makeSearchIndexService(),
                                                           initialSearchQuery: "John Doe")
     static let roomsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded(.mockRooms))),
                                                       clientProxy: makeClientProxy(),
                                                       mediaProvider: MediaProviderMock(.init()),
+                                                      searchIndexService: makeSearchIndexService(),
                                                       initialSearchQuery: "Foundation")
     static let messagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                          clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)),
                                                          mediaProvider: MediaProviderMock(.init()),
+                                                         searchIndexService: makeSearchIndexService(),
                                                          initialSearchQuery: "Foundation",
                                                          initialSearchMode: .messages)
     static let loadingMessagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                                 clientProxy: makeClientProxy(searchService: makeSearchService(paginationState: .loading)),
                                                                 mediaProvider: MediaProviderMock(.init()),
+                                                                searchIndexService: makeSearchIndexService(),
                                                                 initialSearchQuery: "Foundation",
                                                                 initialSearchMode: .messages)
+    
+    /// An empty index: previews exercise the SDK side, and un-configured mocks trap.
+    static func makeSearchIndexService() -> SearchIndexServiceProtocol {
+        let mock = SearchIndexServiceMock()
+        mock.searchReturnValue = []
+        return mock
+    }
     
     static var previews: some View {
         ElementNavigationStack {

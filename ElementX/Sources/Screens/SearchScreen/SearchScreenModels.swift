@@ -80,6 +80,20 @@ struct SearchScreenMessage: Identifiable, Equatable {
         timestamp = result.timestamp
     }
     
+    /// A hit from the local index, which holds attachments and links.
+    init(_ result: SearchIndexResult, roomSummary: RoomSummary?) {
+        let entry = result.entry
+        id = entry.eventID
+        roomID = entry.roomID
+        roomName = roomSummary?.name ?? entry.roomID
+        roomAvatar = roomSummary?.avatar ?? .room(id: entry.roomID, name: roomSummary?.name, avatarURL: nil)
+        senderName = entry.senderDisplayName ?? entry.senderID
+        timestamp = entry.timestamp
+        // Show the filename for an attachment and the text for a link, so the row says
+        // what was actually matched.
+        content = .message(.text(.init(body: entry.filename ?? entry.body ?? "")))
+    }
+    
     var preview: AttributedString? {
         guard let messageBody else { return nil }
         return AttributedString("\(senderName): ") + messageBody

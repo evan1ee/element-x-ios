@@ -14,6 +14,11 @@ typealias SearchScreenViewModelType = StateStoreViewModelV2<SearchScreenViewStat
 class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelProtocol {
     private let roomSummaryProvider: RoomSummaryProviderProtocol
     private let searchService: SearchServiceProxyProtocol
+    /// Attachments and links. The SDK's search covers message bodies but takes text
+    /// messages alone, so filenames and URLs would otherwise be unreachable.
+    private let searchIndexService: SearchIndexServiceProtocol
+    private let clientProxy: ClientProxyProtocol
+    private var localSearchTask: Task<Void, Never>?
     private var searchQueryObservationTask: Task<Void, Never>?
     private var loadingObservationTask: Task<Void, Never>?
     private var setQueryTask: Task<Void, Never>?
@@ -26,9 +31,12 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     init(roomSummaryProvider: RoomSummaryProviderProtocol,
          clientProxy: ClientProxyProtocol,
          mediaProvider: MediaProviderProtocol,
+         searchIndexService: SearchIndexServiceProtocol,
          initialSearchQuery: String = "",
          initialSearchMode: SearchScreenMode = .rooms) {
         self.roomSummaryProvider = roomSummaryProvider
+        self.searchIndexService = searchIndexService
+        self.clientProxy = clientProxy
         searchService = clientProxy.searchService
         
         super.init(initialViewState: SearchScreenViewState(bindings: .init(searchQuery: initialSearchQuery, searchMode: initialSearchMode)),
@@ -50,11 +58,12 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
                     state.messages = []
                     return
                 }
-                state.messages = results.map { result in
+                remoteMessages = results.map { result in
                     SearchScreenMessage(result,
                                         roomSummary: clientProxy.roomSummaryForIdentifier(result.roomID),
                                         isOutgoing: result.sender.id == clientProxy.userID)
                 }
+                mergeMessages()
             }
             .store(in: &cancellables)
         
@@ -123,12 +132,43 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     
     // MARK: - Private
     
+    /// Hits from the SDK's index, and from ours. Kept apart so a late reply from one
+    /// source can't wipe out the other's results.
+    private var remoteMessages: [SearchScreenMessage] = []
+    private var localMessages: [SearchScreenMessage] = []
+    
+    private func searchLocalIndex(for searchQuery: String) {
+        localSearchTask?.cancel()
+        localSearchTask = Task { [weak self] in
+            guard let self else { return }
+            
+            let results = await (try? searchIndexService.search(.init(text: searchQuery))) ?? []
+            
+            // The field may have moved on while we were querying.
+            guard !Task.isCancelled, searchQuery == state.bindings.searchQuery else { return }
+            
+            localMessages = results.map { SearchScreenMessage($0, roomSummary: clientProxy.roomSummaryForIdentifier($0.entry.roomID)) }
+            mergeMessages()
+        }
+    }
+    
+    /// Newest first across both sources, dropping anything indexed twice.
+    private func mergeMessages() {
+        var seen = Set<String>()
+        state.messages = (remoteMessages + localMessages)
+            .filter { seen.insert($0.id).inserted }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+    
     private func updateFilter(for searchQuery: String) {
         // Supersede any in-flight query so its results can't land after a newer one's.
         setQueryTask?.cancel()
         
         if searchQuery.isEmpty {
             roomSummaryProvider.setFilter(.excludeAll)
+            localSearchTask?.cancel()
+            remoteMessages = []
+            localMessages = []
             state.messages = []
         } else {
             roomSummaryProvider.setFilter(.search(query: searchQuery))
@@ -136,6 +176,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
                 // TODO: @stefanceriu Surface set query errors
                 _ = await self?.searchService.setQuery(searchQuery)
             }
+            searchLocalIndex(for: searchQuery)
         }
     }
     
