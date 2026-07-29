@@ -62,6 +62,10 @@ internal nonisolated enum UntranslatedL10n {
   internal static func screenNotificationSettingsSoundAppFadeIos(_ p1: Any) -> String {
     return UntranslatedL10n.tr("Untranslated", "screen_notification_settings_sound_app_fade_ios", String(describing: p1))
   }
+  /// Be in your %1$@
+  internal static func screenOnboardingWelcomeTitleIos(_ p1: Any) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_onboarding_welcome_title_ios", String(describing: p1))
+  }
   /// Sticker
   internal static var screenRoomAttachmentSourceSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_room_attachment_source_sticker") }
   /// Unsupported call. Ask if the caller can use the new %1$@ app.

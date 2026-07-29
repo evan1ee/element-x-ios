@@ -46,7 +46,7 @@ struct AuthenticationClassicAppAccountView: View {
         VStack(spacing: 8) {
             AuthenticationStartLogo(size: 54, hideBrandChrome: false, isOnGradient: false)
             
-            Text(L10n.screenOnboardingWelcomeTitle)
+            Text(UntranslatedL10n.screenOnboardingWelcomeTitleIos(InfoPlistReader.main.productionAppName))
                 .font(.compound.headingMDBold)
                 .foregroundStyle(.compound.textPrimary)
                 .multilineTextAlignment(.center)

@@ -76,7 +76,7 @@ struct AuthenticationStartScreen: View {
             
             if !context.viewState.hideBrandChrome {
                 VStack(spacing: 8) {
-                    Text(L10n.screenOnboardingWelcomeTitle)
+                    Text(UntranslatedL10n.screenOnboardingWelcomeTitleIos(InfoPlistReader.main.productionAppName))
                         .font(.compound.headingLGBold)
                         .foregroundColor(.compound.textPrimary)
                         .multilineTextAlignment(.center)

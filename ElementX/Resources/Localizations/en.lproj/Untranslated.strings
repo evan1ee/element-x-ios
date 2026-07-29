@@ -22,6 +22,7 @@
 "screen_media_input_stickers" = "Stickers";
 "screen_notification_settings_sound_app_default_ios" = "%1$@ Default";
 "screen_notification_settings_sound_app_fade_ios" = "%1$@ Fade";
+"screen_onboarding_welcome_title_ios" = "Be in your %1$@";
 "screen_room_attachment_source_sticker" = "Sticker";
 "screen_room_timeline_legacy_call_ios" = "Unsupported call. Ask if the caller can use the new %1$@ app.";
 "screen_search_empty_state_message" = "Search for chats and messages";
