@@ -392,6 +392,7 @@
 		3CE4C5071B6D2576E2473989 /* OrderedSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B07B296D7A9D2F09120853 /* OrderedSet.swift */; };
 		3D0DAED550E967AB49F1758C /* CXProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E68CA59F66CE43B66D129E9 /* CXProviderProtocol.swift */; };
 		3D41F64AF80E0DAB6CBF6A2C /* MediaInputMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28256B372723488635782E2F /* MediaInputMode.swift */; };
+		3D521B34C73C173DD80C1E3C /* SearchHighlightedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00ECF93FD1561282A4591C85 /* SearchHighlightedText.swift */; };
 		3D72F5F9109AAA257542456B /* CallInviteRoomTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664ABD745A746C45CB842158 /* CallInviteRoomTimelineView.swift */; };
 		3DA57CA0D609A6B37CA1DC2F /* BugReportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DC38E64A5ED3FDB201029A /* BugReportService.swift */; };
 		3DAD62988F072607441CB7A5 /* PollFormScreenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F8664F1FB95AF3C4202478 /* PollFormScreenCoordinator.swift */; };
@@ -1707,6 +1708,7 @@
 		008D864B3F51B41DF483B860 /* RoomThreadListScreenViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomThreadListScreenViewModelProtocol.swift; sourceTree = "<group>"; };
 		00AFC5F08734C2EA4EE79C59 /* IdentityConfirmationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityConfirmationScreen.swift; sourceTree = "<group>"; };
 		00E5B2CBEF8F96424F095508 /* RoomDetailsEditScreenViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomDetailsEditScreenViewModelTests.swift; sourceTree = "<group>"; };
+		00ECF93FD1561282A4591C85 /* SearchHighlightedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchHighlightedText.swift; sourceTree = "<group>"; };
 		011AFA4990C585D157829679 /* DeclineAndBlockScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclineAndBlockScreenViewModel.swift; sourceTree = "<group>"; };
 		012A284622B32052015F1F89 /* ReadMarkerRoomTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadMarkerRoomTimelineView.swift; sourceTree = "<group>"; };
 		01B795AAAB7B8747FE2FF311 /* LogViewerScreenModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerScreenModels.swift; sourceTree = "<group>"; };
@@ -4941,6 +4943,7 @@
 		62E6DBFA3C4FCB80E2B490CD /* View */ = {
 			isa = PBXGroup;
 			children = (
+				00ECF93FD1561282A4591C85 /* SearchHighlightedText.swift */,
 				A79A78330B9329E3A99E4105 /* SearchScreen.swift */,
 			);
 			path = View;
@@ -9276,6 +9279,7 @@
 				0437765FF480249486893CC7 /* ScreenTrackerViewModifier.swift in Sources */,
 				0BFA67AFD757EE2BA569836A /* ScrollViewAdapter.swift in Sources */,
 				67160204A8D362BB7D4AD259 /* Search.swift in Sources */,
+				3D521B34C73C173DD80C1E3C /* SearchHighlightedText.swift in Sources */,
 				5CB2913EA3C419691926152B /* SearchIndexBackfillService.swift in Sources */,
 				FB2FC5777836B81CF905FFB0 /* SearchIndexService.swift in Sources */,
 				DA160DC23051E4E88A0A9B4C /* SearchIndexServiceProtocol.swift in Sources */,

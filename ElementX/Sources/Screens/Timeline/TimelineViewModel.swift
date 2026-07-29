@@ -45,6 +45,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
     
     private var paginateBackwardsTask: Task<Void, Never>?
     private var paginateForwardsTask: Task<Void, Never>?
+    private var focusHighlightTask: Task<Void, Never>?
     
     init(roomProxy: JoinedRoomProxyProtocol,
          focussedEventID: String? = nil,
@@ -345,6 +346,27 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
             state.timelineState.focussedEvent = focussedEvent
             hideFocusLoadingIndicator()
             analyticsService.signpost.finishTransaction(.notificationToMessage)
+            
+            scheduleFocusHighlightRemoval(for: focussedEvent.eventID)
+        }
+    }
+    
+    /// The highlight marks where the timeline jumped to. Once that's been seen it's
+    /// just a permanently emphasised message, so let it go.
+    private func scheduleFocusHighlightRemoval(for eventID: String) {
+        focusHighlightTask?.cancel()
+        focusHighlightTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            
+            guard let self, !Task.isCancelled,
+                  // A newer jump may have landed while we waited; that one owns the highlight now.
+                  state.timelineState.focussedEvent?.eventID == eventID else {
+                return
+            }
+            
+            withElementAnimation {
+                state.timelineState.focussedEvent = nil
+            }
         }
     }
     

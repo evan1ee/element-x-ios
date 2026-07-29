@@ -315,7 +315,7 @@ private struct SearchScreenMessageCell: View {
                     if let mediaPreview = message.mediaPreview {
                         SearchScreenMediaPreviewView(preview: mediaPreview, mediaProvider: context.mediaProvider)
                     } else if let preview = message.preview {
-                        Text(preview)
+                        Text(preview.highlighting(context.viewState.bindings.searchQuery))
                             .font(.compound.bodyMD)
                             .foregroundStyle(.compound.textSecondary)
                             .lineLimit(2)
