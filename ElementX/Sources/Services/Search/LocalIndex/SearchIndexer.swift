@@ -1,0 +1,111 @@
+//
+// Copyright 2026 Element Creations Ltd.
+//
+// SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+// Please see LICENSE files in the repository root for full details.
+//
+
+import Foundation
+
+/// Turns timeline items into index entries and hands them to the index.
+///
+/// Deliberately narrow: the SDK already indexes plain message bodies, so this only
+/// takes what the SDK's index refuses — attachments and links. Feeding it every
+/// text message too would duplicate that work and put a second copy of every
+/// private conversation on disk.
+nonisolated struct SearchIndexer: Sendable {
+    private let indexService: SearchIndexServiceProtocol
+    
+    init(indexService: SearchIndexServiceProtocol) {
+        self.indexService = indexService
+    }
+    
+    /// Indexes what's worth indexing from a timeline, and drops anything redacted
+    /// since it was last seen.
+    func process(_ items: [RoomTimelineItemProtocol], inRoom roomID: String) async {
+        let entries = Self.entries(from: items, roomID: roomID)
+        let redacted = items.compactMap { ($0 as? RedactedRoomTimelineItem)?.id.eventID }
+        
+        do {
+            if !entries.isEmpty {
+                try await indexService.index(entries)
+            }
+            if !redacted.isEmpty {
+                try await indexService.remove(eventIDs: redacted)
+            }
+        } catch {
+            // The index is derived data. Losing a write costs a missing result, not
+            // correctness, so don't propagate into the timeline.
+            MXLog.error("Failed updating the search index: \(error)")
+        }
+    }
+    
+    // MARK: - Mapping
+    
+    static func entries(from items: [RoomTimelineItemProtocol], roomID: String) -> [SearchIndexEntry] {
+        items.compactMap { entry(from: $0, roomID: roomID) }
+    }
+    
+    static func entry(from item: RoomTimelineItemProtocol, roomID: String) -> SearchIndexEntry? {
+        // Local echoes have no event ID yet; they'll be indexed once the timeline
+        // replaces them with the remote item.
+        guard let eventID = item.id.eventID,
+              let item = item as? EventBasedMessageTimelineItemProtocol else {
+            return nil
+        }
+        
+        let attachment = Self.attachment(in: item.contentType)
+        let links = Self.links(in: item.body)
+        
+        // Plain text without a link belongs to the SDK's index, not ours.
+        guard attachment != nil || !links.isEmpty else { return nil }
+        
+        return SearchIndexEntry(eventID: eventID,
+                                roomID: roomID,
+                                senderID: item.sender.id,
+                                senderDisplayName: item.sender.displayName,
+                                timestamp: item.timestamp,
+                                kind: attachment?.kind ?? .link,
+                                body: item.body.isEmpty ? nil : item.body,
+                                filename: attachment?.filename,
+                                mimeType: attachment?.mimeType,
+                                url: links.first,
+                                // The timeline item knows it's threaded but not which root it
+                                // hangs off, so the column stays empty until thread-only search
+                                // needs it.
+                                threadRootID: nil)
+    }
+    
+    private struct Attachment {
+        let kind: SearchIndexEventKind
+        let filename: String
+        let mimeType: String?
+    }
+    
+    private static func attachment(in contentType: EventBasedMessageTimelineItemContentType) -> Attachment? {
+        switch contentType {
+        case .file(let content):
+            Attachment(kind: .file, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+        case .image(let content):
+            Attachment(kind: .media, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+        case .video(let content):
+            Attachment(kind: .media, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+        case .audio(let content), .voice(let content):
+            Attachment(kind: .media, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+        case .text, .notice, .emote, .location:
+            nil
+        }
+    }
+    
+    /// Pulls URLs out of a body so links stay findable by host, which is how people
+    /// tend to remember them — "that github link" rather than the full path.
+    static func links(in text: String) -> [String] {
+        guard !text.isEmpty,
+              let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return []
+        }
+        
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return detector.matches(in: text, range: range).compactMap { $0.url?.absoluteString }
+    }
+}
