@@ -54,8 +54,20 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenMediaInputSearchGifs: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_search_gifs") }
   /// Stickers
   internal static var screenMediaInputStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_stickers") }
+  /// %1$@ Default
+  internal static func screenNotificationSettingsSoundAppDefaultIos(_ p1: Any) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_notification_settings_sound_app_default_ios", String(describing: p1))
+  }
+  /// %1$@ Fade
+  internal static func screenNotificationSettingsSoundAppFadeIos(_ p1: Any) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_notification_settings_sound_app_fade_ios", String(describing: p1))
+  }
   /// Sticker
   internal static var screenRoomAttachmentSourceSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_room_attachment_source_sticker") }
+  /// Unsupported call. Ask if the caller can use the new %1$@ app.
+  internal static func screenRoomTimelineLegacyCallIos(_ p1: Any) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_room_timeline_legacy_call_ios", String(describing: p1))
+  }
   /// Search for chats and messages
   internal static var screenSearchEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_message") }
   /// Start searching...

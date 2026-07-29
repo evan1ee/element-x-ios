@@ -1,6 +1,6 @@
 settings:
-  APP_DISPLAY_NAME: Element X
-  PRODUCTION_APP_NAME: Element
+  APP_DISPLAY_NAME: Halo X
+  PRODUCTION_APP_NAME: Halo
   APP_GROUP_IDENTIFIER: group.com.evan1ee.elementx
   BASE_BUNDLE_IDENTIFIER: com.evan1ee.elementx
   ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: "colors/accent-color"

@@ -32,7 +32,7 @@ nonisolated struct NotificationToneManager: NotificationToneManagerProtocol {
     private let appSettings: AppSettings
     
     /// The default Element X bundled message tone.
-    static let defaultElementXMessageTone: NotificationTone = .createBundledSound(label: L10n.screenNotificationSettingsSoundElementDefault,
+    static let defaultElementXMessageTone: NotificationTone = .createBundledSound(label: UntranslatedL10n.screenNotificationSettingsSoundAppDefaultIos(InfoPlistReader.main.productionAppName),
                                                                                   filename: "message.caf")
     
     /// All default tones (system + Element X), sorted by name.
@@ -259,7 +259,7 @@ nonisolated struct NotificationToneManager: NotificationToneManagerProtocol {
     /// Element X bundled tones available for selection, sorted by name.
     private static let defaultElementXAlerts: [NotificationTone] = [
         defaultElementXMessageTone,
-        .createBundledSound(label: L10n.screenNotificationSettingsSoundElementFade,
+        .createBundledSound(label: UntranslatedL10n.screenNotificationSettingsSoundAppFadeIos(InfoPlistReader.main.productionAppName),
                             filename: "sound_01.caf")
     ].sorted()
     
