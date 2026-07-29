@@ -352,10 +352,16 @@ final nonisolated class AppSettings: @unchecked Sendable {
     // MARK: - Stickers
     
     /// The default Klipy API key used for sticker discovery. Users can override it in the sticker settings.
-    static let defaultKlipyAPIKey = "elLJFeXj5VQYe6K729esEOdNotU2i7y2yBYN9lwDNC0kK774ijXFTwgREQFo70O4"
+    /// Empty unless a key was baked into `Secrets.swift`; without one the user has to supply their own.
+    static var defaultKlipyAPIKey: String {
+        Secrets.klipyAPIKey ?? ""
+    }
     
     /// The Klipy API key used to search and download stickers in the discovery screen.
-    @UserPreference(defaultValue: AppSettings.defaultKlipyAPIKey)
+    ///
+    /// The default repeats `defaultKlipyAPIKey`'s expression rather than referring to it, as
+    /// pointing the macro at another `AppSettings` member makes its expansion recurse.
+    @UserPreference(defaultValue: Secrets.klipyAPIKey ?? "")
     var klipyAPIKey: String
     
     // MARK: - Element Call
