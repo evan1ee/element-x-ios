@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Halo X app icon — disc inset on a 1024 canvas</title>
+  <defs>
+    <!-- The login screen logo's gradient. objectBoundingBox spans the disc's own
+         height, so the ramp matches the logo regardless of the canvas size. -->
+    <linearGradient id="halo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5CC698"/>
+      <stop offset="1" stop-color="#53B39A"/>
+    </linearGradient>
+  </defs>
+  <!-- r = 358.4 puts the disc at 70% of the tile, matching the current icon. -->
+  <circle cx="512" cy="512" r="358.4" fill="url(#halo)"/>
+</svg>
