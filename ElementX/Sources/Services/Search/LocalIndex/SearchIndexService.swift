@@ -36,7 +36,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     /// Bumped whenever the schema changes so a stale index is discarded rather
     /// than queried with the wrong columns. The index is derived data, so
     /// throwing it away costs only the re-indexing.
-    private nonisolated static let schemaVersion = 2
+    /// Internal rather than private so a backup can record which schema its copy of
+    /// the index was written with, and refuse to restore a newer one.
+    nonisolated static let schemaVersion = 2
     
     init(databaseURL: URL) {
         self.databaseURL = databaseURL

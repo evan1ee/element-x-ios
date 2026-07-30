@@ -377,6 +377,23 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: true)
     var historyDownloadInBackground: Bool
     
+    // MARK: - Backup
+    
+    /// Whether encrypted backups run. Off by default — copying a user's messages to
+    /// a third party is not something to start doing on their behalf.
+    @UserPreference(defaultValue: false)
+    var backupEnabled: Bool
+    
+    @UserPreference(defaultValue: BackupProviderID.iCloud)
+    var backupProviderID: BackupProviderID
+    
+    @UserPreference
+    var lastBackupDate: Date?
+    
+    /// Hold off on cellular. Backups are large and mostly not urgent.
+    @UserPreference(defaultValue: true)
+    var backupOnWiFiOnly: Bool
+    
     // MARK: - Element Call
     
     #if IS_MAIN_APP

@@ -1757,6 +1757,741 @@ nonisolated class AuthenticationClientFactoryMock: AuthenticationClientFactoryPr
         }
     }
 }
+nonisolated class BackupDataSourceMock: BackupDataSourceProtocol, @unchecked Sendable {
+    var databaseSchemaVersion: Int {
+        get { return underlyingDatabaseSchemaVersion }
+        set(value) { underlyingDatabaseSchemaVersion = value }
+    }
+    nonisolated(unsafe) var underlyingDatabaseSchemaVersion: Int!
+    var searchIndexSchemaVersion: Int {
+        get { return underlyingSearchIndexSchemaVersion }
+        set(value) { underlyingSearchIndexSchemaVersion = value }
+    }
+    nonisolated(unsafe) var underlyingSearchIndexSchemaVersion: Int!
+
+    //MARK: - exportEntries
+
+    nonisolated(unsafe) var exportEntriesThrowableError: Error?
+    private let exportEntriesCallsCountLock = NSLock()
+    private nonisolated(unsafe) var exportEntriesUnderlyingCallsCount = 0
+    var exportEntriesCallsCount: Int {
+        get { exportEntriesCallsCountLock.withLock { exportEntriesUnderlyingCallsCount } }
+        set { exportEntriesCallsCountLock.withLock { exportEntriesUnderlyingCallsCount = newValue } }
+    }
+    var exportEntriesCalled: Bool {
+        return exportEntriesCallsCount > 0
+    }
+
+    private let exportEntriesReturnValueLock = NSLock()
+    private nonisolated(unsafe) var exportEntriesUnderlyingReturnValue: [String: Data]!
+    var exportEntriesReturnValue: [String: Data]! {
+        get { exportEntriesReturnValueLock.withLock { exportEntriesUnderlyingReturnValue } }
+        set { exportEntriesReturnValueLock.withLock { exportEntriesUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var exportEntriesClosure: (() async throws -> [String: Data])?
+
+    @concurrent func exportEntries() async throws -> [String: Data] {
+        if let error = exportEntriesThrowableError {
+            throw error
+        }
+        exportEntriesCallsCountLock.withLock { exportEntriesUnderlyingCallsCount += 1 }
+        if let exportEntriesClosure = exportEntriesClosure {
+            return try await exportEntriesClosure()
+        } else {
+            return exportEntriesReturnValue
+        }
+    }
+    //MARK: - importEntries
+
+    nonisolated(unsafe) var importEntriesThrowableError: Error?
+    private let importEntriesCallsCountLock = NSLock()
+    private nonisolated(unsafe) var importEntriesUnderlyingCallsCount = 0
+    var importEntriesCallsCount: Int {
+        get { importEntriesCallsCountLock.withLock { importEntriesUnderlyingCallsCount } }
+        set { importEntriesCallsCountLock.withLock { importEntriesUnderlyingCallsCount = newValue } }
+    }
+    var importEntriesCalled: Bool {
+        return importEntriesCallsCount > 0
+    }
+    private let importEntriesReceivedEntriesLock = NSLock()
+    private nonisolated(unsafe) var importEntriesUnderlyingReceivedEntries: [String: Data]?
+    var importEntriesReceivedEntries: [String: Data]? {
+        get { importEntriesReceivedEntriesLock.withLock { importEntriesUnderlyingReceivedEntries } }
+        set { importEntriesReceivedEntriesLock.withLock { importEntriesUnderlyingReceivedEntries = newValue } }
+    }
+    private let importEntriesReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var importEntriesUnderlyingReceivedInvocations: [[String: Data]] = []
+    var importEntriesReceivedInvocations: [[String: Data]] {
+        get { importEntriesReceivedInvocationsLock.withLock { importEntriesUnderlyingReceivedInvocations } }
+        set { importEntriesReceivedInvocationsLock.withLock { importEntriesUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var importEntriesClosure: (([String: Data]) async throws -> Void)?
+
+    @concurrent func importEntries(_ entries: [String: Data]) async throws {
+        if let error = importEntriesThrowableError {
+            throw error
+        }
+        importEntriesCallsCountLock.withLock { importEntriesUnderlyingCallsCount += 1 }
+        importEntriesReceivedEntries = entries
+        importEntriesReceivedInvocationsLock.withLock { importEntriesUnderlyingReceivedInvocations.append(entries) }
+        try await importEntriesClosure?(entries)
+    }
+}
+nonisolated class BackupManagerMock: BackupManagerProtocol, @unchecked Sendable {
+    var progressPublisher: CurrentValuePublisher<BackupProgress, Never> {
+        get { return underlyingProgressPublisher }
+        set(value) { underlyingProgressPublisher = value }
+    }
+    nonisolated(unsafe) var underlyingProgressPublisher: CurrentValuePublisher<BackupProgress, Never>!
+    var restoreProgressPublisher: CurrentValuePublisher<RestoreProgress, Never> {
+        get { return underlyingRestoreProgressPublisher }
+        set(value) { underlyingRestoreProgressPublisher = value }
+    }
+    nonisolated(unsafe) var underlyingRestoreProgressPublisher: CurrentValuePublisher<RestoreProgress, Never>!
+    nonisolated(unsafe) var providers: [BackupProviderProtocol] = []
+    var selectedProviderID: BackupProviderID {
+        get { return underlyingSelectedProviderID }
+        set(value) { underlyingSelectedProviderID = value }
+    }
+    nonisolated(unsafe) var underlyingSelectedProviderID: BackupProviderID!
+    var isEnabled: Bool {
+        get { return underlyingIsEnabled }
+        set(value) { underlyingIsEnabled = value }
+    }
+    nonisolated(unsafe) var underlyingIsEnabled: Bool!
+
+    //MARK: - availableProviders
+
+    private let availableProvidersCallsCountLock = NSLock()
+    private nonisolated(unsafe) var availableProvidersUnderlyingCallsCount = 0
+    var availableProvidersCallsCount: Int {
+        get { availableProvidersCallsCountLock.withLock { availableProvidersUnderlyingCallsCount } }
+        set { availableProvidersCallsCountLock.withLock { availableProvidersUnderlyingCallsCount = newValue } }
+    }
+    var availableProvidersCalled: Bool {
+        return availableProvidersCallsCount > 0
+    }
+
+    private let availableProvidersReturnValueLock = NSLock()
+    private nonisolated(unsafe) var availableProvidersUnderlyingReturnValue: [BackupProviderProtocol]!
+    var availableProvidersReturnValue: [BackupProviderProtocol]! {
+        get { availableProvidersReturnValueLock.withLock { availableProvidersUnderlyingReturnValue } }
+        set { availableProvidersReturnValueLock.withLock { availableProvidersUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var availableProvidersClosure: (() async -> [BackupProviderProtocol])?
+
+    @concurrent func availableProviders() async -> [BackupProviderProtocol] {
+        availableProvidersCallsCountLock.withLock { availableProvidersUnderlyingCallsCount += 1 }
+        if let availableProvidersClosure = availableProvidersClosure {
+            return await availableProvidersClosure()
+        } else {
+            return availableProvidersReturnValue
+        }
+    }
+    //MARK: - selectProvider
+
+    private let selectProviderCallsCountLock = NSLock()
+    private nonisolated(unsafe) var selectProviderUnderlyingCallsCount = 0
+    var selectProviderCallsCount: Int {
+        get { selectProviderCallsCountLock.withLock { selectProviderUnderlyingCallsCount } }
+        set { selectProviderCallsCountLock.withLock { selectProviderUnderlyingCallsCount = newValue } }
+    }
+    var selectProviderCalled: Bool {
+        return selectProviderCallsCount > 0
+    }
+    private let selectProviderReceivedIdLock = NSLock()
+    private nonisolated(unsafe) var selectProviderUnderlyingReceivedId: BackupProviderID?
+    var selectProviderReceivedId: BackupProviderID? {
+        get { selectProviderReceivedIdLock.withLock { selectProviderUnderlyingReceivedId } }
+        set { selectProviderReceivedIdLock.withLock { selectProviderUnderlyingReceivedId = newValue } }
+    }
+    private let selectProviderReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var selectProviderUnderlyingReceivedInvocations: [BackupProviderID] = []
+    var selectProviderReceivedInvocations: [BackupProviderID] {
+        get { selectProviderReceivedInvocationsLock.withLock { selectProviderUnderlyingReceivedInvocations } }
+        set { selectProviderReceivedInvocationsLock.withLock { selectProviderUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var selectProviderClosure: ((BackupProviderID) -> Void)?
+
+    func selectProvider(_ id: BackupProviderID) {
+        selectProviderCallsCountLock.withLock { selectProviderUnderlyingCallsCount += 1 }
+        selectProviderReceivedId = id
+        selectProviderReceivedInvocationsLock.withLock { selectProviderUnderlyingReceivedInvocations.append(id) }
+        selectProviderClosure?(id)
+    }
+    //MARK: - enable
+
+    private let enablePassphraseCallsCountLock = NSLock()
+    private nonisolated(unsafe) var enablePassphraseUnderlyingCallsCount = 0
+    var enablePassphraseCallsCount: Int {
+        get { enablePassphraseCallsCountLock.withLock { enablePassphraseUnderlyingCallsCount } }
+        set { enablePassphraseCallsCountLock.withLock { enablePassphraseUnderlyingCallsCount = newValue } }
+    }
+    var enablePassphraseCalled: Bool {
+        return enablePassphraseCallsCount > 0
+    }
+    private let enablePassphraseReceivedPassphraseLock = NSLock()
+    private nonisolated(unsafe) var enablePassphraseUnderlyingReceivedPassphrase: String?
+    var enablePassphraseReceivedPassphrase: String? {
+        get { enablePassphraseReceivedPassphraseLock.withLock { enablePassphraseUnderlyingReceivedPassphrase } }
+        set { enablePassphraseReceivedPassphraseLock.withLock { enablePassphraseUnderlyingReceivedPassphrase = newValue } }
+    }
+    private let enablePassphraseReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var enablePassphraseUnderlyingReceivedInvocations: [String] = []
+    var enablePassphraseReceivedInvocations: [String] {
+        get { enablePassphraseReceivedInvocationsLock.withLock { enablePassphraseUnderlyingReceivedInvocations } }
+        set { enablePassphraseReceivedInvocationsLock.withLock { enablePassphraseUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let enablePassphraseReturnValueLock = NSLock()
+    private nonisolated(unsafe) var enablePassphraseUnderlyingReturnValue: Result<Void, BackupError>!
+    var enablePassphraseReturnValue: Result<Void, BackupError>! {
+        get { enablePassphraseReturnValueLock.withLock { enablePassphraseUnderlyingReturnValue } }
+        set { enablePassphraseReturnValueLock.withLock { enablePassphraseUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var enablePassphraseClosure: ((String) async -> Result<Void, BackupError>)?
+
+    @concurrent func enable(passphrase: String) async -> Result<Void, BackupError> {
+        enablePassphraseCallsCountLock.withLock { enablePassphraseUnderlyingCallsCount += 1 }
+        enablePassphraseReceivedPassphrase = passphrase
+        enablePassphraseReceivedInvocationsLock.withLock { enablePassphraseUnderlyingReceivedInvocations.append(passphrase) }
+        if let enablePassphraseClosure = enablePassphraseClosure {
+            return await enablePassphraseClosure(passphrase)
+        } else {
+            return enablePassphraseReturnValue
+        }
+    }
+    //MARK: - disable
+
+    private let disableDisposalCallsCountLock = NSLock()
+    private nonisolated(unsafe) var disableDisposalUnderlyingCallsCount = 0
+    var disableDisposalCallsCount: Int {
+        get { disableDisposalCallsCountLock.withLock { disableDisposalUnderlyingCallsCount } }
+        set { disableDisposalCallsCountLock.withLock { disableDisposalUnderlyingCallsCount = newValue } }
+    }
+    var disableDisposalCalled: Bool {
+        return disableDisposalCallsCount > 0
+    }
+    private let disableDisposalReceivedDisposalLock = NSLock()
+    private nonisolated(unsafe) var disableDisposalUnderlyingReceivedDisposal: BackupDisposal?
+    var disableDisposalReceivedDisposal: BackupDisposal? {
+        get { disableDisposalReceivedDisposalLock.withLock { disableDisposalUnderlyingReceivedDisposal } }
+        set { disableDisposalReceivedDisposalLock.withLock { disableDisposalUnderlyingReceivedDisposal = newValue } }
+    }
+    private let disableDisposalReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var disableDisposalUnderlyingReceivedInvocations: [BackupDisposal] = []
+    var disableDisposalReceivedInvocations: [BackupDisposal] {
+        get { disableDisposalReceivedInvocationsLock.withLock { disableDisposalUnderlyingReceivedInvocations } }
+        set { disableDisposalReceivedInvocationsLock.withLock { disableDisposalUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let disableDisposalReturnValueLock = NSLock()
+    private nonisolated(unsafe) var disableDisposalUnderlyingReturnValue: Result<Void, BackupError>!
+    var disableDisposalReturnValue: Result<Void, BackupError>! {
+        get { disableDisposalReturnValueLock.withLock { disableDisposalUnderlyingReturnValue } }
+        set { disableDisposalReturnValueLock.withLock { disableDisposalUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var disableDisposalClosure: ((BackupDisposal) async -> Result<Void, BackupError>)?
+
+    @concurrent func disable(disposal: BackupDisposal) async -> Result<Void, BackupError> {
+        disableDisposalCallsCountLock.withLock { disableDisposalUnderlyingCallsCount += 1 }
+        disableDisposalReceivedDisposal = disposal
+        disableDisposalReceivedInvocationsLock.withLock { disableDisposalUnderlyingReceivedInvocations.append(disposal) }
+        if let disableDisposalClosure = disableDisposalClosure {
+            return await disableDisposalClosure(disposal)
+        } else {
+            return disableDisposalReturnValue
+        }
+    }
+    //MARK: - backUpNow
+
+    private let backUpNowCallsCountLock = NSLock()
+    private nonisolated(unsafe) var backUpNowUnderlyingCallsCount = 0
+    var backUpNowCallsCount: Int {
+        get { backUpNowCallsCountLock.withLock { backUpNowUnderlyingCallsCount } }
+        set { backUpNowCallsCountLock.withLock { backUpNowUnderlyingCallsCount = newValue } }
+    }
+    var backUpNowCalled: Bool {
+        return backUpNowCallsCount > 0
+    }
+
+    private let backUpNowReturnValueLock = NSLock()
+    private nonisolated(unsafe) var backUpNowUnderlyingReturnValue: Result<Void, BackupError>!
+    var backUpNowReturnValue: Result<Void, BackupError>! {
+        get { backUpNowReturnValueLock.withLock { backUpNowUnderlyingReturnValue } }
+        set { backUpNowReturnValueLock.withLock { backUpNowUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var backUpNowClosure: (() async -> Result<Void, BackupError>)?
+
+    @concurrent func backUpNow() async -> Result<Void, BackupError> {
+        backUpNowCallsCountLock.withLock { backUpNowUnderlyingCallsCount += 1 }
+        if let backUpNowClosure = backUpNowClosure {
+            return await backUpNowClosure()
+        } else {
+            return backUpNowReturnValue
+        }
+    }
+    //MARK: - listBackups
+
+    private let listBackupsCallsCountLock = NSLock()
+    private nonisolated(unsafe) var listBackupsUnderlyingCallsCount = 0
+    var listBackupsCallsCount: Int {
+        get { listBackupsCallsCountLock.withLock { listBackupsUnderlyingCallsCount } }
+        set { listBackupsCallsCountLock.withLock { listBackupsUnderlyingCallsCount = newValue } }
+    }
+    var listBackupsCalled: Bool {
+        return listBackupsCallsCount > 0
+    }
+
+    private let listBackupsReturnValueLock = NSLock()
+    private nonisolated(unsafe) var listBackupsUnderlyingReturnValue: Result<[BackupDescriptor], BackupError>!
+    var listBackupsReturnValue: Result<[BackupDescriptor], BackupError>! {
+        get { listBackupsReturnValueLock.withLock { listBackupsUnderlyingReturnValue } }
+        set { listBackupsReturnValueLock.withLock { listBackupsUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var listBackupsClosure: (() async -> Result<[BackupDescriptor], BackupError>)?
+
+    @concurrent func listBackups() async -> Result<[BackupDescriptor], BackupError> {
+        listBackupsCallsCountLock.withLock { listBackupsUnderlyingCallsCount += 1 }
+        if let listBackupsClosure = listBackupsClosure {
+            return await listBackupsClosure()
+        } else {
+            return listBackupsReturnValue
+        }
+    }
+    //MARK: - deleteBackup
+
+    private let deleteBackupIdCallsCountLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingCallsCount = 0
+    var deleteBackupIdCallsCount: Int {
+        get { deleteBackupIdCallsCountLock.withLock { deleteBackupIdUnderlyingCallsCount } }
+        set { deleteBackupIdCallsCountLock.withLock { deleteBackupIdUnderlyingCallsCount = newValue } }
+    }
+    var deleteBackupIdCalled: Bool {
+        return deleteBackupIdCallsCount > 0
+    }
+    private let deleteBackupIdReceivedIdLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingReceivedId: String?
+    var deleteBackupIdReceivedId: String? {
+        get { deleteBackupIdReceivedIdLock.withLock { deleteBackupIdUnderlyingReceivedId } }
+        set { deleteBackupIdReceivedIdLock.withLock { deleteBackupIdUnderlyingReceivedId = newValue } }
+    }
+    private let deleteBackupIdReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingReceivedInvocations: [String] = []
+    var deleteBackupIdReceivedInvocations: [String] {
+        get { deleteBackupIdReceivedInvocationsLock.withLock { deleteBackupIdUnderlyingReceivedInvocations } }
+        set { deleteBackupIdReceivedInvocationsLock.withLock { deleteBackupIdUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let deleteBackupIdReturnValueLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingReturnValue: Result<Void, BackupError>!
+    var deleteBackupIdReturnValue: Result<Void, BackupError>! {
+        get { deleteBackupIdReturnValueLock.withLock { deleteBackupIdUnderlyingReturnValue } }
+        set { deleteBackupIdReturnValueLock.withLock { deleteBackupIdUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var deleteBackupIdClosure: ((String) async -> Result<Void, BackupError>)?
+
+    @concurrent func deleteBackup(id: String) async -> Result<Void, BackupError> {
+        deleteBackupIdCallsCountLock.withLock { deleteBackupIdUnderlyingCallsCount += 1 }
+        deleteBackupIdReceivedId = id
+        deleteBackupIdReceivedInvocationsLock.withLock { deleteBackupIdUnderlyingReceivedInvocations.append(id) }
+        if let deleteBackupIdClosure = deleteBackupIdClosure {
+            return await deleteBackupIdClosure(id)
+        } else {
+            return deleteBackupIdReturnValue
+        }
+    }
+    //MARK: - storageInfo
+
+    private let storageInfoCallsCountLock = NSLock()
+    private nonisolated(unsafe) var storageInfoUnderlyingCallsCount = 0
+    var storageInfoCallsCount: Int {
+        get { storageInfoCallsCountLock.withLock { storageInfoUnderlyingCallsCount } }
+        set { storageInfoCallsCountLock.withLock { storageInfoUnderlyingCallsCount = newValue } }
+    }
+    var storageInfoCalled: Bool {
+        return storageInfoCallsCount > 0
+    }
+
+    private let storageInfoReturnValueLock = NSLock()
+    private nonisolated(unsafe) var storageInfoUnderlyingReturnValue: Result<BackupStorageInfo, BackupError>!
+    var storageInfoReturnValue: Result<BackupStorageInfo, BackupError>! {
+        get { storageInfoReturnValueLock.withLock { storageInfoUnderlyingReturnValue } }
+        set { storageInfoReturnValueLock.withLock { storageInfoUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var storageInfoClosure: (() async -> Result<BackupStorageInfo, BackupError>)?
+
+    @concurrent func storageInfo() async -> Result<BackupStorageInfo, BackupError> {
+        storageInfoCallsCountLock.withLock { storageInfoUnderlyingCallsCount += 1 }
+        if let storageInfoClosure = storageInfoClosure {
+            return await storageInfoClosure()
+        } else {
+            return storageInfoReturnValue
+        }
+    }
+    //MARK: - restore
+
+    private let restoreDescriptorPassphraseCallsCountLock = NSLock()
+    private nonisolated(unsafe) var restoreDescriptorPassphraseUnderlyingCallsCount = 0
+    var restoreDescriptorPassphraseCallsCount: Int {
+        get { restoreDescriptorPassphraseCallsCountLock.withLock { restoreDescriptorPassphraseUnderlyingCallsCount } }
+        set { restoreDescriptorPassphraseCallsCountLock.withLock { restoreDescriptorPassphraseUnderlyingCallsCount = newValue } }
+    }
+    var restoreDescriptorPassphraseCalled: Bool {
+        return restoreDescriptorPassphraseCallsCount > 0
+    }
+    private let restoreDescriptorPassphraseReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var restoreDescriptorPassphraseUnderlyingReceivedArguments: (descriptor: BackupDescriptor, passphrase: String)?
+    var restoreDescriptorPassphraseReceivedArguments: (descriptor: BackupDescriptor, passphrase: String)? {
+        get { restoreDescriptorPassphraseReceivedArgumentsLock.withLock { restoreDescriptorPassphraseUnderlyingReceivedArguments } }
+        set { restoreDescriptorPassphraseReceivedArgumentsLock.withLock { restoreDescriptorPassphraseUnderlyingReceivedArguments = newValue } }
+    }
+    private let restoreDescriptorPassphraseReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var restoreDescriptorPassphraseUnderlyingReceivedInvocations: [(descriptor: BackupDescriptor, passphrase: String)] = []
+    var restoreDescriptorPassphraseReceivedInvocations: [(descriptor: BackupDescriptor, passphrase: String)] {
+        get { restoreDescriptorPassphraseReceivedInvocationsLock.withLock { restoreDescriptorPassphraseUnderlyingReceivedInvocations } }
+        set { restoreDescriptorPassphraseReceivedInvocationsLock.withLock { restoreDescriptorPassphraseUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let restoreDescriptorPassphraseReturnValueLock = NSLock()
+    private nonisolated(unsafe) var restoreDescriptorPassphraseUnderlyingReturnValue: Result<Void, BackupError>!
+    var restoreDescriptorPassphraseReturnValue: Result<Void, BackupError>! {
+        get { restoreDescriptorPassphraseReturnValueLock.withLock { restoreDescriptorPassphraseUnderlyingReturnValue } }
+        set { restoreDescriptorPassphraseReturnValueLock.withLock { restoreDescriptorPassphraseUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var restoreDescriptorPassphraseClosure: ((BackupDescriptor, String) async -> Result<Void, BackupError>)?
+
+    @concurrent func restore(descriptor: BackupDescriptor, passphrase: String) async -> Result<Void, BackupError> {
+        restoreDescriptorPassphraseCallsCountLock.withLock { restoreDescriptorPassphraseUnderlyingCallsCount += 1 }
+        restoreDescriptorPassphraseReceivedArguments = (descriptor: descriptor, passphrase: passphrase)
+        restoreDescriptorPassphraseReceivedInvocationsLock.withLock { restoreDescriptorPassphraseUnderlyingReceivedInvocations.append((descriptor: descriptor, passphrase: passphrase)) }
+        if let restoreDescriptorPassphraseClosure = restoreDescriptorPassphraseClosure {
+            return await restoreDescriptorPassphraseClosure(descriptor, passphrase)
+        } else {
+            return restoreDescriptorPassphraseReturnValue
+        }
+    }
+    //MARK: - applicationDidEnterBackground
+
+    private let applicationDidEnterBackgroundCallsCountLock = NSLock()
+    private nonisolated(unsafe) var applicationDidEnterBackgroundUnderlyingCallsCount = 0
+    var applicationDidEnterBackgroundCallsCount: Int {
+        get { applicationDidEnterBackgroundCallsCountLock.withLock { applicationDidEnterBackgroundUnderlyingCallsCount } }
+        set { applicationDidEnterBackgroundCallsCountLock.withLock { applicationDidEnterBackgroundUnderlyingCallsCount = newValue } }
+    }
+    var applicationDidEnterBackgroundCalled: Bool {
+        return applicationDidEnterBackgroundCallsCount > 0
+    }
+    nonisolated(unsafe) var applicationDidEnterBackgroundClosure: (() -> Void)?
+
+    func applicationDidEnterBackground() {
+        applicationDidEnterBackgroundCallsCountLock.withLock { applicationDidEnterBackgroundUnderlyingCallsCount += 1 }
+        applicationDidEnterBackgroundClosure?()
+    }
+}
+nonisolated class BackupPassphraseStoreMock: BackupPassphraseStoreProtocol, @unchecked Sendable {
+    nonisolated(unsafe) var passphrase: String?
+
+    //MARK: - setPassphrase
+
+    private let setPassphraseCallsCountLock = NSLock()
+    private nonisolated(unsafe) var setPassphraseUnderlyingCallsCount = 0
+    var setPassphraseCallsCount: Int {
+        get { setPassphraseCallsCountLock.withLock { setPassphraseUnderlyingCallsCount } }
+        set { setPassphraseCallsCountLock.withLock { setPassphraseUnderlyingCallsCount = newValue } }
+    }
+    var setPassphraseCalled: Bool {
+        return setPassphraseCallsCount > 0
+    }
+    private let setPassphraseReceivedPassphraseLock = NSLock()
+    private nonisolated(unsafe) var setPassphraseUnderlyingReceivedPassphrase: String?
+    var setPassphraseReceivedPassphrase: String? {
+        get { setPassphraseReceivedPassphraseLock.withLock { setPassphraseUnderlyingReceivedPassphrase } }
+        set { setPassphraseReceivedPassphraseLock.withLock { setPassphraseUnderlyingReceivedPassphrase = newValue } }
+    }
+    private let setPassphraseReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var setPassphraseUnderlyingReceivedInvocations: [String] = []
+    var setPassphraseReceivedInvocations: [String] {
+        get { setPassphraseReceivedInvocationsLock.withLock { setPassphraseUnderlyingReceivedInvocations } }
+        set { setPassphraseReceivedInvocationsLock.withLock { setPassphraseUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var setPassphraseClosure: ((String) -> Void)?
+
+    func setPassphrase(_ passphrase: String) {
+        setPassphraseCallsCountLock.withLock { setPassphraseUnderlyingCallsCount += 1 }
+        setPassphraseReceivedPassphrase = passphrase
+        setPassphraseReceivedInvocationsLock.withLock { setPassphraseUnderlyingReceivedInvocations.append(passphrase) }
+        setPassphraseClosure?(passphrase)
+    }
+    //MARK: - removePassphrase
+
+    private let removePassphraseCallsCountLock = NSLock()
+    private nonisolated(unsafe) var removePassphraseUnderlyingCallsCount = 0
+    var removePassphraseCallsCount: Int {
+        get { removePassphraseCallsCountLock.withLock { removePassphraseUnderlyingCallsCount } }
+        set { removePassphraseCallsCountLock.withLock { removePassphraseUnderlyingCallsCount = newValue } }
+    }
+    var removePassphraseCalled: Bool {
+        return removePassphraseCallsCount > 0
+    }
+    nonisolated(unsafe) var removePassphraseClosure: (() -> Void)?
+
+    func removePassphrase() {
+        removePassphraseCallsCountLock.withLock { removePassphraseUnderlyingCallsCount += 1 }
+        removePassphraseClosure?()
+    }
+}
+nonisolated class BackupProviderMock: BackupProviderProtocol, @unchecked Sendable {
+    var id: BackupProviderID {
+        get { return underlyingId }
+        set(value) { underlyingId = value }
+    }
+    nonisolated(unsafe) var underlyingId: BackupProviderID!
+    var name: String {
+        get { return underlyingName }
+        set(value) { underlyingName = value }
+    }
+    nonisolated(unsafe) var underlyingName: String!
+
+    //MARK: - isAvailable
+
+    private let isAvailableCallsCountLock = NSLock()
+    private nonisolated(unsafe) var isAvailableUnderlyingCallsCount = 0
+    var isAvailableCallsCount: Int {
+        get { isAvailableCallsCountLock.withLock { isAvailableUnderlyingCallsCount } }
+        set { isAvailableCallsCountLock.withLock { isAvailableUnderlyingCallsCount = newValue } }
+    }
+    var isAvailableCalled: Bool {
+        return isAvailableCallsCount > 0
+    }
+
+    private let isAvailableReturnValueLock = NSLock()
+    private nonisolated(unsafe) var isAvailableUnderlyingReturnValue: Bool!
+    var isAvailableReturnValue: Bool! {
+        get { isAvailableReturnValueLock.withLock { isAvailableUnderlyingReturnValue } }
+        set { isAvailableReturnValueLock.withLock { isAvailableUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var isAvailableClosure: (() async -> Bool)?
+
+    @concurrent func isAvailable() async -> Bool {
+        isAvailableCallsCountLock.withLock { isAvailableUnderlyingCallsCount += 1 }
+        if let isAvailableClosure = isAvailableClosure {
+            return await isAvailableClosure()
+        } else {
+            return isAvailableReturnValue
+        }
+    }
+    //MARK: - authenticate
+
+    private let authenticateCallsCountLock = NSLock()
+    private nonisolated(unsafe) var authenticateUnderlyingCallsCount = 0
+    var authenticateCallsCount: Int {
+        get { authenticateCallsCountLock.withLock { authenticateUnderlyingCallsCount } }
+        set { authenticateCallsCountLock.withLock { authenticateUnderlyingCallsCount = newValue } }
+    }
+    var authenticateCalled: Bool {
+        return authenticateCallsCount > 0
+    }
+
+    private let authenticateReturnValueLock = NSLock()
+    private nonisolated(unsafe) var authenticateUnderlyingReturnValue: Result<Void, BackupError>!
+    var authenticateReturnValue: Result<Void, BackupError>! {
+        get { authenticateReturnValueLock.withLock { authenticateUnderlyingReturnValue } }
+        set { authenticateReturnValueLock.withLock { authenticateUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var authenticateClosure: (() async -> Result<Void, BackupError>)?
+
+    @concurrent func authenticate() async -> Result<Void, BackupError> {
+        authenticateCallsCountLock.withLock { authenticateUnderlyingCallsCount += 1 }
+        if let authenticateClosure = authenticateClosure {
+            return await authenticateClosure()
+        } else {
+            return authenticateReturnValue
+        }
+    }
+    //MARK: - upload
+
+    private let uploadPackageURLManifestProgressCallsCountLock = NSLock()
+    private nonisolated(unsafe) var uploadPackageURLManifestProgressUnderlyingCallsCount = 0
+    var uploadPackageURLManifestProgressCallsCount: Int {
+        get { uploadPackageURLManifestProgressCallsCountLock.withLock { uploadPackageURLManifestProgressUnderlyingCallsCount } }
+        set { uploadPackageURLManifestProgressCallsCountLock.withLock { uploadPackageURLManifestProgressUnderlyingCallsCount = newValue } }
+    }
+    var uploadPackageURLManifestProgressCalled: Bool {
+        return uploadPackageURLManifestProgressCallsCount > 0
+    }
+    private let uploadPackageURLManifestProgressReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var uploadPackageURLManifestProgressUnderlyingReceivedArguments: (packageURL: URL, manifest: BackupManifest, progress: (Double) -> Void)?
+    var uploadPackageURLManifestProgressReceivedArguments: (packageURL: URL, manifest: BackupManifest, progress: (Double) -> Void)? {
+        get { uploadPackageURLManifestProgressReceivedArgumentsLock.withLock { uploadPackageURLManifestProgressUnderlyingReceivedArguments } }
+        set { uploadPackageURLManifestProgressReceivedArgumentsLock.withLock { uploadPackageURLManifestProgressUnderlyingReceivedArguments = newValue } }
+    }
+    private let uploadPackageURLManifestProgressReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var uploadPackageURLManifestProgressUnderlyingReceivedInvocations: [(packageURL: URL, manifest: BackupManifest, progress: (Double) -> Void)] = []
+    var uploadPackageURLManifestProgressReceivedInvocations: [(packageURL: URL, manifest: BackupManifest, progress: (Double) -> Void)] {
+        get { uploadPackageURLManifestProgressReceivedInvocationsLock.withLock { uploadPackageURLManifestProgressUnderlyingReceivedInvocations } }
+        set { uploadPackageURLManifestProgressReceivedInvocationsLock.withLock { uploadPackageURLManifestProgressUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let uploadPackageURLManifestProgressReturnValueLock = NSLock()
+    private nonisolated(unsafe) var uploadPackageURLManifestProgressUnderlyingReturnValue: Result<BackupDescriptor, BackupError>!
+    var uploadPackageURLManifestProgressReturnValue: Result<BackupDescriptor, BackupError>! {
+        get { uploadPackageURLManifestProgressReturnValueLock.withLock { uploadPackageURLManifestProgressUnderlyingReturnValue } }
+        set { uploadPackageURLManifestProgressReturnValueLock.withLock { uploadPackageURLManifestProgressUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var uploadPackageURLManifestProgressClosure: ((URL, BackupManifest, @Sendable @escaping (Double) -> Void) async -> Result<BackupDescriptor, BackupError>)?
+
+    @concurrent func upload(packageURL: URL, manifest: BackupManifest, progress: @Sendable @escaping (Double) -> Void) async -> Result<BackupDescriptor, BackupError> {
+        uploadPackageURLManifestProgressCallsCountLock.withLock { uploadPackageURLManifestProgressUnderlyingCallsCount += 1 }
+        uploadPackageURLManifestProgressReceivedArguments = (packageURL: packageURL, manifest: manifest, progress: progress)
+        uploadPackageURLManifestProgressReceivedInvocationsLock.withLock { uploadPackageURLManifestProgressUnderlyingReceivedInvocations.append((packageURL: packageURL, manifest: manifest, progress: progress)) }
+        if let uploadPackageURLManifestProgressClosure = uploadPackageURLManifestProgressClosure {
+            return await uploadPackageURLManifestProgressClosure(packageURL, manifest, progress)
+        } else {
+            return uploadPackageURLManifestProgressReturnValue
+        }
+    }
+    //MARK: - download
+
+    private let downloadIdToProgressCallsCountLock = NSLock()
+    private nonisolated(unsafe) var downloadIdToProgressUnderlyingCallsCount = 0
+    var downloadIdToProgressCallsCount: Int {
+        get { downloadIdToProgressCallsCountLock.withLock { downloadIdToProgressUnderlyingCallsCount } }
+        set { downloadIdToProgressCallsCountLock.withLock { downloadIdToProgressUnderlyingCallsCount = newValue } }
+    }
+    var downloadIdToProgressCalled: Bool {
+        return downloadIdToProgressCallsCount > 0
+    }
+    private let downloadIdToProgressReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var downloadIdToProgressUnderlyingReceivedArguments: (id: String, destinationURL: URL, progress: (Double) -> Void)?
+    var downloadIdToProgressReceivedArguments: (id: String, destinationURL: URL, progress: (Double) -> Void)? {
+        get { downloadIdToProgressReceivedArgumentsLock.withLock { downloadIdToProgressUnderlyingReceivedArguments } }
+        set { downloadIdToProgressReceivedArgumentsLock.withLock { downloadIdToProgressUnderlyingReceivedArguments = newValue } }
+    }
+    private let downloadIdToProgressReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var downloadIdToProgressUnderlyingReceivedInvocations: [(id: String, destinationURL: URL, progress: (Double) -> Void)] = []
+    var downloadIdToProgressReceivedInvocations: [(id: String, destinationURL: URL, progress: (Double) -> Void)] {
+        get { downloadIdToProgressReceivedInvocationsLock.withLock { downloadIdToProgressUnderlyingReceivedInvocations } }
+        set { downloadIdToProgressReceivedInvocationsLock.withLock { downloadIdToProgressUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let downloadIdToProgressReturnValueLock = NSLock()
+    private nonisolated(unsafe) var downloadIdToProgressUnderlyingReturnValue: Result<URL, BackupError>!
+    var downloadIdToProgressReturnValue: Result<URL, BackupError>! {
+        get { downloadIdToProgressReturnValueLock.withLock { downloadIdToProgressUnderlyingReturnValue } }
+        set { downloadIdToProgressReturnValueLock.withLock { downloadIdToProgressUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var downloadIdToProgressClosure: ((String, URL, @Sendable @escaping (Double) -> Void) async -> Result<URL, BackupError>)?
+
+    @concurrent func download(id: String, to destinationURL: URL, progress: @Sendable @escaping (Double) -> Void) async -> Result<URL, BackupError> {
+        downloadIdToProgressCallsCountLock.withLock { downloadIdToProgressUnderlyingCallsCount += 1 }
+        downloadIdToProgressReceivedArguments = (id: id, destinationURL: destinationURL, progress: progress)
+        downloadIdToProgressReceivedInvocationsLock.withLock { downloadIdToProgressUnderlyingReceivedInvocations.append((id: id, destinationURL: destinationURL, progress: progress)) }
+        if let downloadIdToProgressClosure = downloadIdToProgressClosure {
+            return await downloadIdToProgressClosure(id, destinationURL, progress)
+        } else {
+            return downloadIdToProgressReturnValue
+        }
+    }
+    //MARK: - listBackups
+
+    private let listBackupsCallsCountLock = NSLock()
+    private nonisolated(unsafe) var listBackupsUnderlyingCallsCount = 0
+    var listBackupsCallsCount: Int {
+        get { listBackupsCallsCountLock.withLock { listBackupsUnderlyingCallsCount } }
+        set { listBackupsCallsCountLock.withLock { listBackupsUnderlyingCallsCount = newValue } }
+    }
+    var listBackupsCalled: Bool {
+        return listBackupsCallsCount > 0
+    }
+
+    private let listBackupsReturnValueLock = NSLock()
+    private nonisolated(unsafe) var listBackupsUnderlyingReturnValue: Result<[BackupDescriptor], BackupError>!
+    var listBackupsReturnValue: Result<[BackupDescriptor], BackupError>! {
+        get { listBackupsReturnValueLock.withLock { listBackupsUnderlyingReturnValue } }
+        set { listBackupsReturnValueLock.withLock { listBackupsUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var listBackupsClosure: (() async -> Result<[BackupDescriptor], BackupError>)?
+
+    @concurrent func listBackups() async -> Result<[BackupDescriptor], BackupError> {
+        listBackupsCallsCountLock.withLock { listBackupsUnderlyingCallsCount += 1 }
+        if let listBackupsClosure = listBackupsClosure {
+            return await listBackupsClosure()
+        } else {
+            return listBackupsReturnValue
+        }
+    }
+    //MARK: - deleteBackup
+
+    private let deleteBackupIdCallsCountLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingCallsCount = 0
+    var deleteBackupIdCallsCount: Int {
+        get { deleteBackupIdCallsCountLock.withLock { deleteBackupIdUnderlyingCallsCount } }
+        set { deleteBackupIdCallsCountLock.withLock { deleteBackupIdUnderlyingCallsCount = newValue } }
+    }
+    var deleteBackupIdCalled: Bool {
+        return deleteBackupIdCallsCount > 0
+    }
+    private let deleteBackupIdReceivedIdLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingReceivedId: String?
+    var deleteBackupIdReceivedId: String? {
+        get { deleteBackupIdReceivedIdLock.withLock { deleteBackupIdUnderlyingReceivedId } }
+        set { deleteBackupIdReceivedIdLock.withLock { deleteBackupIdUnderlyingReceivedId = newValue } }
+    }
+    private let deleteBackupIdReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingReceivedInvocations: [String] = []
+    var deleteBackupIdReceivedInvocations: [String] {
+        get { deleteBackupIdReceivedInvocationsLock.withLock { deleteBackupIdUnderlyingReceivedInvocations } }
+        set { deleteBackupIdReceivedInvocationsLock.withLock { deleteBackupIdUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let deleteBackupIdReturnValueLock = NSLock()
+    private nonisolated(unsafe) var deleteBackupIdUnderlyingReturnValue: Result<Void, BackupError>!
+    var deleteBackupIdReturnValue: Result<Void, BackupError>! {
+        get { deleteBackupIdReturnValueLock.withLock { deleteBackupIdUnderlyingReturnValue } }
+        set { deleteBackupIdReturnValueLock.withLock { deleteBackupIdUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var deleteBackupIdClosure: ((String) async -> Result<Void, BackupError>)?
+
+    @concurrent func deleteBackup(id: String) async -> Result<Void, BackupError> {
+        deleteBackupIdCallsCountLock.withLock { deleteBackupIdUnderlyingCallsCount += 1 }
+        deleteBackupIdReceivedId = id
+        deleteBackupIdReceivedInvocationsLock.withLock { deleteBackupIdUnderlyingReceivedInvocations.append(id) }
+        if let deleteBackupIdClosure = deleteBackupIdClosure {
+            return await deleteBackupIdClosure(id)
+        } else {
+            return deleteBackupIdReturnValue
+        }
+    }
+    //MARK: - storageInfo
+
+    private let storageInfoCallsCountLock = NSLock()
+    private nonisolated(unsafe) var storageInfoUnderlyingCallsCount = 0
+    var storageInfoCallsCount: Int {
+        get { storageInfoCallsCountLock.withLock { storageInfoUnderlyingCallsCount } }
+        set { storageInfoCallsCountLock.withLock { storageInfoUnderlyingCallsCount = newValue } }
+    }
+    var storageInfoCalled: Bool {
+        return storageInfoCallsCount > 0
+    }
+
+    private let storageInfoReturnValueLock = NSLock()
+    private nonisolated(unsafe) var storageInfoUnderlyingReturnValue: Result<BackupStorageInfo, BackupError>!
+    var storageInfoReturnValue: Result<BackupStorageInfo, BackupError>! {
+        get { storageInfoReturnValueLock.withLock { storageInfoUnderlyingReturnValue } }
+        set { storageInfoReturnValueLock.withLock { storageInfoUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var storageInfoClosure: (() async -> Result<BackupStorageInfo, BackupError>)?
+
+    @concurrent func storageInfo() async -> Result<BackupStorageInfo, BackupError> {
+        storageInfoCallsCountLock.withLock { storageInfoUnderlyingCallsCount += 1 }
+        if let storageInfoClosure = storageInfoClosure {
+            return await storageInfoClosure()
+        } else {
+            return storageInfoReturnValue
+        }
+    }
+}
 nonisolated class BannedRoomProxyMock: BannedRoomProxyProtocol, @unchecked Sendable {
     var info: BaseRoomInfoProxyProtocol {
         get { return underlyingInfo }
@@ -15056,6 +15791,11 @@ nonisolated class UserSessionMock: UserSessionProtocol, @unchecked Sendable {
         set(value) { underlyingHistoryDownloadManager = value }
     }
     nonisolated(unsafe) var underlyingHistoryDownloadManager: HistoryDownloadManagerProtocol!
+    var backupManager: BackupManagerProtocol {
+        get { return underlyingBackupManager }
+        set(value) { underlyingBackupManager = value }
+    }
+    nonisolated(unsafe) var underlyingBackupManager: BackupManagerProtocol!
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> {
         get { return underlyingSessionSecurityStatePublisher }
         set(value) { underlyingSessionSecurityStatePublisher = value }

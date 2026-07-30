@@ -8,6 +8,7 @@
 
 import Combine
 import Foundation
+import UIKit
 
 class UserSession: UserSessionProtocol {
     private var cancellables = Set<AnyCancellable>()
@@ -29,6 +30,10 @@ class UserSession: UserSessionProtocol {
     let historyDownloadManager: HistoryDownloadManagerProtocol
     private let searchIndexBackfillService: SearchIndexBackfillService
     
+    /// Optional encrypted backup of everything above, plus preferences. Idle unless
+    /// the user turns it on.
+    let backupManager: BackupManagerProtocol
+    
     let callbacks = PassthroughSubject<UserSessionCallback, Never>()
     
     let sessionSecurityStateSubject = CurrentValueSubject<SessionSecurityState, Never>(.init(verificationState: .unknown, recoveryState: .unknown))
@@ -40,6 +45,7 @@ class UserSession: UserSessionProtocol {
          mediaProvider: MediaProviderProtocol,
          voiceMessageMediaManager: VoiceMessageMediaManagerProtocol,
          liveLocationManager: LiveLocationManagerProtocol,
+         sessionDirectories: SessionDirectories?,
          appSettings: AppSettings) {
         self.clientProxy = clientProxy
         self.mediaProvider = mediaProvider
@@ -68,6 +74,21 @@ class UserSession: UserSessionProtocol {
                                                             appSettings: appSettings)
         self.historyDownloadManager = historyDownloadManager
         historyDownloadManager.start()
+        
+        // Providers are listed in the order the picker shows them. Adding one here is
+        // the whole cost of a new destination — nothing in the engine changes.
+        backupManager = BackupManager(providers: [ICloudBackupProvider(),
+                                                  LocalFileBackupProvider()],
+                                      dataSource: SessionBackupDataSource(sessionDirectories: sessionDirectories,
+                                                                          searchIndexURL: .searchIndexURL(for: clientProxy.userID),
+                                                                          preferencesSuiteName: AppSettings.suiteName,
+                                                                          userID: clientProxy.userID),
+                                      passphraseStore: BackupPassphraseStore(service: InfoPlistReader.main.baseBundleIdentifier + ".backup",
+                                                                             accessGroup: InfoPlistReader.main.keychainAccessGroupIdentifier),
+                                      appSettings: appSettings,
+                                      userID: clientProxy.userID,
+                                      deviceName: UIDevice.current.name,
+                                      appVersion: InfoPlistReader.main.bundleShortVersionString)
         
         authErrorCancellable = clientProxy.actionsPublisher
             .receive(on: DispatchQueue.main)

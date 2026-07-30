@@ -7,6 +7,13 @@ settings:
   DEVELOPMENT_TEAM: RN9SLQ2637
   IS_NIGHTLY_BUILD: false
 
+  # The iCloud Drive backup container. Deliberately its own setting rather than
+  # derived from the bundle identifier: container IDs are unique across every Apple
+  # developer account, so the one matching your bundle ID may already be taken and
+  # you have to be free to pick another. Must match a container registered to this
+  # team, or the iCloud provider reports itself unavailable and is hidden.
+  ICLOUD_CONTAINER_IDENTIFIER: iCloud.com.evan1ee.elementx
+
   # Optional configuration to load accounts from Element Classic.
   CLASSIC_APP_GROUP_IDENTIFIER: group.im.vector
   CLASSIC_APP_KEYCHAIN_SERVICE_IDENTIFIER: im.vector.app.encryption-manager-service

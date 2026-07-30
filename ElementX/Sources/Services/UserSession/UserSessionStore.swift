@@ -115,10 +115,18 @@ class UserSessionStore: UserSessionStoreProtocol {
                                 appSettings: appSettings)
         }
         
+        // Only the restoration token knows where this session's databases live, and
+        // the backup needs them. Absent means the backup carries preferences and the
+        // search index but no message store, rather than failing outright.
+        let sessionDirectories = keychainController.restorationTokens()
+            .first { $0.userID == clientProxy.userID }?
+            .restorationToken.sessionDirectories
+        
         return UserSession(clientProxy: clientProxy,
                            mediaProvider: mediaProvider,
                            voiceMessageMediaManager: voiceMessageMediaManager,
                            liveLocationManager: liveLocationManager,
+                           sessionDirectories: sessionDirectories,
                            appSettings: appSettings)
     }
     

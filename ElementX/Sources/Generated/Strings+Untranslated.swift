@@ -18,6 +18,100 @@ internal nonisolated enum UntranslatedL10n {
   internal static var actionAddToStickers: String { return UntranslatedL10n.tr("Untranslated", "action_add_to_stickers") }
   /// Sticker added
   internal static var commonStickerAdded: String { return UntranslatedL10n.tr("Untranslated", "common_sticker_added") }
+  /// Delete existing backup
+  internal static var screenBackupConfirmDisableDelete: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_confirm_disable_delete") }
+  /// Keep existing backup
+  internal static var screenBackupConfirmDisableKeep: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_confirm_disable_keep") }
+  /// What should happen to the backup that is already stored?
+  internal static var screenBackupConfirmDisableMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_confirm_disable_message") }
+  /// Disable Backup
+  internal static var screenBackupConfirmDisableTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_confirm_disable_title") }
+  /// Your messages, search index and app preferences are copied. Downloaded media is not — it is fetched again when needed.
+  /// 
+  /// The backup is encrypted on this device before it is uploaded. Keep your passphrase safe: without it the backup cannot be restored.
+  internal static var screenBackupContentsMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_contents_message") }
+  /// What gets backed up
+  internal static var screenBackupContentsTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_contents_title") }
+  /// Backup destination
+  internal static var screenBackupDestination: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_destination") }
+  /// Enable backup
+  internal static var screenBackupEnable: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_enable") }
+  /// Automatically back up your offline data. Your backup is encrypted before upload.
+  internal static var screenBackupEnableFooter: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_enable_footer") }
+  /// This backup belongs to a different account
+  internal static var screenBackupErrorAccountMismatch: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_account_mismatch") }
+  /// The backup is damaged and cannot be read
+  internal static var screenBackupErrorCorrupted: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_corrupted") }
+  /// Wrong passphrase
+  internal static var screenBackupErrorDecryption: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_decryption") }
+  /// Could not encrypt the backup
+  internal static var screenBackupErrorEncryption: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_encryption") }
+  /// Network unavailable
+  internal static var screenBackupErrorNetwork: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_network") }
+  /// Sign in to the backup destination
+  internal static var screenBackupErrorNotAuthenticated: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_not_authenticated") }
+  /// Permission denied
+  internal static var screenBackupErrorPermission: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_permission") }
+  /// Backup destination unavailable
+  internal static var screenBackupErrorProviderUnavailable: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_provider_unavailable") }
+  /// Storage full
+  internal static var screenBackupErrorStorageFull: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_storage_full") }
+  /// The backup is too large for this device to prepare
+  internal static var screenBackupErrorTooLarge: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_too_large") }
+  /// This backup was made by a newer version of the app
+  internal static var screenBackupErrorVersion: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_version") }
+  /// Last backup
+  internal static var screenBackupLastBackup: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_last_backup") }
+  /// Never
+  internal static var screenBackupNever: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_never") }
+  /// No backups yet
+  internal static var screenBackupNoBackups: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_no_backups") }
+  /// You will need this passphrase to restore on another device. It cannot be recovered.
+  internal static var screenBackupPassphraseFooter: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_passphrase_footer") }
+  /// Backup passphrase
+  internal static var screenBackupPassphrasePlaceholder: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_passphrase_placeholder") }
+  /// Choose a passphrase
+  internal static var screenBackupPassphraseTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_passphrase_title") }
+  /// Compressing
+  internal static var screenBackupPhaseCompressing: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_phase_compressing") }
+  /// Encrypting
+  internal static var screenBackupPhaseEncrypting: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_phase_encrypting") }
+  /// Exporting
+  internal static var screenBackupPhaseExporting: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_phase_exporting") }
+  /// Preparing
+  internal static var screenBackupPhasePreparing: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_phase_preparing") }
+  /// Uploading
+  internal static var screenBackupPhaseUploading: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_phase_uploading") }
+  /// iCloud Drive
+  internal static var screenBackupProviderIcloud: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_provider_icloud") }
+  /// Local file
+  internal static var screenBackupProviderLocalFile: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_provider_local_file") }
+  /// WebDAV
+  internal static var screenBackupProviderWebdav: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_provider_webdav") }
+  /// Restore from backup
+  internal static var screenBackupRestore: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore") }
+  /// Downloading
+  internal static var screenBackupRestorePhaseDownloading: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_phase_downloading") }
+  /// Finding backup
+  internal static var screenBackupRestorePhaseFinding: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_phase_finding") }
+  /// Restoring
+  internal static var screenBackupRestorePhaseRestoring: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_phase_restoring") }
+  /// Validating
+  internal static var screenBackupRestorePhaseValidating: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_phase_validating") }
+  /// Backup size
+  internal static var screenBackupSize: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_size") }
+  /// Complete
+  internal static var screenBackupStatusCompleted: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_status_completed") }
+  /// Failed
+  internal static var screenBackupStatusFailed: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_status_failed") }
+  /// Not backed up
+  internal static var screenBackupStatusIdle: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_status_idle") }
+  /// Storage & Backup
+  internal static var screenBackupTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_title") }
+  /// Back up now
+  internal static var screenBackupUpNow: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_up_now") }
+  /// Wi-Fi only
+  internal static var screenBackupWifiOnly: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_wifi_only") }
   /// Search
   internal static var screenHomeTabSearch: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_search") }
   /// Add image or GIF

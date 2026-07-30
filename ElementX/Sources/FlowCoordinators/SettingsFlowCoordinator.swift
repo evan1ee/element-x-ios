@@ -117,6 +117,8 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                     presentStickerSettings()
                 case .syncStorage:
                     presentSyncStorage()
+                case .backup:
+                    presentBackup()
                 case .labs:
                     presentLabs()
                 case .developerOptions:
@@ -268,6 +270,12 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
     private func presentSyncStorage() {
         let coordinator = SyncStorageScreenCoordinator(parameters: .init(historyDownloadManager: flowParameters.userSession.historyDownloadManager,
                                                                          appSettings: flowParameters.appSettings))
+        navigationStackCoordinator.push(coordinator)
+    }
+    
+    private func presentBackup() {
+        let coordinator = BackupScreenCoordinator(parameters: .init(backupManager: flowParameters.userSession.backupManager,
+                                                                    userIndicatorController: flowParameters.userIndicatorController))
         navigationStackCoordinator.push(coordinator)
     }
     

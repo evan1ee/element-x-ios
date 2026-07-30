@@ -176,6 +176,12 @@ struct SettingsScreen: View {
                         context.send(viewAction: .syncStorage)
                     })
             
+            ListRow(label: .default(title: UntranslatedL10n.screenBackupTitle,
+                                    icon: \.cloud),
+                    kind: .navigationLink {
+                        context.send(viewAction: .backup)
+                    })
+            
             ListRow(label: .default(title: UntranslatedL10n.screenStickerSettingsTitle,
                                     icon: \.sticker),
                     kind: .navigationLink {

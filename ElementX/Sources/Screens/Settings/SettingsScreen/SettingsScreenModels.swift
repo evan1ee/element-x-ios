@@ -23,6 +23,7 @@ enum SettingsScreenViewModelAction: Equatable {
     case advancedSettings
     case stickers
     case syncStorage
+    case backup
     case labs
     case developerOptions
     case logout
@@ -90,6 +91,7 @@ enum SettingsScreenViewAction {
     case advancedSettings
     case stickers
     case syncStorage
+    case backup
     case labs
     case logout
     case deactivateAccount

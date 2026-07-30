@@ -55,6 +55,10 @@ extension AccessibilityTests {
         try await performAccessibilityAudit(named: "AvatarHeaderView_Previews")
     }
 
+    func testBackupScreen() async throws {
+        try await performAccessibilityAudit(named: "BackupScreen_Previews")
+    }
+
     func testBadgeLabel() async throws {
         try await performAccessibilityAudit(named: "BadgeLabel_Previews")
     }

@@ -96,6 +96,13 @@ extension PreviewTests {
     }
 
     @Test
+    func backupScreen() async throws {
+        for (index, preview) in BackupScreen_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func badgeLabel() async throws {
         for (index, preview) in BadgeLabel_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)

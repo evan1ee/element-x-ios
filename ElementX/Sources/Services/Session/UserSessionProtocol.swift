@@ -33,6 +33,7 @@ protocol UserSessionProtocol: Sendable {
     
     /// Downloads and indexes full room history when the user has opted in.
     var historyDownloadManager: HistoryDownloadManagerProtocol { get }
+    var backupManager: BackupManagerProtocol { get }
     
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> { get }
     

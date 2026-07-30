@@ -48,6 +48,18 @@ targets:
         UILaunchScreen:
           UIColorName: colors/background-color
         CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        # Surfaces the backup container in the Files app. Without this the packages
+        # exist in iCloud Drive but the user can't see or copy them.
+        #
+        # The container is spelled out because Xcode expands build settings in plist
+        # *values* but not in dictionary *keys* — a $(…) here stays literal and the
+        # registration silently never matches. Keep it equal to
+        # ICLOUD_CONTAINER_IDENTIFIER in app.yml.
+        NSUbiquitousContainers:
+          iCloud.com.evan1ee.elementx:
+            NSUbiquitousContainerIsDocumentScopePublic: true
+            NSUbiquitousContainerName: $(APP_DISPLAY_NAME)
+            NSUbiquitousContainerSupportedFolderLevels: Any
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleURLTypes: [
@@ -124,6 +136,16 @@ targets:
         - applinks:matrix.to
         # - applinks:localhost?mode=developer # developer mode only works with https (but self-signed is fine).
         - webcredentials:*.element.io
+        # Required by the iCloud Drive backup provider. Without them the ubiquity
+        # container doesn't resolve, the provider reports itself unavailable and the
+        # destination picker simply omits it — the app still builds and the local
+        # file provider still works.
+        com.apple.developer.icloud-container-identifiers:
+        - $(ICLOUD_CONTAINER_IDENTIFIER)
+        com.apple.developer.icloud-services:
+        - CloudDocuments
+        com.apple.developer.ubiquity-container-identifiers:
+        - $(ICLOUD_CONTAINER_IDENTIFIER)
         com.apple.developer.usernotifications.communication: true
         com.apple.security.app-sandbox: true
         com.apple.security.application-groups:
