@@ -112,6 +112,9 @@ struct SyncStorageScreenViewState: BindableState {
 
 struct SyncStorageScreenViewStateBindings {
     var confirmation: SyncStorageConfirmation?
+    /// The master switch. Off by default, so without this row the whole feature is
+    /// unreachable to anyone not editing preferences by hand.
+    var historyDownloadEnabled = false
     /// Mirrored from AppSettings so the toggles bind directly; the view model writes
     /// changes back and the scheduler picks them up on its next check.
     var historyDownloadOnWiFiOnly = true

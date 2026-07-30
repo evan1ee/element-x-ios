@@ -98,7 +98,8 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
             let searchCoordinator = SearchScreenCoordinator(parameters: .init(roomSummaryProvider: flowParameters.userSession.clientProxy.alternateRoomSummaryProvider,
                                                                               clientProxy: flowParameters.userSession.clientProxy,
                                                                               mediaProvider: flowParameters.userSession.mediaProvider,
-                                                                              searchIndexService: flowParameters.userSession.searchIndexService))
+                                                                              searchIndexService: flowParameters.userSession.searchIndexService,
+                                                                              historyDownloadManager: flowParameters.userSession.historyDownloadManager))
             let searchStackCoordinator = NavigationStackCoordinator()
             searchStackCoordinator.setRootCoordinator(searchCoordinator)
             

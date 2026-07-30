@@ -19,6 +19,7 @@ class SyncStorageScreenViewModel: SyncStorageScreenViewModelType, SyncStorageScr
     private var storageTask: Task<Void, Never>?
     private var settingsObservationTask: Task<Void, Never>?
     private var backgroundObservationTask: Task<Void, Never>?
+    private var enabledObservationTask: Task<Void, Never>?
     
     private let actionsSubject: PassthroughSubject<SyncStorageScreenViewModelAction, Never> = .init()
     var actionsPublisher: AnyPublisher<SyncStorageScreenViewModelAction, Never> {
@@ -29,8 +30,23 @@ class SyncStorageScreenViewModel: SyncStorageScreenViewModelType, SyncStorageScr
         self.historyDownloadManager = historyDownloadManager
         self.appSettings = appSettings
         
-        super.init(initialViewState: SyncStorageScreenViewState(bindings: .init(historyDownloadOnWiFiOnly: appSettings.historyDownloadOnWiFiOnly,
+        super.init(initialViewState: SyncStorageScreenViewState(bindings: .init(historyDownloadEnabled: appSettings.historyDownloadEnabled,
+                                                                                historyDownloadOnWiFiOnly: appSettings.historyDownloadOnWiFiOnly,
                                                                                 historyDownloadInBackground: appSettings.historyDownloadInBackground)))
+        
+        // resume() and pause() own the setting, so the switch calls them rather than
+        // writing it itself — otherwise the two could disagree.
+        enabledObservationTask = Task { [weak self] in
+            guard let self else { return }
+            for await isEnabled in context.observe(\.viewState.bindings.historyDownloadEnabled).removeDuplicates() {
+                guard isEnabled != appSettings.historyDownloadEnabled else { continue }
+                if isEnabled {
+                    historyDownloadManager.resume()
+                } else {
+                    historyDownloadManager.pause()
+                }
+            }
+        }
         
         // Push the toggles back into settings. The download checks these between
         // batches, so switching Wi-Fi only on mid-download stops it shortly after.

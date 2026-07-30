@@ -29,10 +29,16 @@ struct SearchScreenViewModelTests {
         let searchIndexService = SearchIndexServiceMock()
         searchIndexService.searchReturnValue = []
         
+        // A finished download, so the incomplete-history banner stays out of these tests.
+        let historyDownloadManager = HistoryDownloadManagerMock()
+        historyDownloadManager.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init(status: .completed)).asCurrentValuePublisher()
+        historyDownloadManager.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
+        
         viewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded(.mockRooms))),
                                           clientProxy: clientProxy,
                                           mediaProvider: MediaProviderMock(.init()),
-                                          searchIndexService: searchIndexService)
+                                          searchIndexService: searchIndexService,
+                                          historyDownloadManager: historyDownloadManager)
     }
     
     @Test

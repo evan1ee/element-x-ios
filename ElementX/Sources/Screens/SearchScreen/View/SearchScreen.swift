@@ -29,6 +29,23 @@ struct SearchScreen: View {
         }
     }
     
+    /// Says results may be partial while history is still arriving. Without it an
+    /// empty result reads as "this was never said" rather than "not downloaded yet".
+    private var incompleteHistoryBanner: some View {
+        HStack(alignment: .top, spacing: 8) {
+            CompoundIcon(\.download, size: .xSmall, relativeTo: .compound.bodySM)
+                .foregroundStyle(.compound.iconSecondary)
+            
+            Text(UntranslatedL10n.screenSearchIncompleteHistory)
+                .font(.compound.bodySM)
+                .foregroundStyle(.compound.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.compound.bgSubtleSecondary)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Rendered as content rather than a navigation title so it stays visible while the search field is focused.
@@ -48,6 +65,10 @@ struct SearchScreen: View {
             .pickerStyle(.segmented)
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
+            
+            if context.viewState.isHistoryIncomplete {
+                incompleteHistoryBanner
+            }
             
             switch context.viewState.bindings.searchMode {
             case .rooms:
@@ -468,27 +489,32 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
     static let emptyViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                       clientProxy: makeClientProxy(),
                                                       mediaProvider: MediaProviderMock(.init()),
-                                                      searchIndexService: makeSearchIndexService())
+                                                      searchIndexService: makeSearchIndexService(),
+                                                      historyDownloadManager: makeHistoryDownloadManager())
     static let noResultsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                           clientProxy: makeClientProxy(),
                                                           mediaProvider: MediaProviderMock(.init()),
                                                           searchIndexService: makeSearchIndexService(),
+                                                          historyDownloadManager: makeHistoryDownloadManager(),
                                                           initialSearchQuery: "John Doe")
     static let roomsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded(.mockRooms))),
                                                       clientProxy: makeClientProxy(),
                                                       mediaProvider: MediaProviderMock(.init()),
                                                       searchIndexService: makeSearchIndexService(),
+                                                      historyDownloadManager: makeHistoryDownloadManager(),
                                                       initialSearchQuery: "Foundation")
     static let messagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                          clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)),
                                                          mediaProvider: MediaProviderMock(.init()),
                                                          searchIndexService: makeSearchIndexService(),
+                                                         historyDownloadManager: makeHistoryDownloadManager(),
                                                          initialSearchQuery: "Foundation",
                                                          initialSearchMode: .messages)
     static let loadingMessagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                                 clientProxy: makeClientProxy(searchService: makeSearchService(paginationState: .loading)),
                                                                 mediaProvider: MediaProviderMock(.init()),
                                                                 searchIndexService: makeSearchIndexService(),
+                                                                historyDownloadManager: makeHistoryDownloadManager(),
                                                                 initialSearchQuery: "Foundation",
                                                                 initialSearchMode: .messages)
     
@@ -496,6 +522,15 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
     static func makeSearchIndexService() -> SearchIndexServiceProtocol {
         let mock = SearchIndexServiceMock()
         mock.searchReturnValue = []
+        return mock
+    }
+    
+    /// Reports a finished download, so previews don't carry the banner. Its own state
+    /// is covered by the Sync & Storage screen.
+    static func makeHistoryDownloadManager() -> HistoryDownloadManagerProtocol {
+        let mock = HistoryDownloadManagerMock()
+        mock.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init(status: .completed)).asCurrentValuePublisher()
+        mock.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
         return mock
     }
     

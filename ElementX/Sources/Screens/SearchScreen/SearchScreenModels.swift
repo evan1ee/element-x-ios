@@ -33,6 +33,9 @@ struct SearchScreenViewState: BindableState {
     var messages = [SearchScreenMessage]()
     var isLoadingRooms = false
     var isLoadingMessages = false
+    /// Set while history is still downloading, so results can say they're partial
+    /// rather than letting an empty result read as "nothing was ever said".
+    var isHistoryIncomplete = false
     var bindings: SearchScreenViewStateBindings
     
     var isSearching: Bool {

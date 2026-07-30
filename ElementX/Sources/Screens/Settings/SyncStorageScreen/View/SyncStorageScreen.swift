@@ -115,6 +115,9 @@ struct SyncStorageScreen: View {
     
     private var downloadSection: some View {
         Section {
+            ListRow(label: .plain(title: UntranslatedL10n.screenSyncStorageDownloadHistory),
+                    kind: .toggle($context.historyDownloadEnabled))
+            
             ListRow(label: .plain(title: UntranslatedL10n.screenSyncStorageWifiOnly),
                     kind: .toggle($context.historyDownloadOnWiFiOnly))
             

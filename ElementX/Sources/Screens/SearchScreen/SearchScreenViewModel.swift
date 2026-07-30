@@ -32,6 +32,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
          clientProxy: ClientProxyProtocol,
          mediaProvider: MediaProviderProtocol,
          searchIndexService: SearchIndexServiceProtocol,
+         historyDownloadManager: HistoryDownloadManagerProtocol,
          initialSearchQuery: String = "",
          initialSearchMode: SearchScreenMode = .rooms) {
         self.roomSummaryProvider = roomSummaryProvider
@@ -46,6 +47,18 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             .receive(on: DispatchQueue.main)
             .sink { [weak self] summaries in
                 self?.updateRooms(with: summaries)
+            }
+            .store(in: &cancellables)
+        
+        historyDownloadManager.progressPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] progress in
+                switch progress.status {
+                case .preparing, .downloading:
+                    self?.state.isHistoryIncomplete = true
+                default:
+                    self?.state.isHistoryIncomplete = false
+                }
             }
             .store(in: &cancellables)
         
