@@ -34,6 +34,10 @@ final class SearchIndexBackfillService {
     /// worth making the app stutter.
     private let delayBetweenRooms = Duration.milliseconds(250)
     
+    /// How many 200ms turns to give a room's timeline before moving on. A room can be
+    /// legitimately empty, so this can't wait indefinitely.
+    private static let timelineLoadAttempts = 10
+    
     init(clientProxy: ClientProxyProtocol,
          roomSummaryProvider: RoomSummaryProviderProtocol,
          timelineItemFactory: RoomTimelineItemFactoryProtocol,
@@ -97,6 +101,19 @@ final class SearchIndexBackfillService {
     private func index(roomID: String) async {
         guard case .joined(let room) = await clientProxy.roomForIdentifier(roomID) else {
             return
+        }
+        
+        // `timelineItemProvider` is implicitly unwrapped and only exists once the room
+        // has been subscribed, so reading it on an unopened room traps. Subscribing is
+        // idempotent, and a no-op for rooms the user already has open.
+        await room.subscribeForUpdates()
+        
+        // Subscribing only creates the provider — the items follow on the SDK's diff
+        // stream. Reading straight away finds an empty timeline and indexes nothing,
+        // so give it a bounded chance to fill.
+        for _ in 0..<Self.timelineLoadAttempts where room.timeline.timelineItemProvider.itemProxies.isEmpty {
+            guard !Task.isCancelled else { return }
+            try? await Task.sleep(for: .milliseconds(200))
         }
         
         let isDM = room.infoPublisher.value.isDirect
