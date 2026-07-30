@@ -4975,6 +4975,149 @@ nonisolated class ElementCallWidgetDriverMock: ElementCallWidgetDriverProtocol, 
         }
     }
 }
+nonisolated class HistoryDownloadManagerMock: HistoryDownloadManagerProtocol, @unchecked Sendable {
+    var progressPublisher: CurrentValuePublisher<HistoryDownloadProgress, Never> {
+        get { return underlyingProgressPublisher }
+        set(value) { underlyingProgressPublisher = value }
+    }
+    nonisolated(unsafe) var underlyingProgressPublisher: CurrentValuePublisher<HistoryDownloadProgress, Never>!
+    var roomStatesPublisher: CurrentValuePublisher<[String: RoomHistoryState], Never> {
+        get { return underlyingRoomStatesPublisher }
+        set(value) { underlyingRoomStatesPublisher = value }
+    }
+    nonisolated(unsafe) var underlyingRoomStatesPublisher: CurrentValuePublisher<[String: RoomHistoryState], Never>!
+
+    //MARK: - start
+
+    private let startCallsCountLock = NSLock()
+    private nonisolated(unsafe) var startUnderlyingCallsCount = 0
+    var startCallsCount: Int {
+        get { startCallsCountLock.withLock { startUnderlyingCallsCount } }
+        set { startCallsCountLock.withLock { startUnderlyingCallsCount = newValue } }
+    }
+    var startCalled: Bool {
+        return startCallsCount > 0
+    }
+    nonisolated(unsafe) var startClosure: (() -> Void)?
+
+    func start() {
+        startCallsCountLock.withLock { startUnderlyingCallsCount += 1 }
+        startClosure?()
+    }
+    //MARK: - pause
+
+    private let pauseCallsCountLock = NSLock()
+    private nonisolated(unsafe) var pauseUnderlyingCallsCount = 0
+    var pauseCallsCount: Int {
+        get { pauseCallsCountLock.withLock { pauseUnderlyingCallsCount } }
+        set { pauseCallsCountLock.withLock { pauseUnderlyingCallsCount = newValue } }
+    }
+    var pauseCalled: Bool {
+        return pauseCallsCount > 0
+    }
+    nonisolated(unsafe) var pauseClosure: (() -> Void)?
+
+    func pause() {
+        pauseCallsCountLock.withLock { pauseUnderlyingCallsCount += 1 }
+        pauseClosure?()
+    }
+    //MARK: - resume
+
+    private let resumeCallsCountLock = NSLock()
+    private nonisolated(unsafe) var resumeUnderlyingCallsCount = 0
+    var resumeCallsCount: Int {
+        get { resumeCallsCountLock.withLock { resumeUnderlyingCallsCount } }
+        set { resumeCallsCountLock.withLock { resumeUnderlyingCallsCount = newValue } }
+    }
+    var resumeCalled: Bool {
+        return resumeCallsCount > 0
+    }
+    nonisolated(unsafe) var resumeClosure: (() -> Void)?
+
+    func resume() {
+        resumeCallsCountLock.withLock { resumeUnderlyingCallsCount += 1 }
+        resumeClosure?()
+    }
+    //MARK: - retryFailed
+
+    private let retryFailedCallsCountLock = NSLock()
+    private nonisolated(unsafe) var retryFailedUnderlyingCallsCount = 0
+    var retryFailedCallsCount: Int {
+        get { retryFailedCallsCountLock.withLock { retryFailedUnderlyingCallsCount } }
+        set { retryFailedCallsCountLock.withLock { retryFailedUnderlyingCallsCount = newValue } }
+    }
+    var retryFailedCalled: Bool {
+        return retryFailedCallsCount > 0
+    }
+    nonisolated(unsafe) var retryFailedClosure: (() -> Void)?
+
+    func retryFailed() {
+        retryFailedCallsCountLock.withLock { retryFailedUnderlyingCallsCount += 1 }
+        retryFailedClosure?()
+    }
+    //MARK: - rebuildSearchIndex
+
+    private let rebuildSearchIndexCallsCountLock = NSLock()
+    private nonisolated(unsafe) var rebuildSearchIndexUnderlyingCallsCount = 0
+    var rebuildSearchIndexCallsCount: Int {
+        get { rebuildSearchIndexCallsCountLock.withLock { rebuildSearchIndexUnderlyingCallsCount } }
+        set { rebuildSearchIndexCallsCountLock.withLock { rebuildSearchIndexUnderlyingCallsCount = newValue } }
+    }
+    var rebuildSearchIndexCalled: Bool {
+        return rebuildSearchIndexCallsCount > 0
+    }
+    nonisolated(unsafe) var rebuildSearchIndexClosure: (() async -> Void)?
+
+    @concurrent func rebuildSearchIndex() async {
+        rebuildSearchIndexCallsCountLock.withLock { rebuildSearchIndexUnderlyingCallsCount += 1 }
+        await rebuildSearchIndexClosure?()
+    }
+    //MARK: - clearOfflineHistory
+
+    private let clearOfflineHistoryCallsCountLock = NSLock()
+    private nonisolated(unsafe) var clearOfflineHistoryUnderlyingCallsCount = 0
+    var clearOfflineHistoryCallsCount: Int {
+        get { clearOfflineHistoryCallsCountLock.withLock { clearOfflineHistoryUnderlyingCallsCount } }
+        set { clearOfflineHistoryCallsCountLock.withLock { clearOfflineHistoryUnderlyingCallsCount = newValue } }
+    }
+    var clearOfflineHistoryCalled: Bool {
+        return clearOfflineHistoryCallsCount > 0
+    }
+    nonisolated(unsafe) var clearOfflineHistoryClosure: (() async -> Void)?
+
+    @concurrent func clearOfflineHistory() async {
+        clearOfflineHistoryCallsCountLock.withLock { clearOfflineHistoryUnderlyingCallsCount += 1 }
+        await clearOfflineHistoryClosure?()
+    }
+    //MARK: - storageUsage
+
+    private let storageUsageCallsCountLock = NSLock()
+    private nonisolated(unsafe) var storageUsageUnderlyingCallsCount = 0
+    var storageUsageCallsCount: Int {
+        get { storageUsageCallsCountLock.withLock { storageUsageUnderlyingCallsCount } }
+        set { storageUsageCallsCountLock.withLock { storageUsageUnderlyingCallsCount = newValue } }
+    }
+    var storageUsageCalled: Bool {
+        return storageUsageCallsCount > 0
+    }
+
+    private let storageUsageReturnValueLock = NSLock()
+    private nonisolated(unsafe) var storageUsageUnderlyingReturnValue: HistoryStorageUsage!
+    var storageUsageReturnValue: HistoryStorageUsage! {
+        get { storageUsageReturnValueLock.withLock { storageUsageUnderlyingReturnValue } }
+        set { storageUsageReturnValueLock.withLock { storageUsageUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var storageUsageClosure: (() async -> HistoryStorageUsage)?
+
+    @concurrent func storageUsage() async -> HistoryStorageUsage {
+        storageUsageCallsCountLock.withLock { storageUsageUnderlyingCallsCount += 1 }
+        if let storageUsageClosure = storageUsageClosure {
+            return await storageUsageClosure()
+        } else {
+            return storageUsageReturnValue
+        }
+    }
+}
 nonisolated class HomeserverCapabilitiesProxyMock: HomeserverCapabilitiesProxyProtocol, @unchecked Sendable {
 
     //MARK: - refresh
@@ -10699,6 +10842,101 @@ nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked
         }
         clearCallsCountLock.withLock { clearUnderlyingCallsCount += 1 }
         try await clearClosure?()
+    }
+    //MARK: - roomHistoryStates
+
+    nonisolated(unsafe) var roomHistoryStatesThrowableError: Error?
+    private let roomHistoryStatesCallsCountLock = NSLock()
+    private nonisolated(unsafe) var roomHistoryStatesUnderlyingCallsCount = 0
+    var roomHistoryStatesCallsCount: Int {
+        get { roomHistoryStatesCallsCountLock.withLock { roomHistoryStatesUnderlyingCallsCount } }
+        set { roomHistoryStatesCallsCountLock.withLock { roomHistoryStatesUnderlyingCallsCount = newValue } }
+    }
+    var roomHistoryStatesCalled: Bool {
+        return roomHistoryStatesCallsCount > 0
+    }
+
+    private let roomHistoryStatesReturnValueLock = NSLock()
+    private nonisolated(unsafe) var roomHistoryStatesUnderlyingReturnValue: [String: RoomHistoryState]!
+    var roomHistoryStatesReturnValue: [String: RoomHistoryState]! {
+        get { roomHistoryStatesReturnValueLock.withLock { roomHistoryStatesUnderlyingReturnValue } }
+        set { roomHistoryStatesReturnValueLock.withLock { roomHistoryStatesUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var roomHistoryStatesClosure: (() async throws -> [String: RoomHistoryState])?
+
+    @concurrent func roomHistoryStates() async throws -> [String: RoomHistoryState] {
+        if let error = roomHistoryStatesThrowableError {
+            throw error
+        }
+        roomHistoryStatesCallsCountLock.withLock { roomHistoryStatesUnderlyingCallsCount += 1 }
+        if let roomHistoryStatesClosure = roomHistoryStatesClosure {
+            return try await roomHistoryStatesClosure()
+        } else {
+            return roomHistoryStatesReturnValue
+        }
+    }
+    //MARK: - setRoomHistoryState
+
+    nonisolated(unsafe) var setRoomHistoryStateThrowableError: Error?
+    private let setRoomHistoryStateCallsCountLock = NSLock()
+    private nonisolated(unsafe) var setRoomHistoryStateUnderlyingCallsCount = 0
+    var setRoomHistoryStateCallsCount: Int {
+        get { setRoomHistoryStateCallsCountLock.withLock { setRoomHistoryStateUnderlyingCallsCount } }
+        set { setRoomHistoryStateCallsCountLock.withLock { setRoomHistoryStateUnderlyingCallsCount = newValue } }
+    }
+    var setRoomHistoryStateCalled: Bool {
+        return setRoomHistoryStateCallsCount > 0
+    }
+    private let setRoomHistoryStateReceivedStateLock = NSLock()
+    private nonisolated(unsafe) var setRoomHistoryStateUnderlyingReceivedState: RoomHistoryState?
+    var setRoomHistoryStateReceivedState: RoomHistoryState? {
+        get { setRoomHistoryStateReceivedStateLock.withLock { setRoomHistoryStateUnderlyingReceivedState } }
+        set { setRoomHistoryStateReceivedStateLock.withLock { setRoomHistoryStateUnderlyingReceivedState = newValue } }
+    }
+    private let setRoomHistoryStateReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var setRoomHistoryStateUnderlyingReceivedInvocations: [RoomHistoryState] = []
+    var setRoomHistoryStateReceivedInvocations: [RoomHistoryState] {
+        get { setRoomHistoryStateReceivedInvocationsLock.withLock { setRoomHistoryStateUnderlyingReceivedInvocations } }
+        set { setRoomHistoryStateReceivedInvocationsLock.withLock { setRoomHistoryStateUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var setRoomHistoryStateClosure: ((RoomHistoryState) async throws -> Void)?
+
+    @concurrent func setRoomHistoryState(_ state: RoomHistoryState) async throws {
+        if let error = setRoomHistoryStateThrowableError {
+            throw error
+        }
+        setRoomHistoryStateCallsCountLock.withLock { setRoomHistoryStateUnderlyingCallsCount += 1 }
+        setRoomHistoryStateReceivedState = state
+        setRoomHistoryStateReceivedInvocationsLock.withLock { setRoomHistoryStateUnderlyingReceivedInvocations.append(state) }
+        try await setRoomHistoryStateClosure?(state)
+    }
+    //MARK: - databaseSize
+
+    private let databaseSizeCallsCountLock = NSLock()
+    private nonisolated(unsafe) var databaseSizeUnderlyingCallsCount = 0
+    var databaseSizeCallsCount: Int {
+        get { databaseSizeCallsCountLock.withLock { databaseSizeUnderlyingCallsCount } }
+        set { databaseSizeCallsCountLock.withLock { databaseSizeUnderlyingCallsCount = newValue } }
+    }
+    var databaseSizeCalled: Bool {
+        return databaseSizeCallsCount > 0
+    }
+
+    private let databaseSizeReturnValueLock = NSLock()
+    private nonisolated(unsafe) var databaseSizeUnderlyingReturnValue: Int64!
+    var databaseSizeReturnValue: Int64! {
+        get { databaseSizeReturnValueLock.withLock { databaseSizeUnderlyingReturnValue } }
+        set { databaseSizeReturnValueLock.withLock { databaseSizeUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var databaseSizeClosure: (() async -> Int64)?
+
+    @concurrent func databaseSize() async -> Int64 {
+        databaseSizeCallsCountLock.withLock { databaseSizeUnderlyingCallsCount += 1 }
+        if let databaseSizeClosure = databaseSizeClosure {
+            return await databaseSizeClosure()
+        } else {
+            return databaseSizeReturnValue
+        }
     }
 }
 nonisolated class SearchServiceProxyMock: SearchServiceProxyProtocol, @unchecked Sendable {

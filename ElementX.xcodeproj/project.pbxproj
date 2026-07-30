@@ -635,6 +635,7 @@
 		6586E1F1D5F0651D0638FFAF /* UserSessionMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4469F6AE311BDC439B3A5EC /* UserSessionMock.swift */; };
 		659E5B766F76FDEC1BF393A4 /* RoomDetailsEditScreenViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E413F4CBD7BF0588F394A9DD /* RoomDetailsEditScreenViewModel.swift */; };
 		661EF50C1F7D4B0BC8A7AAE3 /* EmoteRoomTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44ABA63DBE7F76C58260B43B /* EmoteRoomTimelineView.swift */; };
+		663DDEC72C434DCCCE2C5B36 /* HistoryDownloadManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BBF4FF436780F5C021DC269 /* HistoryDownloadManagerProtocol.swift */; };
 		663E198678778F7426A9B27D /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9FAFE1C2149E6AC8156ED2B /* Collection.swift */; };
 		6681D6D3ADF69EBD2625F29A /* KnockedRoomProxyMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E8F4D7D61B80EBD5CB92F8A /* KnockedRoomProxyMock.swift */; };
 		66832DE7B5C2E861045265DC /* RoomSelectionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D879DC5515B1D42577F96C94 /* RoomSelectionScreen.swift */; };
@@ -1377,6 +1378,7 @@
 		D8F1462EA00AFC939FF9ACCA /* target.yml in Resources */ = {isa = PBXBuildFile; fileRef = 203D1ACC20287F8986C959D3 /* target.yml */; };
 		D97C782FE0005995C36FA04A /* portrait_test_video.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = E5E7D4EE7CA295E5039FDA21 /* portrait_test_video.mp4 */; };
 		D98B5EE8C4F5A2CE84687AE8 /* UTType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 897DF5E9A70CE05A632FC8AF /* UTType.swift */; };
+		D9F34637D7B3B0C7BB66DB27 /* HistoryDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23B28B863B5662E7C7DD6263 /* HistoryDownloadManager.swift */; };
 		D9F80CE61BF8FF627FDB0543 /* LoadableImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C352359663A0E52BA20761EE /* LoadableImage.swift */; };
 		DA10C99BA43A0F1E732F6274 /* LogLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2711E5996016ABD6EAAEB58A /* LogLevel.swift */; };
 		DA160DC23051E4E88A0A9B4C /* SearchIndexServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44DAEEA200C113C3B7C3F6BD /* SearchIndexServiceProtocol.swift */; };
@@ -1933,6 +1935,7 @@
 		2363DB6162BBCC511B67B527 /* AccessibilityTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AccessibilityTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		23674BF78CE814366EBD8762 /* cy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cy; path = cy.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		2389732B0E115A999A069083 /* NotificationSettingsScreenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsScreenCoordinator.swift; sourceTree = "<group>"; };
+		23B28B863B5662E7C7DD6263 /* HistoryDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDownloadManager.swift; sourceTree = "<group>"; };
 		23E6EB7960BC9D0F7396B3BD /* RoomChangeRolesScreenRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomChangeRolesScreenRow.swift; sourceTree = "<group>"; };
 		23EE69982BBA18C6D51AD08E /* UserProfileScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileScreen.swift; sourceTree = "<group>"; };
 		240610DF32F3213BEC5611D7 /* BlockedUsersScreenViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockedUsersScreenViewModelTests.swift; sourceTree = "<group>"; };
@@ -2439,6 +2442,7 @@
 		7B9FCA1CFD07B8CF9BD21266 /* FlowCoordinatorProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowCoordinatorProtocol.swift; sourceTree = "<group>"; };
 		7BA4A91DFB86A88822323ED2 /* sticker_heart.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sticker_heart.png; sourceTree = "<group>"; };
 		7BBADF8010C813D905C172CE /* SecurityAndPrivacyScreenModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityAndPrivacyScreenModels.swift; sourceTree = "<group>"; };
+		7BBF4FF436780F5C021DC269 /* HistoryDownloadManagerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDownloadManagerProtocol.swift; sourceTree = "<group>"; };
 		7BD5523BDEDB247E29228476 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		7C1AF829F12FDC99717082D9 /* RoomRolesAndPermissionsScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomRolesAndPermissionsScreenViewModel.swift; sourceTree = "<group>"; };
 		7C28B70BEFD3676F11D5D51F /* RoomRolesAndPermissionsScreenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomRolesAndPermissionsScreenCoordinator.swift; sourceTree = "<group>"; };
@@ -6062,6 +6066,15 @@
 			path = Pills;
 			sourceTree = "<group>";
 		};
+		9D435E0E6AF83017CAC55870 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				23B28B863B5662E7C7DD6263 /* HistoryDownloadManager.swift */,
+				7BBF4FF436780F5C021DC269 /* HistoryDownloadManagerProtocol.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
 		9F7C2D63C42828D8931D5286 /* CollapsibleFlowLayout */ = {
 			isa = PBXGroup;
 			children = (
@@ -6558,6 +6571,7 @@
 			children = (
 				7AD6FFE581238BD30B53BA0A /* SearchServiceProxy.swift */,
 				9F3E4640982CE98C6ADD7896 /* SearchServiceProxyProtocol.swift */,
+				9D435E0E6AF83017CAC55870 /* History */,
 				7C45D62501CE93C0BCD089CE /* LocalIndex */,
 			);
 			path = Search;
@@ -8793,6 +8807,8 @@
 				F3C9CAD26FD4D7D6EBACF501 /* HTMLFixtures.swift in Sources */,
 				E8C4D9F93F0DCED211D5F187 /* HTMLParserStyle.swift in Sources */,
 				0C1E537A49ABB386F7554D4A /* HighlightedTimelineItemModifier.swift in Sources */,
+				D9F34637D7B3B0C7BB66DB27 /* HistoryDownloadManager.swift in Sources */,
+				663DDEC72C434DCCCE2C5B36 /* HistoryDownloadManagerProtocol.swift in Sources */,
 				964B9D2EC38C488C360CE0C9 /* HomeScreen.swift in Sources */,
 				62C5876C4254C58C2086F0DE /* HomeScreenContent.swift in Sources */,
 				8CC12086CBF91A7E10CDC205 /* HomeScreenCoordinator.swift in Sources */,

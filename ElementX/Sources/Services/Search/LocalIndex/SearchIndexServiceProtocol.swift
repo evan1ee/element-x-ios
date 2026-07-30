@@ -87,4 +87,15 @@ protocol SearchIndexServiceProtocol: Sendable {
     
     /// Empties the index without deleting the file.
     func clear() async throws
+    
+    // MARK: - History download progress
+    
+    /// Per-room download progress. Stored alongside the index because it describes
+    /// how complete the index is, and the two must be discarded together.
+    func roomHistoryStates() async throws -> [String: RoomHistoryState]
+    
+    func setRoomHistoryState(_ state: RoomHistoryState) async throws
+    
+    /// Bytes the index occupies on disk, including its write-ahead log.
+    func databaseSize() async -> Int64
 }

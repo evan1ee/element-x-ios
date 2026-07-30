@@ -364,6 +364,19 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: Secrets.klipyAPIKey ?? "")
     var klipyAPIKey: String
     
+    // MARK: - Offline history
+    
+    /// Whether the full history download runs. Off by default: a first pass fetches
+    /// every message in every room, which isn't a cost to impose without asking.
+    @UserPreference(defaultValue: false)
+    var historyDownloadEnabled: Bool
+    
+    @UserPreference(defaultValue: true)
+    var historyDownloadOnWiFiOnly: Bool
+    
+    @UserPreference(defaultValue: true)
+    var historyDownloadInBackground: Bool
+    
     // MARK: - Element Call
     
     #if IS_MAIN_APP

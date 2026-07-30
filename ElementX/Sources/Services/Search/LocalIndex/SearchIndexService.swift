@@ -228,6 +228,75 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     func clear() async throws {
         let database = try connection()
         try execute("DELETE FROM events", on: database)
+        try execute("DELETE FROM room_history_state", on: database)
+    }
+    
+    // MARK: - History download progress
+    
+    func roomHistoryStates() async throws -> [String: RoomHistoryState] {
+        let database = try connection()
+        let statement = try prepare("""
+        SELECT room_id, status, messages_indexed, estimated_total, last_updated
+        FROM room_history_state
+        """, on: database)
+        defer { sqlite3_finalize(statement) }
+        
+        var states: [String: RoomHistoryState] = [:]
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let roomID = string(from: statement, at: 0),
+                  let status = string(from: statement, at: 1).flatMap(RoomHistoryState.Status.init(rawValue:)) else {
+                continue
+            }
+            
+            states[roomID] = RoomHistoryState(roomID: roomID,
+                                              status: status,
+                                              messagesIndexed: Int(sqlite3_column_int64(statement, 2)),
+                                              estimatedTotal: sqlite3_column_type(statement, 3) == SQLITE_NULL ? nil : Int(sqlite3_column_int64(statement, 3)),
+                                              lastUpdated: sqlite3_column_type(statement, 4) == SQLITE_NULL ? nil : Date(timeIntervalSince1970: Double(sqlite3_column_int64(statement, 4)) / 1000))
+        }
+        return states
+    }
+    
+    func setRoomHistoryState(_ state: RoomHistoryState) async throws {
+        let database = try connection()
+        let statement = try prepare("""
+        INSERT INTO room_history_state (room_id, status, messages_indexed, estimated_total, last_updated)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(room_id) DO UPDATE SET
+            status = excluded.status,
+            messages_indexed = excluded.messages_indexed,
+            estimated_total = excluded.estimated_total,
+            last_updated = excluded.last_updated
+        """, on: database)
+        defer { sqlite3_finalize(statement) }
+        
+        bind(state.roomID, to: statement, at: 1)
+        bind(state.status.rawValue, to: statement, at: 2)
+        sqlite3_bind_int64(statement, 3, Int64(state.messagesIndexed))
+        if let total = state.estimatedTotal {
+            sqlite3_bind_int64(statement, 4, Int64(total))
+        } else {
+            sqlite3_bind_null(statement, 4)
+        }
+        if let updated = state.lastUpdated {
+            sqlite3_bind_int64(statement, 5, Int64(updated.timeIntervalSince1970 * 1000))
+        } else {
+            sqlite3_bind_null(statement, 5)
+        }
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw SearchIndexError.query(lastErrorMessage(database))
+        }
+    }
+    
+    func databaseSize() async -> Int64 {
+        // The write-ahead log can hold a meaningful share of the data, so counting the
+        // main file alone would understate what's actually on disk.
+        [databaseURL,
+         databaseURL.appendingPathExtension("wal"),
+         databaseURL.appendingPathExtension("shm")]
+            .compactMap { try? FileManager.default.attributesOfItem(atPath: $0.path(percentEncoded: false))[.size] as? Int64 }
+            .reduce(0, +)
     }
     
     // MARK: - Query parsing
@@ -352,7 +421,8 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                           "DROP TRIGGER IF EXISTS events_after_delete",
                           "DROP TRIGGER IF EXISTS events_after_update",
                           "DROP TABLE IF EXISTS events_fts",
-                          "DROP TABLE IF EXISTS events"] {
+                          "DROP TABLE IF EXISTS events",
+                          "DROP TABLE IF EXISTS room_history_state"] {
             try execute(statement, on: database)
         }
     }
@@ -377,6 +447,16 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             message_body_segmented TEXT,
             filename_segmented TEXT,
             sender_display_name_segmented TEXT
+        )
+        """, on: database)
+        
+        try execute("""
+        CREATE TABLE IF NOT EXISTS room_history_state (
+            room_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            messages_indexed INTEGER NOT NULL DEFAULT 0,
+            estimated_total INTEGER,
+            last_updated INTEGER
         )
         """, on: database)
         
