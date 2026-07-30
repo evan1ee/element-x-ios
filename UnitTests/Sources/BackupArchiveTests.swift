@@ -21,7 +21,7 @@ struct BackupArchiveTests {
         defer { try? FileManager.default.removeItem(at: url) }
         
         let written = try write(entries, to: url)
-        let read = try BackupArchive.read(from: url, passphrase: passphrase)
+        let read = try read(url)
         
         #expect(read.entries == entries)
         #expect(read.manifest.formatVersion == BackupManifest.currentFormatVersion)
@@ -37,7 +37,7 @@ struct BackupArchiveTests {
         
         _ = try write(entries, to: url)
         
-        #expect(try BackupArchive.read(from: url, passphrase: passphrase).entries == entries)
+        #expect(try read(url).entries == entries)
     }
     
     /// Names go through a length-prefixed record rather than a path, so anything that
@@ -52,7 +52,68 @@ struct BackupArchiveTests {
         
         _ = try write(entries, to: url)
         
-        #expect(try BackupArchive.read(from: url, passphrase: passphrase).entries == entries)
+        #expect(try read(url).entries == entries)
+    }
+    
+    // MARK: - Chunking
+    
+    /// The reason the format changed: an entry larger than a chunk has to round-trip
+    /// across chunk boundaries, and every test above sits comfortably inside one.
+    @Test
+    func roundTripsAnEntrySpanningManyChunks() throws {
+        // Pseudo-random so it can't be compressed down into a single chunk, which
+        // would make this test silently stop covering what it claims to.
+        var generator = SystemRandomNumberGenerator()
+        let large = Data((0..<(BackupArchive.chunkSize * 3 + 1234)).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
+        
+        let url = Self.temporaryURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        
+        let manifest = try write(["big.bin": large], to: url)
+        #expect(manifest.entries.first?.size == Int64(large.count))
+        
+        #expect(try read(url).entries["big.bin"] == large)
+    }
+    
+    /// Several multi-chunk entries in one package: each entry's chunks have to be
+    /// read back against the right entry, not run together.
+    @Test
+    func keepsMultiChunkEntriesSeparate() throws {
+        let entries = ["first.bin": Data(repeating: 0xA1, count: BackupArchive.chunkSize + 100),
+                       "second.bin": Data(repeating: 0xB2, count: BackupArchive.chunkSize * 2 + 7),
+                       "third.txt": Data("small".utf8)]
+        
+        let url = Self.temporaryURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        
+        _ = try write(entries, to: url)
+        
+        #expect(try read(url).entries == entries)
+    }
+    
+    /// Each chunk is sealed with a nonce derived from its position, so swapping two
+    /// chunks has to fail rather than quietly producing scrambled output.
+    @Test
+    func rejectsReorderedChunks() throws {
+        let url = Self.temporaryURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+        
+        _ = try write(["big.bin": Data(repeating: 0xC3, count: BackupArchive.chunkSize * 2)], to: url)
+        
+        // Chunks are uniform here, so the two sealed records are the same length:
+        // swapping them keeps the file well-formed and only the nonce catches it.
+        var raw = try Data(contentsOf: url)
+        let manifest = try BackupArchive.readManifest(from: url)
+        let headerSize = try 4 + 4 + (JSONEncoder().encode(manifest).count)
+        let recordSize = (raw.count - headerSize) / 2
+        let first = raw[headerSize..<(headerSize + recordSize)]
+        let second = raw[(headerSize + recordSize)...]
+        raw.replaceSubrange(headerSize..., with: Data(second) + Data(first))
+        try raw.write(to: url)
+        
+        #expect(throws: (any Error).self) {
+            try read(url)
+        }
     }
     
     // MARK: - Confidentiality
@@ -93,7 +154,7 @@ struct BackupArchiveTests {
         _ = try write(Self.sampleEntries, to: url)
         
         #expect(throws: BackupError.decryptionFailed) {
-            try BackupArchive.read(from: url, passphrase: "not the passphrase")
+            try read(url, passphrase: "not the passphrase")
         }
     }
     
@@ -127,7 +188,7 @@ struct BackupArchiveTests {
         try full.prefix(full.count / 2).write(to: url)
         
         #expect(throws: (any Error).self) {
-            try BackupArchive.read(from: url, passphrase: passphrase)
+            try read(url)
         }
     }
     
@@ -144,7 +205,7 @@ struct BackupArchiveTests {
         try raw.write(to: url)
         
         #expect(throws: BackupError.decryptionFailed) {
-            try BackupArchive.read(from: url, passphrase: passphrase)
+            try read(url)
         }
     }
     
@@ -208,12 +269,14 @@ struct BackupArchiveTests {
                            entries: manifest.entries,
                            providerID: manifest.providerID,
                            deviceName: manifest.deviceName,
-                           keySalt: manifest.keySalt)
+                           keySalt: manifest.keySalt,
+                           noncePrefix: manifest.noncePrefix,
+                           chunkSize: manifest.chunkSize)
         }
         
         #expect(throws: BackupError.versionMismatch(found: BackupManifest.currentFormatVersion + 1,
                                                     supported: BackupManifest.currentFormatVersion)) {
-            try BackupArchive.read(from: url, passphrase: passphrase)
+            try read(url)
         }
     }
     
@@ -226,15 +289,38 @@ struct BackupArchiveTests {
          "metadata.json": Data(#"{"userID":"@alice:example.com"}"#.utf8)]
     }
     
+    /// Writes each entry to its own file first, since the archive now takes URLs.
     private func write(_ entries: [String: Data], to url: URL) throws -> BackupManifest {
-        try BackupArchive.write(entries: entries,
-                                to: url,
-                                passphrase: passphrase,
-                                appVersion: "1.2.3",
-                                databaseSchemaVersion: 1,
-                                searchIndexSchemaVersion: 2,
-                                providerID: .localFile,
-                                deviceName: "Test Device")
+        let scratch = Self.temporaryDirectory()
+        try FileManager.default.createDirectoryIfNeeded(at: scratch)
+        
+        var entryURLs: [String: URL] = [:]
+        for (name, data) in entries {
+            let fileURL = scratch.appending(component: name.replacingOccurrences(of: "/", with: "__"))
+            try data.write(to: fileURL, options: .atomic)
+            entryURLs[name] = fileURL
+        }
+        
+        return try BackupArchive.write(entryURLs: entryURLs,
+                                       to: url,
+                                       passphrase: passphrase,
+                                       appVersion: "1.2.3",
+                                       databaseSchemaVersion: 1,
+                                       searchIndexSchemaVersion: 2,
+                                       providerID: .localFile,
+                                       deviceName: "Test Device")
+    }
+    
+    /// Reads a package back as bytes, so the round-trip assertions stay readable.
+    private func read(_ url: URL, passphrase: String? = nil) throws -> (manifest: BackupManifest, entries: [String: Data]) {
+        let directory = Self.temporaryDirectory()
+        let result = try BackupArchive.read(from: url, passphrase: passphrase ?? self.passphrase, into: directory)
+        let entries = try result.entryURLs.mapValues { try Data(contentsOf: $0) }
+        return (result.manifest, entries)
+    }
+    
+    private static func temporaryDirectory() -> URL {
+        FileManager.default.temporaryDirectory.appending(component: UUID().uuidString, directoryHint: .isDirectory)
     }
     
     private static func temporaryURL() -> URL {

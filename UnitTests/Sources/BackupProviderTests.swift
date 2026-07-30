@@ -26,7 +26,9 @@ struct BackupProviderTests {
         
         let package = Self.temporaryDirectory().appending(component: "package.hxb")
         try FileManager.default.createDirectoryIfNeeded(at: package.deletingLastPathComponent())
-        let manifest = try BackupArchive.write(entries: ["a.bin": Data(repeating: 0x11, count: 512)],
+        let sourceURL = package.deletingLastPathComponent().appending(component: "a.bin")
+        try Data(repeating: 0x11, count: 512).write(to: sourceURL, options: .atomic)
+        let manifest = try BackupArchive.write(entryURLs: ["a.bin": sourceURL],
                                                to: package,
                                                passphrase: "pass",
                                                appVersion: "1.0.0",
@@ -53,7 +55,9 @@ struct BackupProviderTests {
         try FileManager.default.createDirectoryIfNeeded(at: fetchDirectory)
         let destination = fetchDirectory.appending(component: "fetched.hxb")
         _ = try #require(await provider.download(id: uploaded.id, to: destination) { _ in }.successValue)
-        #expect(try BackupArchive.read(from: destination, passphrase: "pass").entries["a.bin"]?.count == 512)
+        let unsealed = fetchDirectory.appending(component: "unsealed", directoryHint: .isDirectory)
+        let restored = try BackupArchive.read(from: destination, passphrase: "pass", into: unsealed).entryURLs
+        #expect(try restored["a.bin"].map { try Data(contentsOf: $0).count } == 512)
         
         let info = try #require(await provider.storageInfo().successValue)
         #expect(info.backupCount == 1)

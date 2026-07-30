@@ -23,10 +23,6 @@ class BackupManager: BackupManagerProtocol {
     private let deviceName: String
     private let appVersion: String
     
-    /// The whole snapshot is held in memory while it's compressed and sealed, so
-    /// there has to be a ceiling. Chosen to stay well clear of the jetsam limit for
-    /// a foreground app; a streaming writer would remove the need for it.
-    private static let maximumPayloadBytes: Int64 = 512 * 1024 * 1024
     /// How stale a backup has to be before backgrounding takes another one.
     private static let automaticBackupInterval: TimeInterval = 24 * 60 * 60
     
@@ -179,17 +175,18 @@ class BackupManager: BackupManagerProtocol {
         
         update { $0.phase = .exporting }
         
-        let entries: [String: Data]
+        // Scratch holds the two synthesised entries; the databases are referenced
+        // where they already sit, so nothing is copied to get here.
+        let scratchURL = FileManager.default.temporaryDirectory
+            .appending(component: "hxb-export-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: scratchURL) }
+        
+        let entryURLs: [String: URL]
         do {
-            entries = try await dataSource.exportEntries()
+            entryURLs = try await dataSource.exportEntryURLs(scratchDirectory: scratchURL)
         } catch {
             MXLog.error("Backup export failed: \(error)")
             return fail(.providerFailure("export"))
-        }
-        
-        let payloadSize = entries.values.reduce(Int64(0)) { $0 + Int64($1.count) }
-        guard payloadSize <= Self.maximumPayloadBytes else {
-            return fail(.payloadTooLarge(bytes: payloadSize, limit: Self.maximumPayloadBytes))
         }
         
         guard !Task.isCancelled else { return fail(.cancelled) }
@@ -205,7 +202,7 @@ class BackupManager: BackupManagerProtocol {
             // Compression and sealing happen together inside the archive writer, so
             // the encrypting phase is reported around the same call.
             update { $0.phase = .encrypting }
-            manifest = try BackupArchive.write(entries: entries,
+            manifest = try BackupArchive.write(entryURLs: entryURLs,
                                                to: packageURL,
                                                passphrase: passphrase,
                                                appVersion: appVersion,
@@ -316,9 +313,15 @@ class BackupManager: BackupManagerProtocol {
         
         updateRestore { $0.phase = .decrypting }
         
-        let entries: [String: Data]
+        // Decrypted entries are written out as files rather than returned as bytes,
+        // so restoring a large account costs disk rather than memory.
+        let unsealedURL = FileManager.default.temporaryDirectory
+            .appending(component: "hxb-restore-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: unsealedURL) }
+        
+        let entryURLs: [String: URL]
         do {
-            entries = try BackupArchive.read(from: packageURL, passphrase: passphrase).entries
+            entryURLs = try BackupArchive.read(from: packageURL, passphrase: passphrase, into: unsealedURL).entryURLs
         } catch let error as BackupError {
             return failRestore(error)
         } catch {
@@ -327,7 +330,8 @@ class BackupManager: BackupManagerProtocol {
         
         // Refuse another account's package before writing anything: merging two
         // users' stores would corrupt both.
-        if let data = entries[SessionBackupDataSource.metadataEntryName],
+        if let url = entryURLs[SessionBackupDataSource.metadataEntryName],
+           let data = try? Data(contentsOf: url),
            let metadata = try? JSONDecoder().decode(BackupMetadata.self, from: data),
            metadata.userID != userID {
             return failRestore(.accountMismatch)
@@ -336,7 +340,7 @@ class BackupManager: BackupManagerProtocol {
         updateRestore { $0.phase = .restoring }
         
         do {
-            try await dataSource.importEntries(entries)
+            try await dataSource.importEntryURLs(entryURLs)
         } catch {
             MXLog.error("Backup import failed: \(error)")
             return failRestore(.providerFailure("import"))

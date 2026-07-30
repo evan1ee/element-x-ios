@@ -1769,72 +1769,86 @@ nonisolated class BackupDataSourceMock: BackupDataSourceProtocol, @unchecked Sen
     }
     nonisolated(unsafe) var underlyingSearchIndexSchemaVersion: Int!
 
-    //MARK: - exportEntries
+    //MARK: - exportEntryURLs
 
-    nonisolated(unsafe) var exportEntriesThrowableError: Error?
-    private let exportEntriesCallsCountLock = NSLock()
-    private nonisolated(unsafe) var exportEntriesUnderlyingCallsCount = 0
-    var exportEntriesCallsCount: Int {
-        get { exportEntriesCallsCountLock.withLock { exportEntriesUnderlyingCallsCount } }
-        set { exportEntriesCallsCountLock.withLock { exportEntriesUnderlyingCallsCount = newValue } }
+    nonisolated(unsafe) var exportEntryURLsScratchDirectoryThrowableError: Error?
+    private let exportEntryURLsScratchDirectoryCallsCountLock = NSLock()
+    private nonisolated(unsafe) var exportEntryURLsScratchDirectoryUnderlyingCallsCount = 0
+    var exportEntryURLsScratchDirectoryCallsCount: Int {
+        get { exportEntryURLsScratchDirectoryCallsCountLock.withLock { exportEntryURLsScratchDirectoryUnderlyingCallsCount } }
+        set { exportEntryURLsScratchDirectoryCallsCountLock.withLock { exportEntryURLsScratchDirectoryUnderlyingCallsCount = newValue } }
     }
-    var exportEntriesCalled: Bool {
-        return exportEntriesCallsCount > 0
+    var exportEntryURLsScratchDirectoryCalled: Bool {
+        return exportEntryURLsScratchDirectoryCallsCount > 0
+    }
+    private let exportEntryURLsScratchDirectoryReceivedScratchDirectoryLock = NSLock()
+    private nonisolated(unsafe) var exportEntryURLsScratchDirectoryUnderlyingReceivedScratchDirectory: URL?
+    var exportEntryURLsScratchDirectoryReceivedScratchDirectory: URL? {
+        get { exportEntryURLsScratchDirectoryReceivedScratchDirectoryLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReceivedScratchDirectory } }
+        set { exportEntryURLsScratchDirectoryReceivedScratchDirectoryLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReceivedScratchDirectory = newValue } }
+    }
+    private let exportEntryURLsScratchDirectoryReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var exportEntryURLsScratchDirectoryUnderlyingReceivedInvocations: [URL] = []
+    var exportEntryURLsScratchDirectoryReceivedInvocations: [URL] {
+        get { exportEntryURLsScratchDirectoryReceivedInvocationsLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReceivedInvocations } }
+        set { exportEntryURLsScratchDirectoryReceivedInvocationsLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReceivedInvocations = newValue } }
     }
 
-    private let exportEntriesReturnValueLock = NSLock()
-    private nonisolated(unsafe) var exportEntriesUnderlyingReturnValue: [String: Data]!
-    var exportEntriesReturnValue: [String: Data]! {
-        get { exportEntriesReturnValueLock.withLock { exportEntriesUnderlyingReturnValue } }
-        set { exportEntriesReturnValueLock.withLock { exportEntriesUnderlyingReturnValue = newValue } }
+    private let exportEntryURLsScratchDirectoryReturnValueLock = NSLock()
+    private nonisolated(unsafe) var exportEntryURLsScratchDirectoryUnderlyingReturnValue: [String: URL]!
+    var exportEntryURLsScratchDirectoryReturnValue: [String: URL]! {
+        get { exportEntryURLsScratchDirectoryReturnValueLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReturnValue } }
+        set { exportEntryURLsScratchDirectoryReturnValueLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var exportEntriesClosure: (() async throws -> [String: Data])?
+    nonisolated(unsafe) var exportEntryURLsScratchDirectoryClosure: ((URL) async throws -> [String: URL])?
 
-    @concurrent func exportEntries() async throws -> [String: Data] {
-        if let error = exportEntriesThrowableError {
+    @concurrent func exportEntryURLs(scratchDirectory: URL) async throws -> [String: URL] {
+        if let error = exportEntryURLsScratchDirectoryThrowableError {
             throw error
         }
-        exportEntriesCallsCountLock.withLock { exportEntriesUnderlyingCallsCount += 1 }
-        if let exportEntriesClosure = exportEntriesClosure {
-            return try await exportEntriesClosure()
+        exportEntryURLsScratchDirectoryCallsCountLock.withLock { exportEntryURLsScratchDirectoryUnderlyingCallsCount += 1 }
+        exportEntryURLsScratchDirectoryReceivedScratchDirectory = scratchDirectory
+        exportEntryURLsScratchDirectoryReceivedInvocationsLock.withLock { exportEntryURLsScratchDirectoryUnderlyingReceivedInvocations.append(scratchDirectory) }
+        if let exportEntryURLsScratchDirectoryClosure = exportEntryURLsScratchDirectoryClosure {
+            return try await exportEntryURLsScratchDirectoryClosure(scratchDirectory)
         } else {
-            return exportEntriesReturnValue
+            return exportEntryURLsScratchDirectoryReturnValue
         }
     }
-    //MARK: - importEntries
+    //MARK: - importEntryURLs
 
-    nonisolated(unsafe) var importEntriesThrowableError: Error?
-    private let importEntriesCallsCountLock = NSLock()
-    private nonisolated(unsafe) var importEntriesUnderlyingCallsCount = 0
-    var importEntriesCallsCount: Int {
-        get { importEntriesCallsCountLock.withLock { importEntriesUnderlyingCallsCount } }
-        set { importEntriesCallsCountLock.withLock { importEntriesUnderlyingCallsCount = newValue } }
+    nonisolated(unsafe) var importEntryURLsThrowableError: Error?
+    private let importEntryURLsCallsCountLock = NSLock()
+    private nonisolated(unsafe) var importEntryURLsUnderlyingCallsCount = 0
+    var importEntryURLsCallsCount: Int {
+        get { importEntryURLsCallsCountLock.withLock { importEntryURLsUnderlyingCallsCount } }
+        set { importEntryURLsCallsCountLock.withLock { importEntryURLsUnderlyingCallsCount = newValue } }
     }
-    var importEntriesCalled: Bool {
-        return importEntriesCallsCount > 0
+    var importEntryURLsCalled: Bool {
+        return importEntryURLsCallsCount > 0
     }
-    private let importEntriesReceivedEntriesLock = NSLock()
-    private nonisolated(unsafe) var importEntriesUnderlyingReceivedEntries: [String: Data]?
-    var importEntriesReceivedEntries: [String: Data]? {
-        get { importEntriesReceivedEntriesLock.withLock { importEntriesUnderlyingReceivedEntries } }
-        set { importEntriesReceivedEntriesLock.withLock { importEntriesUnderlyingReceivedEntries = newValue } }
+    private let importEntryURLsReceivedEntryURLsLock = NSLock()
+    private nonisolated(unsafe) var importEntryURLsUnderlyingReceivedEntryURLs: [String: URL]?
+    var importEntryURLsReceivedEntryURLs: [String: URL]? {
+        get { importEntryURLsReceivedEntryURLsLock.withLock { importEntryURLsUnderlyingReceivedEntryURLs } }
+        set { importEntryURLsReceivedEntryURLsLock.withLock { importEntryURLsUnderlyingReceivedEntryURLs = newValue } }
     }
-    private let importEntriesReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var importEntriesUnderlyingReceivedInvocations: [[String: Data]] = []
-    var importEntriesReceivedInvocations: [[String: Data]] {
-        get { importEntriesReceivedInvocationsLock.withLock { importEntriesUnderlyingReceivedInvocations } }
-        set { importEntriesReceivedInvocationsLock.withLock { importEntriesUnderlyingReceivedInvocations = newValue } }
+    private let importEntryURLsReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var importEntryURLsUnderlyingReceivedInvocations: [[String: URL]] = []
+    var importEntryURLsReceivedInvocations: [[String: URL]] {
+        get { importEntryURLsReceivedInvocationsLock.withLock { importEntryURLsUnderlyingReceivedInvocations } }
+        set { importEntryURLsReceivedInvocationsLock.withLock { importEntryURLsUnderlyingReceivedInvocations = newValue } }
     }
-    nonisolated(unsafe) var importEntriesClosure: (([String: Data]) async throws -> Void)?
+    nonisolated(unsafe) var importEntryURLsClosure: (([String: URL]) async throws -> Void)?
 
-    @concurrent func importEntries(_ entries: [String: Data]) async throws {
-        if let error = importEntriesThrowableError {
+    @concurrent func importEntryURLs(_ entryURLs: [String: URL]) async throws {
+        if let error = importEntryURLsThrowableError {
             throw error
         }
-        importEntriesCallsCountLock.withLock { importEntriesUnderlyingCallsCount += 1 }
-        importEntriesReceivedEntries = entries
-        importEntriesReceivedInvocationsLock.withLock { importEntriesUnderlyingReceivedInvocations.append(entries) }
-        try await importEntriesClosure?(entries)
+        importEntryURLsCallsCountLock.withLock { importEntryURLsUnderlyingCallsCount += 1 }
+        importEntryURLsReceivedEntryURLs = entryURLs
+        importEntryURLsReceivedInvocationsLock.withLock { importEntryURLsUnderlyingReceivedInvocations.append(entryURLs) }
+        try await importEntryURLsClosure?(entryURLs)
     }
 }
 nonisolated class BackupManagerMock: BackupManagerProtocol, @unchecked Sendable {

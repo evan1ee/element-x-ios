@@ -20,7 +20,6 @@
 "screen_backup_error_permission" = "Permission denied";
 "screen_backup_error_provider_unavailable" = "Backup destination unavailable";
 "screen_backup_error_storage_full" = "Storage full";
-"screen_backup_error_too_large" = "The backup is too large for this device to prepare";
 "screen_backup_error_version" = "This backup was made by a newer version of the app";
 "screen_backup_last_backup" = "Last backup";
 "screen_backup_never" = "Never";

@@ -24,10 +24,6 @@ nonisolated enum BackupError: Error, Equatable, Sendable {
     case versionMismatch(found: Int, supported: Int)
     case permissionDenied
     case cancelled
-    /// The snapshot is bigger than this implementation will hold in memory. A
-    /// streaming writer would lift this; until then, refusing beats being killed
-    /// mid-encrypt and leaving a half-written package on the destination.
-    case payloadTooLarge(bytes: Int64, limit: Int64)
     /// The package belongs to a different account.
     case accountMismatch
     /// Anything a provider can't express as one of the above. The string is for logs
@@ -41,7 +37,7 @@ nonisolated enum BackupError: Error, Equatable, Sendable {
         case .network, .providerUnavailable, .providerFailure: true
         case .notAuthenticated, .storageFull, .corruptedPackage, .decryptionFailed,
              .encryptionFailed, .versionMismatch, .permissionDenied, .cancelled,
-             .payloadTooLarge, .accountMismatch: false
+             .accountMismatch: false
         }
     }
 }
@@ -65,7 +61,8 @@ nonisolated struct BackupEntry: Codable, Equatable, Sendable {
 /// the device name the user chose themselves.
 nonisolated struct BackupManifest: Codable, Equatable, Sendable {
     /// Bumped when the container layout changes in a way older readers can't handle.
-    static let currentFormatVersion = 1
+    /// 2 introduced chunked sealing so a backup never has to fit in memory.
+    static let currentFormatVersion = 2
     
     let formatVersion: Int
     let appVersion: String
@@ -85,6 +82,12 @@ nonisolated struct BackupManifest: Codable, Equatable, Sendable {
     /// Random per-backup salt for deriving the key from the passphrase. Public by
     /// design — a salt defends against precomputation, not against being read.
     let keySalt: Data
+    /// Random per-backup nonce prefix. Each chunk's nonce is this plus its position,
+    /// so nonces are unique without storing one per chunk. Absent in version 1.
+    let noncePrefix: Data?
+    /// Plaintext bytes per chunk, recorded so a future writer can change it without
+    /// stranding older packages. Absent in version 1.
+    let chunkSize: Int?
     
     var isSupported: Bool {
         formatVersion <= Self.currentFormatVersion

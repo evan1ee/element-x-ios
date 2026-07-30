@@ -56,8 +56,6 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenBackupErrorProviderUnavailable: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_provider_unavailable") }
   /// Storage full
   internal static var screenBackupErrorStorageFull: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_storage_full") }
-  /// The backup is too large for this device to prepare
-  internal static var screenBackupErrorTooLarge: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_too_large") }
   /// This backup was made by a newer version of the app
   internal static var screenBackupErrorVersion: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_error_version") }
   /// Last backup

@@ -117,7 +117,6 @@ extension BackupError {
         case .encryptionFailed: UntranslatedL10n.screenBackupErrorEncryption
         case .versionMismatch: UntranslatedL10n.screenBackupErrorVersion
         case .permissionDenied: UntranslatedL10n.screenBackupErrorPermission
-        case .payloadTooLarge: UntranslatedL10n.screenBackupErrorTooLarge
         case .accountMismatch: UntranslatedL10n.screenBackupErrorAccountMismatch
         case .cancelled, .providerFailure: L10n.commonSomethingWentWrong
         }

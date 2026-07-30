@@ -34,16 +34,23 @@ nonisolated enum BackupRestoreStaging {
         FileManager.default.fileExists(atPath: directory.appending(component: markerName).path(percentEncoded: false))
     }
     
-    /// Writes the decrypted entries aside, keyed by their package names.
-    static func stage(entries: [String: Data]) throws {
+    /// Moves the decrypted entries aside, keyed by their package names.
+    ///
+    /// Moves rather than reads: the archive has already written them out as files, and
+    /// loading them here would reintroduce the memory ceiling the streaming reader
+    /// exists to remove.
+    static func stage(entryURLs: [String: URL]) throws {
         try? FileManager.default.removeItem(at: directory)
         try FileManager.default.createDirectoryIfNeeded(at: directory)
         
-        for (name, data) in entries {
+        for (name, source) in entryURLs {
             // Package names carry '/', which can't be a filename. Encoding rather than
             // creating subdirectories keeps applying it a flat, restartable loop.
             let destination = directory.appending(component: encode(name))
-            try data.write(to: destination, options: .atomic)
+            if FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.moveItem(at: source, to: destination)
         }
         
         try Data().write(to: directory.appending(component: markerName), options: .atomic)
@@ -65,10 +72,9 @@ nonisolated enum BackupRestoreStaging {
             return
         }
         
-        var entries: [String: Data] = [:]
+        var entryURLs: [String: URL] = [:]
         for url in names where url.lastPathComponent != markerName {
-            guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
-            entries[decode(url.lastPathComponent)] = data
+            entryURLs[decode(url.lastPathComponent)] = url
         }
         
         let dataSource = SessionBackupDataSource(sessionDirectories: sessionDirectories,
@@ -76,8 +82,8 @@ nonisolated enum BackupRestoreStaging {
                                                  preferencesSuiteName: preferencesSuiteName,
                                                  userID: "")
         do {
-            try dataSource.write(entries: entries)
-            MXLog.info("Restore applied: \(entries.count) entries.")
+            try dataSource.write(entryURLs: entryURLs)
+            MXLog.info("Restore applied: \(entryURLs.count) entries.")
         } catch {
             MXLog.error("Failed applying the staged restore: \(error)")
         }

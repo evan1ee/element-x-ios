@@ -19,8 +19,11 @@ nonisolated protocol BackupDataSourceProtocol: AnyObject, Sendable {
     var databaseSchemaVersion: Int { get }
     var searchIndexSchemaVersion: Int { get }
     
-    func exportEntries() async throws -> [String: Data]
-    func importEntries(_ entries: [String: Data]) async throws
+    /// Package-relative name to the file holding its contents. URLs rather than bytes
+    /// so a backup never has to fit in memory; `scratchDirectory` is where synthesised
+    /// entries are written and is the caller's to clean up.
+    func exportEntryURLs(scratchDirectory: URL) async throws -> [String: URL]
+    func importEntryURLs(_ entryURLs: [String: URL]) async throws
 }
 
 /// The real one: the session's databases, the search index, and preferences.
@@ -73,15 +76,16 @@ final nonisolated class SessionBackupDataSource: BackupDataSourceProtocol {
         SearchIndexService.schemaVersion
     }
     
-    func exportEntries() async throws -> [String: Data] {
-        var entries: [String: Data] = [:]
+    func exportEntryURLs(scratchDirectory: URL) async throws -> [String: URL] {
+        var entries: [String: URL] = [:]
         
+        // The databases are already files, so they're referenced where they lie rather
+        // than read. Only the two synthesised entries need writing out.
         for directory in [sessionDirectories?.dataDirectory, sessionDirectories?.cacheDirectory].compactMap(\.self) {
             let contents = (try? FileManager.default.contentsOfDirectory(at: directory,
                                                                          includingPropertiesForKeys: nil)) ?? []
             for url in contents where Self.databasePrefixes.contains(where: { url.lastPathComponent.hasPrefix($0) }) {
-                guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
-                entries["\(Self.databaseDirectory)/\(url.lastPathComponent)"] = data
+                entries["\(Self.databaseDirectory)/\(url.lastPathComponent)"] = url
             }
         }
         
@@ -89,27 +93,33 @@ final nonisolated class SessionBackupDataSource: BackupDataSourceProtocol {
         // captured as SQLite left it rather than needing a checkpoint we can't force
         // from outside the actor that owns the connection.
         for url in searchIndexSiblings() {
-            guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
             let suffix = url.lastPathComponent.dropFirst(searchIndexURL.lastPathComponent.count)
-            entries[Self.searchEntryName + suffix] = data
+            entries[Self.searchEntryName + suffix] = url
         }
         
-        entries[Self.preferencesEntryName] = try JSONSerialization.data(withJSONObject: exportedPreferences())
-        entries[Self.metadataEntryName] = try JSONEncoder().encode(BackupMetadata(userID: userID, createdAt: .now))
+        try FileManager.default.createDirectoryIfNeeded(at: scratchDirectory)
+        
+        let preferencesURL = scratchDirectory.appending(component: Self.preferencesEntryName)
+        try JSONSerialization.data(withJSONObject: exportedPreferences()).write(to: preferencesURL, options: .atomic)
+        entries[Self.preferencesEntryName] = preferencesURL
+        
+        let metadataURL = scratchDirectory.appending(component: Self.metadataEntryName)
+        try JSONEncoder().encode(BackupMetadata(userID: userID, createdAt: .now)).write(to: metadataURL, options: .atomic)
+        entries[Self.metadataEntryName] = metadataURL
         
         return entries
     }
     
     /// Stages rather than writes. The databases are open right now, so putting the
     /// files in place has to wait for the next launch — see `BackupRestoreStaging`.
-    func importEntries(_ entries: [String: Data]) async throws {
-        try BackupRestoreStaging.stage(entries: entries)
+    func importEntryURLs(_ entryURLs: [String: URL]) async throws {
+        try BackupRestoreStaging.stage(entryURLs: entryURLs)
     }
     
     /// Puts a restore in place. Only safe before anything opens these databases,
-    /// which is why it's separate from `importEntries` and called during startup.
-    func write(entries: [String: Data]) throws {
-        for (name, data) in entries where name.hasPrefix("\(Self.databaseDirectory)/") {
+    /// which is why it's separate from `importEntryURLs` and called during startup.
+    func write(entryURLs: [String: URL]) throws {
+        for (name, source) in entryURLs where name.hasPrefix("\(Self.databaseDirectory)/") {
             guard let sessionDirectories else { continue }
             let filename = String(name.dropFirst(Self.databaseDirectory.count + 1))
             // The event cache belongs in caches and the state store in data. Writing
@@ -118,18 +128,20 @@ final nonisolated class SessionBackupDataSource: BackupDataSourceProtocol {
                 ? sessionDirectories.cacheDirectory
                 : sessionDirectories.dataDirectory
             try FileManager.default.createDirectoryIfNeeded(at: directory)
-            try data.write(to: directory.appending(component: filename), options: .atomic)
+            try Self.replaceItem(at: directory.appending(component: filename), with: source)
         }
         
-        for (name, data) in entries where name.hasPrefix(Self.searchEntryName) {
+        for (name, source) in entryURLs where name.hasPrefix(Self.searchEntryName) {
             let suffix = name.dropFirst(Self.searchEntryName.count)
             let destination = searchIndexURL.deletingLastPathComponent()
                 .appending(component: searchIndexURL.lastPathComponent + suffix)
             try FileManager.default.createDirectoryIfNeeded(at: destination.deletingLastPathComponent())
-            try data.write(to: destination, options: .atomic)
+            try Self.replaceItem(at: destination, with: source)
         }
         
-        if let data = entries[Self.preferencesEntryName],
+        // Small enough to read whole, unlike the databases above.
+        if let url = entryURLs[Self.preferencesEntryName],
+           let data = try? Data(contentsOf: url),
            let preferences = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
             for (key, value) in preferences where !Self.excludedPreferenceKeys.contains(key) {
                 userDefaults?.set(value, forKey: key)
@@ -138,6 +150,15 @@ final nonisolated class SessionBackupDataSource: BackupDataSourceProtocol {
     }
     
     // MARK: - Private
+    
+    /// Moves rather than copies: the source is a decrypted staging file that is being
+    /// consumed, and copying a database twice over is a pointless second write.
+    private static func replaceItem(at destination: URL, with source: URL) throws {
+        if FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
+            try FileManager.default.removeItem(at: destination)
+        }
+        try FileManager.default.moveItem(at: source, to: destination)
+    }
     
     private func searchIndexSiblings() -> [URL] {
         let directory = searchIndexURL.deletingLastPathComponent()
