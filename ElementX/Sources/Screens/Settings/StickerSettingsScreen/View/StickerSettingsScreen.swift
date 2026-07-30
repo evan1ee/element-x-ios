@@ -35,7 +35,14 @@ struct StickerSettingsScreen: View {
 // MARK: - Previews
 
 struct StickerSettingsScreen_Previews: PreviewProvider, TestablePreview {
-    static let viewModel = StickerSettingsScreenViewModel(stickerSettings: AppSettings.volatile())
+    /// Overwrites the key before rendering. The default is the real one from Secrets,
+    /// and this screen puts it on screen in plain text — snapshotting that writes a
+    /// live credential into a PNG that gets committed.
+    static let viewModel = {
+        let settings = AppSettings.volatile()
+        settings.klipyAPIKey = "klipy-api-key-placeholder"
+        return StickerSettingsScreenViewModel(stickerSettings: settings)
+    }()
     
     static var previews: some View {
         ElementNavigationStack {
