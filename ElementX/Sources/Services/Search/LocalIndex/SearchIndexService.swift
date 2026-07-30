@@ -12,6 +12,19 @@ import SQLite3
 /// doesn't import these macros, so they're restated here.
 private nonisolated let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
+private nonisolated extension Character {
+    /// Scripts written without spaces between words, where the tokeniser can't find
+    /// word boundaries on its own.
+    var isCJK: Bool {
+        guard let scalar = unicodeScalars.first, unicodeScalars.count == 1 else { return false }
+        return (0x4E00...0x9FFF).contains(scalar.value) || // CJK Unified Ideographs
+            (0x3400...0x4DBF).contains(scalar.value) || // Extension A
+            (0xF900...0xFAFF).contains(scalar.value) || // Compatibility Ideographs
+            (0x3040...0x30FF).contains(scalar.value) || // Hiragana and Katakana
+            (0xAC00...0xD7AF).contains(scalar.value) // Hangul syllables
+    }
+}
+
 /// A local full text index over timeline events, backed by SQLite's FTS5.
 ///
 /// An actor rather than a queue because every entry point touches the same
@@ -23,7 +36,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     /// Bumped whenever the schema changes so a stale index is discarded rather
     /// than queried with the wrong columns. The index is derived data, so
     /// throwing it away costs only the re-indexing.
-    private nonisolated static let schemaVersion = 1
+    private nonisolated static let schemaVersion = 2
     
     init(databaseURL: URL) {
         self.databaseURL = databaseURL
@@ -50,8 +63,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             let sql = """
             INSERT INTO events
                 (event_id, room_id, sender_id, sender_display_name, timestamp, kind,
-                 message_body, filename, mime_type, url, thread_root_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 message_body, filename, mime_type, url, thread_root_id,
+                 message_body_segmented, filename_segmented, sender_display_name_segmented)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(event_id) DO UPDATE SET
                 sender_display_name = excluded.sender_display_name,
                 timestamp = excluded.timestamp,
@@ -60,7 +74,10 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 filename = excluded.filename,
                 mime_type = excluded.mime_type,
                 url = excluded.url,
-                thread_root_id = excluded.thread_root_id
+                thread_root_id = excluded.thread_root_id,
+                message_body_segmented = excluded.message_body_segmented,
+                filename_segmented = excluded.filename_segmented,
+                sender_display_name_segmented = excluded.sender_display_name_segmented
             """
             let statement = try prepare(sql, on: database)
             defer { sqlite3_finalize(statement) }
@@ -79,6 +96,11 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 bind(entry.mimeType, to: statement, at: 9)
                 bind(entry.url, to: statement, at: 10)
                 bind(entry.threadRootID, to: statement, at: 11)
+                // The searchable copies. Segmenting on write means the query only has
+                // to segment itself the same way to line up.
+                bind(entry.body.map(Self.segmented), to: statement, at: 12)
+                bind(entry.filename.map(Self.segmented), to: statement, at: 13)
+                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 14)
                 
                 guard sqlite3_step(statement) == SQLITE_DONE else {
                     throw SearchIndexError.query(lastErrorMessage(database))
@@ -221,8 +243,42 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     
     /// Builds the MATCH expression. Every term is quoted so the user can't inject
     /// FTS5 operators, and given a prefix wildcard so results arrive while typing.
+    ///
+    /// Terms are segmented the same way the indexed text was, so a term buried in a
+    /// run of CJK still lines up with the tokens actually stored.
     nonisolated static func matchExpression(for terms: [String]) -> String {
-        terms.map { "\"\($0)\"*" }.joined(separator: " ")
+        terms
+            .map { term in
+                segmented(term)
+                    .split(separator: " ")
+                    .map { "\"\($0)\"*" }
+                    .joined(separator: " ")
+            }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+    
+    /// Pads every CJK character with spaces so `unicode61` treats each as its own token.
+    ///
+    /// Without this the tokeniser sees a whole unspaced run as a single term: an entire
+    /// Chinese sentence with an English word inside it becomes one token, and neither
+    /// the English word nor any Chinese word within it can be matched. Splitting per
+    /// character also beats the `trigram` tokeniser here, which can't match the
+    /// two-character words that make up much of written Chinese.
+    nonisolated static func segmented(_ text: String) -> String {
+        var result = ""
+        result.reserveCapacity(text.count * 2)
+        
+        for character in text {
+            if character.isCJK {
+                result.append(" ")
+                result.append(character)
+                result.append(" ")
+            } else {
+                result.append(character)
+            }
+        }
+        return result
     }
     
     /// Locates each term in the body so the UI can highlight without matching again.
@@ -315,7 +371,12 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             filename TEXT,
             mime_type TEXT,
             url TEXT,
-            thread_root_id TEXT
+            thread_root_id TEXT,
+            -- Indexed copies, CJK split per character. Kept apart from the columns
+            -- above so what's searched and what's shown can differ.
+            message_body_segmented TEXT,
+            filename_segmented TEXT,
+            sender_display_name_segmented TEXT
         )
         """, on: database)
         
@@ -327,10 +388,10 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         // ID stays an indexed lookup rather than a scan of the FTS table.
         try execute("""
         CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(
-            message_body,
-            filename,
+            message_body_segmented,
+            filename_segmented,
             url,
-            sender_display_name,
+            sender_display_name_segmented,
             content = 'events',
             content_rowid = 'rowid',
             tokenize = 'unicode61 remove_diacritics 2'
@@ -340,24 +401,24 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         // External content tables aren't kept in step automatically.
         try execute("""
         CREATE TRIGGER IF NOT EXISTS events_after_insert AFTER INSERT ON events BEGIN
-            INSERT INTO events_fts(rowid, message_body, filename, url, sender_display_name)
-            VALUES (new.rowid, new.message_body, new.filename, new.url, new.sender_display_name);
+            INSERT INTO events_fts(rowid, message_body_segmented, filename_segmented, url, sender_display_name_segmented)
+            VALUES (new.rowid, new.message_body_segmented, new.filename_segmented, new.url, new.sender_display_name_segmented);
         END
         """, on: database)
         
         try execute("""
         CREATE TRIGGER IF NOT EXISTS events_after_delete AFTER DELETE ON events BEGIN
-            INSERT INTO events_fts(events_fts, rowid, message_body, filename, url, sender_display_name)
-            VALUES ('delete', old.rowid, old.message_body, old.filename, old.url, old.sender_display_name);
+            INSERT INTO events_fts(events_fts, rowid, message_body_segmented, filename_segmented, url, sender_display_name_segmented)
+            VALUES ('delete', old.rowid, old.message_body_segmented, old.filename_segmented, old.url, old.sender_display_name_segmented);
         END
         """, on: database)
         
         try execute("""
         CREATE TRIGGER IF NOT EXISTS events_after_update AFTER UPDATE ON events BEGIN
-            INSERT INTO events_fts(events_fts, rowid, message_body, filename, url, sender_display_name)
-            VALUES ('delete', old.rowid, old.message_body, old.filename, old.url, old.sender_display_name);
-            INSERT INTO events_fts(rowid, message_body, filename, url, sender_display_name)
-            VALUES (new.rowid, new.message_body, new.filename, new.url, new.sender_display_name);
+            INSERT INTO events_fts(events_fts, rowid, message_body_segmented, filename_segmented, url, sender_display_name_segmented)
+            VALUES ('delete', old.rowid, old.message_body_segmented, old.filename_segmented, old.url, old.sender_display_name_segmented);
+            INSERT INTO events_fts(rowid, message_body_segmented, filename_segmented, url, sender_display_name_segmented)
+            VALUES (new.rowid, new.message_body_segmented, new.filename_segmented, new.url, new.sender_display_name_segmented);
         END
         """, on: database)
     }

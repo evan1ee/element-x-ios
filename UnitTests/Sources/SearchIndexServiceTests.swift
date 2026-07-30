@@ -195,6 +195,49 @@ struct SearchIndexServiceTests {
         #expect(result.bodyMatches.allSatisfy { body[$0].lowercased() == "meeting" })
     }
     
+    // MARK: - Scripts without spaces between words
+    
+    @Test
+    func termsBuriedInChineseAreStillFound() async throws {
+        let service = makeService()
+        // Real message from a mixed-language room. Nothing separates "app" from the
+        // characters either side of it.
+        try await service.index([makeEntry(body: "可以发表情的app还要改一下代码才行。")])
+        
+        #expect(try await service.search(.init(text: "app")).count == 1)
+    }
+    
+    @Test
+    func chineseWordsAreFoundAtAnyLength() async throws {
+        let service = makeService()
+        try await service.index([makeEntry(body: "刚刚把卸载的官方element x 装上，官方的可以收到通知。")])
+        
+        // Two characters is the common case in written Chinese, and the length the
+        // trigram tokeniser can't reach.
+        #expect(try await service.search(.init(text: "通知")).count == 1)
+        #expect(try await service.search(.init(text: "收到通知")).count == 1)
+        #expect(try await service.search(.init(text: "element")).count == 1)
+    }
+    
+    @Test
+    func chineseThatIsntPresentStillMisses() async throws {
+        let service = makeService()
+        try await service.index([makeEntry(body: "可以发表情的app还要改一下代码才行。")])
+        
+        // Per-character segmentation must not turn every query into a match.
+        #expect(try await service.search(.init(text: "不存在")).isEmpty)
+    }
+    
+    @Test
+    func japaneseAndKoreanSegmentToo() async throws {
+        let service = makeService()
+        try await service.index([makeEntry(eventID: "$jp", body: "会議は明日ですか"),
+                                 makeEntry(eventID: "$kr", body: "내일 회의 있어요")])
+        
+        #expect(try await service.search(.init(text: "明日")).count == 1)
+        #expect(try await service.search(.init(text: "회의")).count == 1)
+    }
+    
     // MARK: - Persistence
     
     @Test
