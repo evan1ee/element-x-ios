@@ -48,6 +48,9 @@ struct RoomHistoryState: Equatable, Sendable, Codable {
     enum Status: String, Equatable, Sendable, Codable {
         case waiting
         case downloading
+        /// Hit the per-pass batch cap with history still to fetch. Distinct from
+        /// `waiting` so a room the queue hasn't reached yet doesn't claim to be partial.
+        case partial
         case complete
         case paused
         case error

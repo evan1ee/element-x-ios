@@ -169,6 +169,12 @@ struct RoomDetailsScreen: View {
                         context.send(viewAction: .processTapPolls)
                     })
                     .accessibilityIdentifier(A11yIdentifiers.roomDetailsScreen.pollsHistory)
+            
+            if let details = context.viewState.offlineHistoryDetails {
+                ListRow(label: .default(title: UntranslatedL10n.screenRoomDetailsOfflineHistory, icon: \.download),
+                        details: .title(details),
+                        kind: .label)
+            }
         }
     }
     

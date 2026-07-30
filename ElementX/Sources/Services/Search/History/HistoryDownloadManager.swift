@@ -175,16 +175,37 @@ final class HistoryDownloadManager: HistoryDownloadManagerProtocol {
         
         update { $0.status = .downloading }
         
-        for roomID in pending {
-            guard !Task.isCancelled else { return }
+        // A room holding more than the per-room cap needs more than one round. Rounds
+        // repeat until one adds nothing new, so every room gets a turn before any room
+        // gets seconds, and the pass ends genuinely finished rather than parked on
+        // "downloading" with nothing left running.
+        var remaining = pending
+        
+        while !remaining.isEmpty {
+            let countBeforeRound = await (try? indexService.count()) ?? 0
             
-            if let reason = pauseReason() {
-                update { $0.status = .paused(reason) }
-                return
+            for roomID in remaining {
+                guard !Task.isCancelled else { return }
+                
+                if let reason = pauseReason() {
+                    update { $0.status = .paused(reason) }
+                    return
+                }
+                
+                await download(roomID: roomID)
+                update { $0.queueLength = max($0.queueLength - 1, 0) }
             }
             
-            await download(roomID: roomID)
-            update { $0.queueLength = max($0.queueLength - 1, 0) }
+            let states = roomStatesSubject.value
+            let stillPartial = remaining.filter { states[$0]?.status == .partial }
+            let countAfterRound = await (try? indexService.count()) ?? 0
+            
+            // No new events despite rooms reporting more to fetch: the server isn't
+            // giving us anything, so stop rather than spin.
+            guard countAfterRound > countBeforeRound else { break }
+            
+            remaining = stillPartial
+            update { $0.queueLength = remaining.count }
         }
         
         guard !Task.isCancelled else { return }
@@ -242,7 +263,7 @@ final class HistoryDownloadManager: HistoryDownloadManagerProtocol {
         }
         
         let reachedStart = room.timeline.timelineItemProvider.paginationState.backward == .endReached
-        await setState(roomID: roomID) { $0.status = reachedStart ? .complete : .waiting }
+        await setState(roomID: roomID) { $0.status = reachedStart ? .complete : .partial }
         
         if reachedStart {
             update { $0.roomsCompleted += 1 }

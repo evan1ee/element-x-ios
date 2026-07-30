@@ -68,6 +68,18 @@ internal nonisolated enum UntranslatedL10n {
   }
   /// Sticker
   internal static var screenRoomAttachmentSourceSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_room_attachment_source_sticker") }
+  /// Offline history
+  internal static var screenRoomDetailsOfflineHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_room_details_offline_history") }
+  /// Available
+  internal static var screenRoomDetailsOfflineHistoryComplete: String { return UntranslatedL10n.tr("Untranslated", "screen_room_details_offline_history_complete") }
+  /// Downloading…
+  internal static var screenRoomDetailsOfflineHistoryDownloading: String { return UntranslatedL10n.tr("Untranslated", "screen_room_details_offline_history_downloading") }
+  /// Incomplete
+  internal static var screenRoomDetailsOfflineHistoryError: String { return UntranslatedL10n.tr("Untranslated", "screen_room_details_offline_history_error") }
+  /// Partly available
+  internal static var screenRoomDetailsOfflineHistoryPartial: String { return UntranslatedL10n.tr("Untranslated", "screen_room_details_offline_history_partial") }
+  /// Paused
+  internal static var screenRoomDetailsOfflineHistoryPaused: String { return UntranslatedL10n.tr("Untranslated", "screen_room_details_offline_history_paused") }
   /// Unsupported call. Ask if the caller can use the new %1$@ app.
   internal static func screenRoomTimelineLegacyCallIos(_ p1: Any) -> String {
     return UntranslatedL10n.tr("Untranslated", "screen_room_timeline_legacy_call_ios", String(describing: p1))

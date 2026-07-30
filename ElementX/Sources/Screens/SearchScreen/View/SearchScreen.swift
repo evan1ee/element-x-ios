@@ -518,6 +518,14 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
                                                                 initialSearchQuery: "Foundation",
                                                                 initialSearchMode: .messages)
     
+    static let downloadingHistoryViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
+                                                                   clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)),
+                                                                   mediaProvider: MediaProviderMock(.init()),
+                                                                   searchIndexService: makeSearchIndexService(),
+                                                                   historyDownloadManager: makeHistoryDownloadManager(status: .downloading),
+                                                                   initialSearchQuery: "Foundation",
+                                                                   initialSearchMode: .messages)
+    
     /// An empty index: previews exercise the SDK side, and un-configured mocks trap.
     static func makeSearchIndexService() -> SearchIndexServiceProtocol {
         let mock = SearchIndexServiceMock()
@@ -525,11 +533,11 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
         return mock
     }
     
-    /// Reports a finished download, so previews don't carry the banner. Its own state
-    /// is covered by the Sync & Storage screen.
-    static func makeHistoryDownloadManager() -> HistoryDownloadManagerProtocol {
+    /// Defaults to a finished download, so only the preview that wants the banner gets it.
+    /// The download's own progress UI is covered by the Sync & Storage screen.
+    static func makeHistoryDownloadManager(status: HistoryDownloadStatus = .completed) -> HistoryDownloadManagerProtocol {
         let mock = HistoryDownloadManagerMock()
-        mock.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init(status: .completed)).asCurrentValuePublisher()
+        mock.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init(status: status)).asCurrentValuePublisher()
         mock.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
         return mock
     }
@@ -559,6 +567,11 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
             SearchScreen(context: loadingMessagesViewModel.context)
         }
         .previewDisplayName("Loading messages")
+        
+        ElementNavigationStack {
+            SearchScreen(context: downloadingHistoryViewModel.context)
+        }
+        .previewDisplayName("Downloading history")
     }
     
     private static func makeSearchService(results: [SearchServiceResult] = [], paginationState: SearchServicePaginationState = .idle(endReached: true)) -> SearchServiceProxyMock {

@@ -24,6 +24,12 @@
 "screen_notification_settings_sound_app_fade_ios" = "%1$@ Fade";
 "screen_onboarding_welcome_title_ios" = "Be in your %1$@";
 "screen_room_attachment_source_sticker" = "Sticker";
+"screen_room_details_offline_history" = "Offline history";
+"screen_room_details_offline_history_complete" = "Available";
+"screen_room_details_offline_history_downloading" = "Downloading…";
+"screen_room_details_offline_history_error" = "Incomplete";
+"screen_room_details_offline_history_partial" = "Partly available";
+"screen_room_details_offline_history_paused" = "Paused";
 "screen_room_timeline_legacy_call_ios" = "Unsupported call. Ask if the caller can use the new %1$@ app.";
 "screen_search_empty_state_message" = "Search for chats and messages";
 "screen_search_empty_state_title" = "Start searching...";

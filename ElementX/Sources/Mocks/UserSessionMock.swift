@@ -26,5 +26,12 @@ struct UserSessionMockConfiguration {
         sessionSecurityStatePublisher = CurrentValueSubject<SessionSecurityState, Never>(.init(verificationState: .verified, recoveryState: .enabled)).asCurrentValuePublisher()
         
         liveLocationManager = LiveLocationManagerMock(.init())
+        
+        // No per-room state, so screens reading it show nothing rather than trapping on
+        // an un-configured mock. Tests wanting the download visible replace this.
+        let historyDownloadManagerMock = HistoryDownloadManagerMock()
+        historyDownloadManagerMock.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init()).asCurrentValuePublisher()
+        historyDownloadManagerMock.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
+        historyDownloadManager = historyDownloadManagerMock
     }
 }

@@ -72,6 +72,13 @@ class RoomDetailsScreenViewModel: RoomDetailsScreenViewModelType, RoomDetailsScr
             state.reportRoomEnabled = await userSession.clientProxy.isReportRoomSupported
         }
         
+        userSession.historyDownloadManager.roomStatesPublisher
+            .map { $0[roomProxy.id] }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .weakAssign(to: \.state.offlineHistory, on: self)
+            .store(in: &cancellables)
+        
         userSession.clientProxy.homeserverReachabilityPublisher
             .filter { $0 == .reachable }
             .receive(on: DispatchQueue.main)

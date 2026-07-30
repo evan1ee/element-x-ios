@@ -70,6 +70,24 @@ struct RoomDetailsScreenViewState: BindableState {
     
     var reportRoomEnabled = false
     
+    /// How much of this room's history is available offline. Nil while the download is
+    /// switched off, when there's nothing to report.
+    var offlineHistory: RoomHistoryState?
+    
+    /// Only says something once a room has been touched — "Waiting" before the queue
+    /// reaches it would suggest a problem where there is none.
+    var offlineHistoryDetails: String? {
+        guard let offlineHistory else { return nil }
+        return switch offlineHistory.status {
+        case .waiting: nil
+        case .downloading: UntranslatedL10n.screenRoomDetailsOfflineHistoryDownloading
+        case .partial: UntranslatedL10n.screenRoomDetailsOfflineHistoryPartial
+        case .complete: UntranslatedL10n.screenRoomDetailsOfflineHistoryComplete
+        case .paused: UntranslatedL10n.screenRoomDetailsOfflineHistoryPaused
+        case .error: UntranslatedL10n.screenRoomDetailsOfflineHistoryError
+        }
+    }
+    
     var canSeeKnockingRequests: Bool {
         dmRecipientInfo == nil && isKnockableRoom && (canInviteUsers || canKickUsers || canBanUsers)
     }
