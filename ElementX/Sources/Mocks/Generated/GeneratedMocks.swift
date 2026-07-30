@@ -15051,6 +15051,11 @@ nonisolated class UserSessionMock: UserSessionProtocol, @unchecked Sendable {
         set(value) { underlyingSearchIndexService = value }
     }
     nonisolated(unsafe) var underlyingSearchIndexService: SearchIndexServiceProtocol!
+    var historyDownloadManager: HistoryDownloadManagerProtocol {
+        get { return underlyingHistoryDownloadManager }
+        set(value) { underlyingHistoryDownloadManager = value }
+    }
+    nonisolated(unsafe) var underlyingHistoryDownloadManager: HistoryDownloadManagerProtocol!
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> {
         get { return underlyingSessionSecurityStatePublisher }
         set(value) { underlyingSessionSecurityStatePublisher = value }

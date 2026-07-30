@@ -23,9 +23,10 @@ class UserSession: UserSessionProtocol {
     /// Scans media content, `nil` when no content scanner is configured for the server.
     let contentScannerService: ContentScannerServiceProtocol?
     
-    /// The local index of attachments and links. Message bodies come from the SDK's
-    /// own index instead, which the client builder configures.
+    /// The local search index and the two things that fill it: a light pass over what
+    /// the event cache already holds, and the optional full history download.
     let searchIndexService: SearchIndexServiceProtocol
+    let historyDownloadManager: HistoryDownloadManagerProtocol
     private let searchIndexBackfillService: SearchIndexBackfillService
     
     let callbacks = PassthroughSubject<UserSessionCallback, Never>()
@@ -35,7 +36,11 @@ class UserSession: UserSessionProtocol {
         sessionSecurityStateSubject.asCurrentValuePublisher()
     }
     
-    init(clientProxy: ClientProxyProtocol, mediaProvider: MediaProviderProtocol, voiceMessageMediaManager: VoiceMessageMediaManagerProtocol, liveLocationManager: LiveLocationManagerProtocol) {
+    init(clientProxy: ClientProxyProtocol,
+         mediaProvider: MediaProviderProtocol,
+         voiceMessageMediaManager: VoiceMessageMediaManagerProtocol,
+         liveLocationManager: LiveLocationManagerProtocol,
+         appSettings: AppSettings) {
         self.clientProxy = clientProxy
         self.mediaProvider = mediaProvider
         self.voiceMessageMediaManager = voiceMessageMediaManager
@@ -44,13 +49,25 @@ class UserSession: UserSessionProtocol {
         
         let searchIndexService = SearchIndexService(databaseURL: .searchIndexURL(for: clientProxy.userID))
         self.searchIndexService = searchIndexService
+        
+        let timelineItemFactory = RoomTimelineItemFactory(userID: clientProxy.userID,
+                                                          attributedStringBuilder: AttributedStringBuilder(mentionBuilder: PlainMentionBuilder()),
+                                                          stateEventStringBuilder: RoomStateEventStringBuilder(userID: clientProxy.userID))
+        
         searchIndexBackfillService = SearchIndexBackfillService(clientProxy: clientProxy,
                                                                 roomSummaryProvider: clientProxy.roomSummaryProvider,
-                                                                timelineItemFactory: RoomTimelineItemFactory(userID: clientProxy.userID,
-                                                                                                             attributedStringBuilder: AttributedStringBuilder(mentionBuilder: PlainMentionBuilder()),
-                                                                                                             stateEventStringBuilder: RoomStateEventStringBuilder(userID: clientProxy.userID)),
+                                                                timelineItemFactory: timelineItemFactory,
                                                                 indexService: searchIndexService)
         searchIndexBackfillService.start()
+        
+        // Only runs if the user asked for it; otherwise it sits idle reporting not started.
+        let historyDownloadManager = HistoryDownloadManager(clientProxy: clientProxy,
+                                                            roomSummaryProvider: clientProxy.roomSummaryProvider,
+                                                            timelineItemFactory: timelineItemFactory,
+                                                            indexService: searchIndexService,
+                                                            appSettings: appSettings)
+        self.historyDownloadManager = historyDownloadManager
+        historyDownloadManager.start()
         
         authErrorCancellable = clientProxy.actionsPublisher
             .receive(on: DispatchQueue.main)

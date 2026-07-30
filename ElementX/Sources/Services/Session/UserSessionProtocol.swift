@@ -31,6 +31,9 @@ protocol UserSessionProtocol: Sendable {
     /// The local index of attachments and links, kept warm in the background.
     var searchIndexService: SearchIndexServiceProtocol { get }
     
+    /// Downloads and indexes full room history when the user has opted in.
+    var historyDownloadManager: HistoryDownloadManagerProtocol { get }
+    
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> { get }
     
     var callbacks: PassthroughSubject<UserSessionCallback, Never> { get }
