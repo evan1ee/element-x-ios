@@ -227,6 +227,23 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         return Int(sqlite3_column_int64(statement, 0))
     }
     
+    /// The newest event indexed for a room, used as a watermark so live updates only
+    /// write what's actually new rather than re-indexing the whole loaded timeline.
+    func latestTimestamp(inRoom roomID: String) async throws -> Date? {
+        let database = try connection()
+        let statement = try prepare("SELECT MAX(timestamp) FROM events WHERE room_id = ?", on: database)
+        defer { sqlite3_finalize(statement) }
+        
+        sqlite3_bind_text(statement, 1, roomID, -1, sqliteTransient)
+        
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            throw SearchIndexError.query(lastErrorMessage(database))
+        }
+        // NULL for a room with nothing indexed, which reads as 0 here.
+        guard sqlite3_column_type(statement, 0) != SQLITE_NULL else { return nil }
+        return Date(timeIntervalSince1970: Double(sqlite3_column_int64(statement, 0)) / 1000)
+    }
+    
     func clear() async throws {
         let database = try connection()
         try execute("DELETE FROM events", on: database)

@@ -11557,6 +11557,52 @@ nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked
             return countReturnValue
         }
     }
+    //MARK: - latestTimestamp
+
+    nonisolated(unsafe) var latestTimestampInRoomThrowableError: Error?
+    private let latestTimestampInRoomCallsCountLock = NSLock()
+    private nonisolated(unsafe) var latestTimestampInRoomUnderlyingCallsCount = 0
+    var latestTimestampInRoomCallsCount: Int {
+        get { latestTimestampInRoomCallsCountLock.withLock { latestTimestampInRoomUnderlyingCallsCount } }
+        set { latestTimestampInRoomCallsCountLock.withLock { latestTimestampInRoomUnderlyingCallsCount = newValue } }
+    }
+    var latestTimestampInRoomCalled: Bool {
+        return latestTimestampInRoomCallsCount > 0
+    }
+    private let latestTimestampInRoomReceivedRoomIDLock = NSLock()
+    private nonisolated(unsafe) var latestTimestampInRoomUnderlyingReceivedRoomID: String?
+    var latestTimestampInRoomReceivedRoomID: String? {
+        get { latestTimestampInRoomReceivedRoomIDLock.withLock { latestTimestampInRoomUnderlyingReceivedRoomID } }
+        set { latestTimestampInRoomReceivedRoomIDLock.withLock { latestTimestampInRoomUnderlyingReceivedRoomID = newValue } }
+    }
+    private let latestTimestampInRoomReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var latestTimestampInRoomUnderlyingReceivedInvocations: [String] = []
+    var latestTimestampInRoomReceivedInvocations: [String] {
+        get { latestTimestampInRoomReceivedInvocationsLock.withLock { latestTimestampInRoomUnderlyingReceivedInvocations } }
+        set { latestTimestampInRoomReceivedInvocationsLock.withLock { latestTimestampInRoomUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let latestTimestampInRoomReturnValueLock = NSLock()
+    private nonisolated(unsafe) var latestTimestampInRoomUnderlyingReturnValue: Date?
+    var latestTimestampInRoomReturnValue: Date? {
+        get { latestTimestampInRoomReturnValueLock.withLock { latestTimestampInRoomUnderlyingReturnValue } }
+        set { latestTimestampInRoomReturnValueLock.withLock { latestTimestampInRoomUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var latestTimestampInRoomClosure: ((String) async throws -> Date?)?
+
+    @concurrent func latestTimestamp(inRoom roomID: String) async throws -> Date? {
+        if let error = latestTimestampInRoomThrowableError {
+            throw error
+        }
+        latestTimestampInRoomCallsCountLock.withLock { latestTimestampInRoomUnderlyingCallsCount += 1 }
+        latestTimestampInRoomReceivedRoomID = roomID
+        latestTimestampInRoomReceivedInvocationsLock.withLock { latestTimestampInRoomUnderlyingReceivedInvocations.append(roomID) }
+        if let latestTimestampInRoomClosure = latestTimestampInRoomClosure {
+            return try await latestTimestampInRoomClosure(roomID)
+        } else {
+            return latestTimestampInRoomReturnValue
+        }
+    }
     //MARK: - clear
 
     nonisolated(unsafe) var clearThrowableError: Error?

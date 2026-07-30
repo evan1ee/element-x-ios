@@ -86,6 +86,9 @@ protocol SearchIndexServiceProtocol: Sendable {
     func count() async throws -> Int
     
     /// Empties the index without deleting the file.
+    /// The newest indexed event's timestamp for a room, or nil when it has none.
+    func latestTimestamp(inRoom roomID: String) async throws -> Date?
+    
     func clear() async throws
     
     // MARK: - History download progress

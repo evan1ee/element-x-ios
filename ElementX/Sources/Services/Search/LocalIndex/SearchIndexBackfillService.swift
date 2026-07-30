@@ -22,10 +22,12 @@ final class SearchIndexBackfillService {
     private let roomSummaryProvider: RoomSummaryProviderProtocol
     private let timelineItemFactory: RoomTimelineItemFactoryProtocol
     private let indexer: SearchIndexer
+    private let indexService: SearchIndexServiceProtocol
     
-    /// Rooms already covered this launch. The index itself is the durable record;
-    /// this only stops us revisiting a room each time the list republishes.
-    private var visitedRoomIDs: Set<String> = []
+    /// The activity each room had when it was last indexed. A room the list
+    /// republishes with a newer message needs another look; one that hasn't changed
+    /// doesn't. Nil marks a room seen but with nothing in it yet.
+    private var indexedActivity: [String: Date?] = [:]
     private var backfillTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     
@@ -45,6 +47,7 @@ final class SearchIndexBackfillService {
         self.clientProxy = clientProxy
         self.roomSummaryProvider = roomSummaryProvider
         self.timelineItemFactory = timelineItemFactory
+        self.indexService = indexService
         indexer = SearchIndexer(indexService: indexService)
     }
     
@@ -52,7 +55,8 @@ final class SearchIndexBackfillService {
         backfillTask?.cancel()
     }
     
-    /// Starts following the room list, indexing rooms as they appear.
+    /// Starts following the room list, indexing rooms as they appear and again
+    /// whenever one of them receives something new.
     func start() {
         roomSummaryProvider.roomListPublisher
             .sink { [weak self] summaries in
@@ -70,10 +74,20 @@ final class SearchIndexBackfillService {
     // MARK: - Private
     
     private func scheduleBackfill(for summaries: [RoomSummary]) {
-        let pending = summaries.map(\.id).filter { !visitedRoomIDs.contains($0) }
+        // A room qualifies if it has never been indexed, or if its latest message is
+        // newer than the one it had when we last looked. That second case is what
+        // makes sent and received messages searchable without waiting for a relaunch.
+        let pending = summaries.filter { summary in
+            guard let previous = indexedActivity[summary.id] else { return true }
+            guard let latest = summary.lastMessageDate else { return false }
+            return previous.map { latest > $0 } ?? true
+        }
         guard !pending.isEmpty else { return }
         
-        visitedRoomIDs.formUnion(pending)
+        for summary in pending {
+            indexedActivity[summary.id] = summary.lastMessageDate
+        }
+        let pendingIDs = pending.map(\.id)
         
         // One task at a time. A new room arriving mid-run shouldn't start a second
         // pass competing for the same database.
@@ -81,7 +95,7 @@ final class SearchIndexBackfillService {
         backfillTask = Task(priority: .background) { [weak self] in
             await previous?.value
             guard let self, !Task.isCancelled else { return }
-            await backfill(roomIDs: pending)
+            await backfill(roomIDs: pendingIDs)
         }
     }
     
@@ -96,6 +110,26 @@ final class SearchIndexBackfillService {
             // Yield between rooms so sync and the UI keep their turn.
             try? await Task.sleep(for: delayBetweenRooms)
         }
+    }
+    
+    /// Whether a revisit should look at this item again.
+    ///
+    /// Newer than the watermark is the common case — a message that has arrived since.
+    /// Edits and redactions keep the original event's timestamp, so they sit below the
+    /// watermark forever and would never be reconsidered; both change what should be
+    /// in the index, so they're always let through.
+    // Internal so the watermark's edge cases can be tested without a live timeline.
+    static func isWorthReindexing(_ item: RoomTimelineItemProtocol, after watermark: Date) -> Bool {
+        // A redaction has to reach the indexer so the row is deleted.
+        if item is RedactedRoomTimelineItem {
+            return true
+        }
+        
+        // Anything without a timestamp isn't indexable anyway; the indexer drops it,
+        // and deciding that twice invites the two judgements to drift apart.
+        guard let item = item as? EventBasedMessageTimelineItemProtocol else { return true }
+        
+        return item.timestamp > watermark || item.properties.isEdited
     }
     
     private func index(roomID: String) async {
@@ -117,9 +151,17 @@ final class SearchIndexBackfillService {
         }
         
         let isDM = room.infoPublisher.value.isDirect
-        let items = room.timeline.timelineItemProvider.itemProxies.compactMap { proxy -> RoomTimelineItemProtocol? in
+        var items = room.timeline.timelineItemProvider.itemProxies.compactMap { proxy -> RoomTimelineItemProtocol? in
             guard case .event(let eventProxy) = proxy else { return nil }
             return timelineItemFactory.buildTimelineItem(for: eventProxy, isDM: isDM)
+        }
+        
+        // On a revisit, only what arrived since last time. Without this a room with a
+        // full history downloaded would rewrite thousands of rows for every message.
+        // Indexing is an upsert, so the cost is the only thing at stake — but on a
+        // busy room that cost lands on every incoming event.
+        if let watermark = try? await indexService.latestTimestamp(inRoom: roomID) {
+            items = items.filter { Self.isWorthReindexing($0, after: watermark) }
         }
         
         guard !items.isEmpty else { return }
