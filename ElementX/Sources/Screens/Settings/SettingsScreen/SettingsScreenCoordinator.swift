@@ -32,6 +32,7 @@ enum SettingsScreenCoordinatorAction {
     case notifications
     case advancedSettings
     case stickers
+    case syncStorage
     case labs
     case developerOptions
     case deactivateAccount
@@ -87,6 +88,8 @@ final class SettingsScreenCoordinator: CoordinatorProtocol {
                     actionsSubject.send(.advancedSettings)
                 case .stickers:
                     actionsSubject.send(.stickers)
+                case .syncStorage:
+                    actionsSubject.send(.syncStorage)
                 case .labs:
                     actionsSubject.send(.labs)
                 case .developerOptions:

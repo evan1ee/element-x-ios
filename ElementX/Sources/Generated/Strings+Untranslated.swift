@@ -76,6 +76,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_message") }
   /// Start searching...
   internal static var screenSearchEmptyStateTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_title") }
+  /// Older messages are still downloading. Results may be incomplete.
+  internal static var screenSearchIncompleteHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_search_incomplete_history") }
   /// There are no results for “%1$@.” Try a new search term.
   internal static func screenSearchNoResultsMessage(_ p1: Any) -> String {
     return UntranslatedL10n.tr("Untranslated", "screen_search_no_results_message", String(describing: p1))
@@ -84,6 +86,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
   /// Rooms
   internal static var screenSearchTabRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_rooms") }
+  /// View download progress
+  internal static var screenSearchViewDownloadProgress: String { return UntranslatedL10n.tr("Untranslated", "screen_search_view_download_progress") }
   /// Add to my stickers
   internal static var screenStickerDiscoveryAddToMyStickers: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_discovery_add_to_my_stickers") }
   /// No stickers found
@@ -122,6 +126,92 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenStickerSettingsReset: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_settings_reset") }
   /// Stickers
   internal static var screenStickerSettingsTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sticker_settings_title") }
+  /// Active room
+  internal static var screenSyncStorageActiveRoom: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_active_room") }
+  /// Advanced
+  internal static var screenSyncStorageAdvanced: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_advanced") }
+  /// Continue in the background
+  internal static var screenSyncStorageBackground: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_background") }
+  /// Keep downloading history while the app is in the background.
+  internal static var screenSyncStorageBackgroundDescription: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_background_description") }
+  /// Calculating…
+  internal static var screenSyncStorageCalculating: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_calculating") }
+  /// Clear offline history
+  internal static var screenSyncStorageClearHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_clear_history") }
+  /// Downloaded history will be removed from this device. Your messages are not deleted.
+  internal static var screenSyncStorageClearHistoryConfirmation: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_clear_history_confirmation") }
+  /// All synchronised messages are now available offline.
+  internal static var screenSyncStorageCompletedDescription: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_completed_description") }
+  /// Database
+  internal static var screenSyncStorageDatabase: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_database") }
+  /// Download full history
+  internal static var screenSyncStorageDownloadHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_download_history") }
+  /// Fetches every message so search covers your whole history, not only what has been read on this device.
+  internal static var screenSyncStorageDownloadHistoryDescription: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_download_history_description") }
+  /// Sign-in expired
+  internal static var screenSyncStorageErrorAuthentication: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_error_authentication") }
+  /// Network unavailable
+  internal static var screenSyncStorageErrorNetwork: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_error_network") }
+  /// Server temporarily unavailable
+  internal static var screenSyncStorageErrorServer: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_error_server") }
+  /// Storage full
+  internal static var screenSyncStorageErrorStorageFull: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_error_storage_full") }
+  /// History Download
+  internal static var screenSyncStorageHistoryDownload: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_history_download") }
+  /// Last error
+  internal static var screenSyncStorageLastError: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_last_error") }
+  /// Last synchronised
+  internal static var screenSyncStorageLastSync: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_last_sync") }
+  /// Media cache
+  internal static var screenSyncStorageMediaCache: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_media_cache") }
+  /// Messages
+  internal static var screenSyncStorageMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_messages") }
+  /// Waiting for a connection
+  internal static var screenSyncStorageOffline: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_offline") }
+  /// Pause download
+  internal static var screenSyncStoragePause: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_pause") }
+  /// Queued
+  internal static var screenSyncStorageQueueLength: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_queue_length") }
+  /// Rebuild search index
+  internal static var screenSyncStorageRebuildIndex: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_rebuild_index") }
+  /// The index will be discarded and built again. Search will be incomplete until it finishes.
+  internal static var screenSyncStorageRebuildIndexConfirmation: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_rebuild_index_confirmation") }
+  /// Resume download
+  internal static var screenSyncStorageResume: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_resume") }
+  /// Retry failed downloads
+  internal static var screenSyncStorageRetry: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_retry") }
+  /// Rooms
+  internal static var screenSyncStorageRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_rooms") }
+  /// Search index
+  internal static var screenSyncStorageSearchIndex: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_search_index") }
+  /// Empty
+  internal static var screenSyncStorageSearchIndexEmpty: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_search_index_empty") }
+  /// Healthy
+  internal static var screenSyncStorageSearchIndexHealthy: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_search_index_healthy") }
+  /// Complete
+  internal static var screenSyncStorageStatusCompleted: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_status_completed") }
+  /// Downloading
+  internal static var screenSyncStorageStatusDownloading: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_status_downloading") }
+  /// Error
+  internal static var screenSyncStorageStatusError: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_status_error") }
+  /// Not started
+  internal static var screenSyncStorageStatusNotStarted: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_status_not_started") }
+  /// Paused
+  internal static var screenSyncStorageStatusPaused: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_status_paused") }
+  /// Preparing
+  internal static var screenSyncStorageStatusPreparing: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_status_preparing") }
+  /// About %1$@ remaining
+  internal static func screenSyncStorageTimeRemaining(_ p1: Any) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_time_remaining", String(describing: p1))
+  }
+  /// Sync & Storage
+  internal static var screenSyncStorageTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_title") }
+  /// Total
+  internal static var screenSyncStorageTotal: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_total") }
+  /// Waiting for Wi-Fi
+  internal static var screenSyncStorageWaitingForWifi: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_waiting_for_wifi") }
+  /// Wi-Fi only
+  internal static var screenSyncStorageWifiOnly: String { return UntranslatedL10n.tr("Untranslated", "screen_sync_storage_wifi_only") }
   /// Clear all data currently stored on this device?
   /// Sign in again to access your account data and messages.
   internal static var softLogoutClearDataDialogContent: String { return UntranslatedL10n.tr("Untranslated", "soft_logout_clear_data_dialog_content") }

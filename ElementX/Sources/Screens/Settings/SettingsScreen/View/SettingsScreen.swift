@@ -170,6 +170,12 @@ struct SettingsScreen: View {
                     })
                     .accessibilityIdentifier(A11yIdentifiers.settingsScreen.advancedSettings)
             
+            ListRow(label: .default(title: UntranslatedL10n.screenSyncStorageTitle,
+                                    icon: \.download),
+                    kind: .navigationLink {
+                        context.send(viewAction: .syncStorage)
+                    })
+            
             ListRow(label: .default(title: UntranslatedL10n.screenStickerSettingsTitle,
                                     icon: \.sticker),
                     kind: .navigationLink {

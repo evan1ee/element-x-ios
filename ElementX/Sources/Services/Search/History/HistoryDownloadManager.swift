@@ -160,11 +160,12 @@ final class HistoryDownloadManager: HistoryDownloadManagerProtocol {
         
         let pending = roomIDs.filter { states[$0]?.status != .complete }
         
+        let alreadyIndexed = await (try? indexService.count()) ?? 0
         update {
             $0.roomsTotal = roomIDs.count
             $0.roomsCompleted = roomIDs.count - pending.count
             $0.queueLength = pending.count
-            $0.messagesIndexed = states.values.reduce(0) { $0 + $1.messagesIndexed }
+            $0.messagesIndexed = alreadyIndexed
         }
         
         guard !pending.isEmpty else {
@@ -257,10 +258,14 @@ final class HistoryDownloadManager: HistoryDownloadManagerProtocol {
         guard !items.isEmpty else { return }
         await indexer.process(items, inRoom: roomID)
         
-        // The loaded window is the best count available without a second query, and
-        // it only grows as we paginate.
+        // Per room this is the size of the loaded window, which is what the room's own
+        // progress line reflects.
         await setState(roomID: roomID) { $0.messagesIndexed = items.count }
-        update { $0.messagesIndexed = roomStatesSubject.value.values.reduce(0) { $0 + $1.messagesIndexed } }
+        
+        // The overall figure is read from the index rather than summed across rooms:
+        // windows are re-read each batch, so adding them up double counts.
+        let indexed = await (try? indexService.count()) ?? 0
+        update { $0.messagesIndexed = indexed }
     }
     
     // MARK: - Conditions
