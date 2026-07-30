@@ -9,10 +9,13 @@ import Foundation
 
 /// Turns timeline items into index entries and hands them to the index.
 ///
-/// Deliberately narrow: the SDK already indexes plain message bodies, so this only
-/// takes what the SDK's index refuses — attachments and links. Feeding it every
-/// text message too would duplicate that work and put a second copy of every
-/// private conversation on disk.
+/// Message bodies are indexed here rather than left to the SDK. Its index tokenises
+/// on spaces, so it can't reach a word inside a run of Chinese, Japanese or Korean —
+/// and it only accepts text messages, so filenames and links never reach it at all.
+/// Holding everything locally means one index, one tokeniser, one set of rules.
+///
+/// The cost is that message bodies now sit in the app group container. They arrive
+/// decrypted, so the file deserves the same care as the event cache beside it.
 nonisolated struct SearchIndexer: Sendable {
     private let indexService: SearchIndexServiceProtocol
     
@@ -57,15 +60,19 @@ nonisolated struct SearchIndexer: Sendable {
         let attachment = Self.attachment(in: item.contentType)
         let links = Self.links(in: item.body)
         
-        // Plain text without a link belongs to the SDK's index, not ours.
-        guard attachment != nil || !links.isEmpty else { return nil }
+        // Nothing to match against: no filename, no text.
+        guard attachment != nil || !item.body.isEmpty else { return nil }
+        
+        // A message carrying a link files under links so the filter can find it;
+        // the body is still indexed either way.
+        let kind: SearchIndexEventKind = attachment?.kind ?? (links.isEmpty ? .message : .link)
         
         return SearchIndexEntry(eventID: eventID,
                                 roomID: roomID,
                                 senderID: item.sender.id,
                                 senderDisplayName: item.sender.displayName,
                                 timestamp: item.timestamp,
-                                kind: attachment?.kind ?? .link,
+                                kind: kind,
                                 body: item.body.isEmpty ? nil : item.body,
                                 filename: attachment?.filename,
                                 mimeType: attachment?.mimeType,

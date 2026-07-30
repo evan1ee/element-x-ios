@@ -67,10 +67,17 @@ struct SearchIndexerTests {
     }
     
     @Test
-    func plainTextIsLeftToTheSDKsIndex() {
-        // Indexing this too would duplicate the SDK's work and put a second copy of
-        // every private message on disk.
-        #expect(SearchIndexer.entry(from: makeText("just a normal message"), roomID: roomID) == nil)
+    func plainTextIsIndexedSoBodiesAreSearchable() throws {
+        let entry = try #require(SearchIndexer.entry(from: makeText("just a normal message"), roomID: roomID))
+        
+        #expect(entry.kind == .message)
+        #expect(entry.body == "just a normal message")
+    }
+    
+    @Test
+    func textWithNoBodyAndNoAttachmentIsSkipped() {
+        // Nothing to match against, so the row would only take up space.
+        #expect(SearchIndexer.entry(from: makeText(""), roomID: roomID) == nil)
     }
     
     @Test
@@ -104,7 +111,7 @@ struct SearchIndexerTests {
     }
     
     @Test
-    func mappingAWholeTimelineKeepsOnlyTheRelevantItems() {
+    func mappingAWholeTimelineClassifiesEachItem() {
         let items: [RoomTimelineItemProtocol] = [
             makeText("plain chatter"),
             makeText("look at https://matrix.org"),
@@ -123,8 +130,8 @@ struct SearchIndexerTests {
         
         let entries = SearchIndexer.entries(from: items, roomID: roomID)
         
-        #expect(entries.count == 2)
-        #expect(entries.map(\.kind).sorted { $0.rawValue < $1.rawValue } == [.file, .link])
+        #expect(entries.count == 3)
+        #expect(entries.map(\.kind).sorted { $0.rawValue < $1.rawValue } == [.file, .link, .message])
     }
     
     // MARK: - Helpers
