@@ -47,19 +47,24 @@ struct BackupScreen: View {
     // MARK: - Sections
     
     /// Only destinations usable on this device appear, so somewhere without iCloud
-    /// isn't offered a choice that can't work.
+    /// isn't offered a choice that can't work. The whole section goes with them:
+    /// availability is resolved asynchronously, and a header with nothing under it
+    /// is worse than no header at all.
+    @ViewBuilder
     private var destinationSection: some View {
-        Section {
-            ForEach(context.viewState.availableProviders) { provider in
-                ListRow(label: .plain(title: provider.name),
-                        kind: .selection(isSelected: provider.id == context.viewState.selectedProviderID) {
-                            context.send(viewAction: .selectProvider(provider.id))
-                        })
-                        .disabled(context.viewState.isEnabled || context.viewState.isBusy)
+        if !context.viewState.availableProviders.isEmpty {
+            Section {
+                ForEach(context.viewState.availableProviders) { provider in
+                    ListRow(label: .plain(title: provider.name),
+                            kind: .selection(isSelected: provider.id == context.viewState.selectedProviderID) {
+                                context.send(viewAction: .selectProvider(provider.id))
+                            })
+                            .disabled(context.viewState.isEnabled || context.viewState.isBusy)
+                }
+            } header: {
+                Text(UntranslatedL10n.screenBackupDestination)
+                    .compoundListSectionHeader()
             }
-        } header: {
-            Text(UntranslatedL10n.screenBackupDestination)
-                .compoundListSectionHeader()
         }
     }
     
@@ -70,7 +75,7 @@ struct BackupScreen: View {
                 .disabled(context.viewState.isBusy)
             
             if context.viewState.isEnabled || context.viewState.backup.phase != .idle {
-                ListRow(label: .plain(title: UntranslatedL10n.screenBackupLastBackup,
+                ListRow(label: .plain(title: UntranslatedL10n.screenBackupStatus,
                                       description: context.viewState.backup.lastError.map(\.localizedTitle)),
                         details: .title(context.viewState.statusTitle),
                         kind: .label)

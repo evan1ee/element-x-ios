@@ -33,5 +33,15 @@ struct UserSessionMockConfiguration {
         historyDownloadManagerMock.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init()).asCurrentValuePublisher()
         historyDownloadManagerMock.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
         historyDownloadManager = historyDownloadManagerMock
+        
+        // Idle and switched off, matching the default. Same reasoning as above: a
+        // screen that reads it gets an answer instead of trapping.
+        let backupManagerMock = BackupManagerMock()
+        backupManagerMock.underlyingProgressPublisher = CurrentValueSubject<BackupProgress, Never>(.init()).asCurrentValuePublisher()
+        backupManagerMock.underlyingRestoreProgressPublisher = CurrentValueSubject<RestoreProgress, Never>(.init()).asCurrentValuePublisher()
+        backupManagerMock.availableProvidersReturnValue = []
+        backupManagerMock.underlyingSelectedProviderID = .iCloud
+        backupManagerMock.underlyingIsEnabled = false
+        backupManager = backupManagerMock
     }
 }

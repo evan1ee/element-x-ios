@@ -37,11 +37,14 @@
 "screen_backup_provider_local_file" = "Local file";
 "screen_backup_provider_webdav" = "WebDAV";
 "screen_backup_restore" = "Restore from backup";
+"screen_backup_restore_staged_message" = "The backup has been decrypted and will be put in place the next time you open the app. Close and reopen %1$@ to finish restoring.";
+"screen_backup_restore_staged_title" = "Restart to finish";
 "screen_backup_restore_phase_downloading" = "Downloading";
 "screen_backup_restore_phase_finding" = "Finding backup";
 "screen_backup_restore_phase_restoring" = "Restoring";
 "screen_backup_restore_phase_validating" = "Validating";
 "screen_backup_size" = "Backup size";
+"screen_backup_status" = "Status";
 "screen_backup_status_completed" = "Complete";
 "screen_backup_status_failed" = "Failed";
 "screen_backup_status_idle" = "Not backed up";

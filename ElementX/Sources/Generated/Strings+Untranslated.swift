@@ -98,8 +98,16 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenBackupRestorePhaseRestoring: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_phase_restoring") }
   /// Validating
   internal static var screenBackupRestorePhaseValidating: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_phase_validating") }
+  /// The backup has been decrypted and will be put in place the next time you open the app. Close and reopen %1$@ to finish restoring.
+  internal static func screenBackupRestoreStagedMessage(_ p1: Any) -> String {
+    return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_staged_message", String(describing: p1))
+  }
+  /// Restart to finish
+  internal static var screenBackupRestoreStagedTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_restore_staged_title") }
   /// Backup size
   internal static var screenBackupSize: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_size") }
+  /// Status
+  internal static var screenBackupStatus: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_status") }
   /// Complete
   internal static var screenBackupStatusCompleted: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_status_completed") }
   /// Failed

@@ -56,6 +56,12 @@ class UserSessionStore: UserSessionStoreProtocol {
             return .failure(.missingCredentials)
         }
         
+        // Before the client opens a single database. A restore staged in the previous
+        // run can only be put in place while nothing holds these files.
+        BackupRestoreStaging.applyPendingRestore(sessionDirectories: credentials.restorationToken.sessionDirectories,
+                                                 searchIndexURL: .searchIndexURL(for: credentials.userID),
+                                                 preferencesSuiteName: AppSettings.suiteName)
+        
         switch await restorePreviousLogin(credentials) {
         case .success(let clientProxy):
             return await .success(buildUserSessionWithClient(clientProxy))

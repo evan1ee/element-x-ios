@@ -26,8 +26,13 @@ class BackupScreenViewModel: BackupScreenViewModelType, BackupScreenViewModelPro
         self.backupManager = backupManager
         self.userIndicatorController = userIndicatorController
         
+        // Seeded from the current values rather than waiting for the publishers: they
+        // deliver on the main queue, so opening the screen during a backup would
+        // otherwise show "Not backed up" for a frame before catching up.
         super.init(initialViewState: BackupScreenViewState(selectedProviderID: backupManager.selectedProviderID,
-                                                           isEnabled: backupManager.isEnabled))
+                                                           isEnabled: backupManager.isEnabled,
+                                                           backup: backupManager.progressPublisher.value,
+                                                           restore: backupManager.restoreProgressPublisher.value))
         
         backupManager.progressPublisher
             .receive(on: DispatchQueue.main)
@@ -139,7 +144,11 @@ class BackupScreenViewModel: BackupScreenViewModelType, BackupScreenViewModelPro
         Task {
             switch await backupManager.restore(descriptor: descriptor, passphrase: passphrase) {
             case .success:
-                userIndicatorController.submitIndicator(.init(title: UntranslatedL10n.screenBackupStatusCompleted))
+                // The databases are open, so the files can only be swapped in on the
+                // next launch. Saying "complete" here would be a lie the user acts on.
+                state.bindings.alertInfo = AlertInfo(id: .error,
+                                                     title: UntranslatedL10n.screenBackupRestoreStagedTitle,
+                                                     message: UntranslatedL10n.screenBackupRestoreStagedMessage(InfoPlistReader.main.bundleDisplayName))
             case .failure(let error):
                 show(error)
             }

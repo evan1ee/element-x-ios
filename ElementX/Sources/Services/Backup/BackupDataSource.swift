@@ -100,7 +100,15 @@ final nonisolated class SessionBackupDataSource: BackupDataSourceProtocol {
         return entries
     }
     
+    /// Stages rather than writes. The databases are open right now, so putting the
+    /// files in place has to wait for the next launch — see `BackupRestoreStaging`.
     func importEntries(_ entries: [String: Data]) async throws {
+        try BackupRestoreStaging.stage(entries: entries)
+    }
+    
+    /// Puts a restore in place. Only safe before anything opens these databases,
+    /// which is why it's separate from `importEntries` and called during startup.
+    func write(entries: [String: Data]) throws {
         for (name, data) in entries where name.hasPrefix("\(Self.databaseDirectory)/") {
             guard let sessionDirectories else { continue }
             let filename = String(name.dropFirst(Self.databaseDirectory.count + 1))
