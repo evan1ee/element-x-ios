@@ -141,10 +141,14 @@ struct SearchScreenMediaAsset: Identifiable, Equatable {
         // Serialised rather than a bare URL: media in an encrypted room needs the keys that
         // come with the source, and an mxc:// URI on its own would only fetch bytes we
         // couldn't decrypt.
+        // The MIME type is only carried when falling back to the original. A thumbnail of a
+        // GIF is a still image, and claiming otherwise sends the loader down its animated
+        // path looking for frames that aren't there.
+        let hasThumbnail = entry.thumbnailSource != nil
         let source = entry.thumbnailSource ?? entry.mediaSource
         thumbnailSource = source
             .flatMap { try? MediaSource.fromJson(json: $0) }
-            .map { MediaSourceProxy(source: $0, mimeType: entry.mimeType) }
+            .map { MediaSourceProxy(source: $0, mimeType: hasThumbnail ? nil : entry.mimeType) }
     }
     
     /// What the row calls this. Links show their host, which is how people remember them.

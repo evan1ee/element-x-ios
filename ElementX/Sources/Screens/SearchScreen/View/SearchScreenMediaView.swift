@@ -185,6 +185,9 @@ struct SearchScreenMediaView: View {
 /// One tile in the grid. Falls back to an icon when the thumbnail hasn't been fetched,
 /// so the layout doesn't shift once images arrive.
 struct SearchScreenMediaGridCell: View {
+    /// Roughly a third of the screen at 3x, which is all a cell can show.
+    private static let thumbnailSize = CGSize(width: 400, height: 400)
+    
     let asset: SearchScreenMediaAsset
     let mediaProvider: MediaProviderProtocol?
     
@@ -194,8 +197,12 @@ struct SearchScreenMediaGridCell: View {
         GeometryReader { proxy in
             Group {
                 if let source = asset.thumbnailSource {
+                    // A size is what makes this ask the server for a scaled thumbnail.
+                    // Without one the loader fetches the full original, and fifteen of those
+                    // at once is enough to stall the grid indefinitely.
                     LoadableImage(mediaSource: source,
                                   mediaType: .timelineItem(uniqueID: .init(asset.id)),
+                                  size: Self.thumbnailSize,
                                   mediaProvider: mediaProvider) {
                         placeholder
                     }
