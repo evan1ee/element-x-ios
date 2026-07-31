@@ -10,7 +10,9 @@ import Foundation
 /// Points at the room backing Saved Messages, held in global account data so that
 /// every device the user signs in on finds the same room instead of creating its own.
 struct SavedMessagesRoomInfo: Codable, Equatable {
-    static let eventType = "io.element.saved_messages"
+    /// Not reverse-DNS: the spec only suggests that so clients don't collide on a shared key,
+    /// and nothing enforces it. This one is ours alone.
+    static let eventType = "user.saved_messages"
     
     /// Bumped if the shape of this event ever changes. Written by us, and read back
     /// so a future client can recognise an event it may not fully understand.
