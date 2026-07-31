@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MatrixRustSDK
 
 enum SearchScreenViewModelAction {
     case presentRoom(roomID: String, eventID: String?)
@@ -137,10 +138,13 @@ struct SearchScreenMediaAsset: Identifiable, Equatable {
         height = entry.height
         duration = entry.duration
         
+        // Serialised rather than a bare URL: media in an encrypted room needs the keys that
+        // come with the source, and an mxc:// URI on its own would only fetch bytes we
+        // couldn't decrypt.
         let source = entry.thumbnailSource ?? entry.mediaSource
         thumbnailSource = source
-            .flatMap(URL.init(string:))
-            .flatMap { try? MediaSourceProxy(url: $0, mimeType: entry.mimeType) }
+            .flatMap { try? MediaSource.fromJson(json: $0) }
+            .map { MediaSourceProxy(source: $0, mimeType: entry.mimeType) }
     }
     
     /// What the row calls this. Links show their host, which is how people remember them.

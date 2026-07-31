@@ -38,7 +38,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     /// throwing it away costs only the re-indexing.
     /// Internal rather than private so a backup can record which schema its copy of
     /// the index was written with, and refuse to restore a newer one.
-    nonisolated static let schemaVersion = 4
+    nonisolated static let schemaVersion = 5
     
     init(databaseURL: URL) {
         self.databaseURL = databaseURL

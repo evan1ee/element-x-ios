@@ -118,8 +118,8 @@ nonisolated struct SearchIndexer: Sendable {
                        fileSize: content.imageInfo.fileSize,
                        width: content.imageInfo.size.map { Int($0.width) },
                        height: content.imageInfo.size.map { Int($0.height) },
-                       mediaSource: content.imageInfo.source.url.absoluteString,
-                       thumbnailSource: content.thumbnailInfo?.source.url.absoluteString)
+                       mediaSource: content.imageInfo.source.underlyingSource.toJson(),
+                       thumbnailSource: content.thumbnailInfo?.source.underlyingSource.toJson())
         case .video(let content):
             Attachment(kind: .media,
                        filename: content.filename,
@@ -128,8 +128,8 @@ nonisolated struct SearchIndexer: Sendable {
                        width: content.videoInfo.size.map { Int($0.width) },
                        height: content.videoInfo.size.map { Int($0.height) },
                        duration: content.videoInfo.duration,
-                       mediaSource: content.videoInfo.source.url.absoluteString,
-                       thumbnailSource: content.thumbnailInfo?.source.url.absoluteString)
+                       mediaSource: content.videoInfo.source.underlyingSource.toJson(),
+                       thumbnailSource: content.thumbnailInfo?.source.underlyingSource.toJson())
         case .audio(let content):
             Attachment(kind: .media,
                        filename: content.filename,

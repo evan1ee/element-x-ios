@@ -16,7 +16,8 @@ import SwiftUI
 struct SearchScreenMediaView: View {
     let context: SearchScreenViewModel.Context
     
-    private let columns = [GridItem(.adaptive(minimum: 104), spacing: 2)]
+    /// Three across with hairline gutters, so the photos themselves carry the screen.
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 1.5), count: 3)
     
     var body: some View {
         VStack(spacing: 0) {
@@ -126,7 +127,7 @@ struct SearchScreenMediaView: View {
     
     private var grid: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 2) {
+            LazyVGrid(columns: columns, spacing: 1.5) {
                 ForEach(context.viewState.media) { asset in
                     Button {
                         context.send(viewAction: .selectAsset(asset))
@@ -137,7 +138,6 @@ struct SearchScreenMediaView: View {
                     .onAppear { paginateIfNeeded(at: asset) }
                 }
             }
-            .padding(.horizontal, 2)
             
             if context.viewState.isLoadingMedia {
                 ProgressView().padding()
@@ -189,20 +189,22 @@ struct SearchScreenMediaGridCell: View {
     let mediaProvider: MediaProviderProtocol?
     
     var body: some View {
-        Color.compound.bgSubtleSecondary
-            .aspectRatio(1, contentMode: .fill)
-            .overlay {
+        // The image is sized to the cell rather than to itself. Left to its own devices a
+        // loaded photo takes its intrinsic size and blows the grid apart.
+        GeometryReader { proxy in
+            Group {
                 if let source = asset.thumbnailSource {
                     LoadableImage(mediaSource: source,
                                   mediaType: .timelineItem(uniqueID: .init(asset.id)),
                                   mediaProvider: mediaProvider) {
-                        placeholderIcon
+                        placeholder
                     }
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
                 } else {
-                    placeholderIcon
+                    placeholder
                 }
             }
+            .frame(width: proxy.size.width, height: proxy.size.width)
             .clipped()
             .overlay(alignment: .bottomTrailing) {
                 if let badge = asset.badge {
@@ -211,15 +213,20 @@ struct SearchScreenMediaGridCell: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(.black.opacity(0.6), in: Capsule())
+                        .background(.black.opacity(0.55), in: Capsule())
                         .padding(4)
                 }
             }
+        }
+        .aspectRatio(1, contentMode: .fit)
     }
     
-    private var placeholderIcon: some View {
-        CompoundIcon(asset.category.icon, size: .medium, relativeTo: .compound.bodyLG)
-            .foregroundStyle(.compound.iconTertiary)
+    private var placeholder: some View {
+        Color.compound.bgSubtleSecondary
+            .overlay {
+                CompoundIcon(asset.category.icon, size: .small, relativeTo: .compound.bodySM)
+                    .foregroundStyle(.compound.iconQuaternary)
+            }
     }
 }
 
