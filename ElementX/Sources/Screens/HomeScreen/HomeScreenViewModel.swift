@@ -23,6 +23,9 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
     
     private let roomSummaryProvider: RoomSummaryProviderProtocol?
     
+    /// `nil` until the service has resolved it, at which point the room is hoisted to the top.
+    private var savedMessagesRoomID: String?
+    
     private var actionsSubject: PassthroughSubject<HomeScreenViewModelAction, Never> = .init()
     var actions: AnyPublisher<HomeScreenViewModelAction, Never> {
         actionsSubject.eraseToAnyPublisher()
@@ -123,6 +126,15 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         appSettings.seenInvitesPublisher
             .removeDuplicates()
             .sink { [weak self] _ in
+                self?.updateRooms()
+            }
+            .store(in: &cancellables)
+        
+        userSession.savedMessagesService.roomIDPublisher
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] roomID in
+                self?.savedMessagesRoomID = roomID
                 self?.updateRooms()
             }
             .store(in: &cancellables)
@@ -365,11 +377,28 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         for summary in roomSummaryProvider.roomListPublisher.value {
             let room = HomeScreenRoom(summary: summary,
                                       roomListActivityVisibility: appSettings.roomListActivityVisibility,
-                                      seenInvites: seenInvites)
+                                      seenInvites: seenInvites,
+                                      isSavedMessages: summary.id == savedMessagesRoomID)
             rooms.append(room)
         }
         
-        state.rooms = rooms
+        state.rooms = pinningSavedMessages(in: rooms)
+    }
+    
+    /// Moves Saved Messages to the top of the list. Skipped while the user is searching or
+    /// filtering, where they've asked for a specific set of rooms in the list's own order.
+    private func pinningSavedMessages(in rooms: [HomeScreenRoom]) -> [HomeScreenRoom] {
+        guard !state.bindings.isSearchFieldFocused,
+              !state.bindings.filtersState.isFiltering,
+              state.selectedSpaceFilter == nil,
+              let index = rooms.firstIndex(where: { $0.isSavedMessages }) else {
+            return rooms
+        }
+        
+        var rooms = rooms
+        let savedMessages = rooms.remove(at: index)
+        rooms.insert(savedMessages, at: 0)
+        return rooms
     }
     
     private func markRoomAsFavourite(_ roomID: String, isFavourite: Bool) async {

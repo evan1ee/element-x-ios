@@ -225,11 +225,21 @@ struct HomeScreenRoom: Identifiable, Equatable {
     
     let isTombstoned: Bool
     
+    /// The user's personal Saved Messages room, which is pinned above everything else
+    /// and shown with its own name and icon rather than the room's.
+    var isSavedMessages = false
+    
+    var displayedName: String {
+        isSavedMessages ? UntranslatedL10n.commonSavedMessages : name
+    }
+    
     var displayedLastMessage: AttributedString? {
         if isTombstoned {
             AttributedString(L10n.screenRoomlistTombstonedRoomDescription)
         } else if lastMessageState == .failed {
             AttributedString(L10n.commonMessageFailedToSend)
+        } else if isSavedMessages, lastMessage == nil {
+            AttributedString(UntranslatedL10n.commonSavedMessagesSubtitle)
         } else {
             lastMessage
         }
@@ -257,7 +267,8 @@ struct HomeScreenRoom: Identifiable, Equatable {
 extension HomeScreenRoom {
     init(summary: RoomSummary,
          roomListActivityVisibility: RoomListActivityVisibility = .current,
-         seenInvites: Set<String> = []) {
+         seenInvites: Set<String> = [],
+         isSavedMessages: Bool = false) {
         let roomID = summary.id
         
         let isUnseenInvite = summary.joinRequestType?.isInvite == true && !seenInvites.contains(roomID)
@@ -303,7 +314,8 @@ extension HomeScreenRoom {
                   avatar: summary.avatar,
                   statusEmoji: summary.statusEmoji,
                   canonicalAlias: summary.canonicalAlias,
-                  isTombstoned: summary.isTombstoned)
+                  isTombstoned: summary.isTombstoned,
+                  isSavedMessages: isSavedMessages)
     }
 }
 

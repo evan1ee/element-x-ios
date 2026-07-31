@@ -40,19 +40,35 @@ struct HomeScreenRoomCell: View {
             .accessibilityElement(children: .combine)
         }
         .buttonStyle(HomeScreenRoomCellButtonStyle(isSelected: isSelected))
-        .accessibilityIdentifier(A11yIdentifiers.homeScreen.roomName(room.name))
+        .accessibilityIdentifier(A11yIdentifiers.homeScreen.roomName(room.displayedName))
         .accessibilityHidden(redactionReasons.contains(.placeholder) ? true : false)
     }
     
     @ViewBuilder
     private var avatar: some View {
         if dynamicTypeSize < .accessibility3 {
-            RoomAvatarImage(avatar: room.avatar,
-                            avatarSize: .room(on: .chats),
-                            mediaProvider: mediaProvider)
-                .dynamicTypeSize(dynamicTypeSize < .accessibility1 ? dynamicTypeSize : .accessibility1)
-                .accessibilityHidden(true)
+            Group {
+                if room.isSavedMessages {
+                    savedMessagesAvatar
+                } else {
+                    RoomAvatarImage(avatar: room.avatar,
+                                    avatarSize: .room(on: .chats),
+                                    mediaProvider: mediaProvider)
+                }
+            }
+            .dynamicTypeSize(dynamicTypeSize < .accessibility1 ? dynamicTypeSize : .accessibility1)
+            .accessibilityHidden(true)
         }
+    }
+    
+    /// A fixed icon rather than the room's avatar, so Saved Messages looks the same on every device.
+    private var savedMessagesAvatar: some View {
+        let size = Avatars.Size.room(on: .chats).value
+        
+        return CompoundIcon(\.saveSolid, size: .custom(size / 2), relativeTo: .compound.bodyLG)
+            .foregroundStyle(.compound.iconOnSolidPrimary)
+            .frame(width: size, height: size)
+            .background(.compound.bgAccentRest, in: Circle())
     }
     
     private var content: some View {
@@ -75,7 +91,7 @@ struct HomeScreenRoomCell: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 16) {
             HStack(spacing: 4) {
-                Text(room.name)
+                Text(room.displayedName)
                     .lineLimit(1)
                 
                 if let statusEmoji = room.statusEmoji {
