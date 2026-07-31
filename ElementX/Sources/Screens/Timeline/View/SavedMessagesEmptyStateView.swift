@@ -13,8 +13,12 @@ import SwiftUI
 struct SavedMessagesEmptyStateView: View {
     var body: some View {
         VStack(spacing: 8) {
-            CompoundIcon(\.saveSolid, size: .custom(32), relativeTo: .compound.headingLG)
-                .foregroundStyle(.compound.iconSecondary)
+            Image(asset: Asset.Images.savedMessagesIcon)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .foregroundStyle(HaloBrand.gradient)
+                .frame(width: 44, height: 44)
                 .padding(.bottom, 8)
             
             Text(UntranslatedL10n.screenSavedMessagesEmptyStateTitle)

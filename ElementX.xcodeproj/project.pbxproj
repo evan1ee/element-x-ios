@@ -416,6 +416,7 @@
 		3F55721B5C08E8D9F1295592 /* SDKListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5CD2993048222B64C45006 /* SDKListener.swift */; };
 		3F70E237CE4C3FAB02FC227F /* NotificationConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C830A64609CBD152F06E0457 /* NotificationConstants.swift */; };
 		3F791C4E0F7B373DB217EC90 /* NSItemProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4ED859C6363DAB2E8CFF2CE /* NSItemProviderTests.swift */; };
+		3FC0C91DDF9FE2EAE3287B48 /* HaloBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17BCFED8AE7D8998B8D1180 /* HaloBrand.swift */; };
 		401BB28CD6B7DD6B4E7863E7 /* ServerConfirmationScreenModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9342F5D6729627B6393AF853 /* ServerConfirmationScreenModels.swift */; };
 		4060D5B90302C93F5617B290 /* Macros in Frameworks */ = {isa = PBXBuildFile; productRef = 45CF0AEC68C170C55A613370 /* Macros */; };
 		407DCE030E0F9B7C9861D38A /* KZFileWatchers in Frameworks */ = {isa = PBXBuildFile; productRef = 81DB3AB6CE996AB3954F4F03 /* KZFileWatchers */; };
@@ -3214,6 +3215,7 @@
 		F104596B0620CEFE5DFD31B1 /* RoomSelectionScreenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomSelectionScreenCoordinator.swift; sourceTree = "<group>"; };
 		F134D2D91DFF732FB75B2CB7 /* UserProfileScreenViewModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileScreenViewModelProtocol.swift; sourceTree = "<group>"; };
 		F174A5627CDB3CAF280D1880 /* EmojiPickerScreenModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiPickerScreenModels.swift; sourceTree = "<group>"; };
+		F17BCFED8AE7D8998B8D1180 /* HaloBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaloBrand.swift; sourceTree = "<group>"; };
 		F17EFA1D3D09FC2F9C5E1CB2 /* MediaProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaProvider.swift; sourceTree = "<group>"; };
 		F1B8500C152BC59445647DA8 /* UnsupportedRoomTimelineItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsupportedRoomTimelineItem.swift; sourceTree = "<group>"; };
 		F229480685F30BCB96C439EC /* AdvancedSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsScreen.swift; sourceTree = "<group>"; };
@@ -3492,6 +3494,7 @@
 			children = (
 				76A46ABD27628CB5FC402541 /* Backports.swift */,
 				F03AEAA2F66E796C365EFD58 /* ElementNavigationStack.swift */,
+				F17BCFED8AE7D8998B8D1180 /* HaloBrand.swift */,
 				AD3690A19F1B6B3D1983E4AC /* KeyboardHeightObserver.swift */,
 				5DB56ABD78E60920ACE43087 /* PreviewScrollView.swift */,
 				D2C513A6CD99E6C3C163DA1E /* RowDivider.swift */,
@@ -8971,6 +8974,7 @@
 				4295E5F850897710A51AE114 /* GeoURI.swift in Sources */,
 				F3C9CAD26FD4D7D6EBACF501 /* HTMLFixtures.swift in Sources */,
 				E8C4D9F93F0DCED211D5F187 /* HTMLParserStyle.swift in Sources */,
+				3FC0C91DDF9FE2EAE3287B48 /* HaloBrand.swift in Sources */,
 				0C1E537A49ABB386F7554D4A /* HighlightedTimelineItemModifier.swift in Sources */,
 				D9F34637D7B3B0C7BB66DB27 /* HistoryDownloadManager.swift in Sources */,
 				663DDEC72C434DCCCE2C5B36 /* HistoryDownloadManagerProtocol.swift in Sources */,
