@@ -109,7 +109,6 @@ struct UserStickerPack: Codable, Equatable {
                         fileSize: image.info?.size,
                         mimeType: image.info?.mimetype)
             }
-            .sorted { $0.id < $1.id }
     }
 }
 

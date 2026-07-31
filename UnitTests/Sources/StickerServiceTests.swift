@@ -53,6 +53,28 @@ struct StickerServiceTests {
     }
     
     @Test
+    mutating func userStickersAreOrderedNewestFirst() async throws {
+        try setup()
+        // "aaa" would come first alphabetically and "zzz" last, so shortcode order and
+        // timestamp order disagree — only the timestamps can produce the expectation below.
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        {
+            "images": {
+                "aaa_oldest": { "url": "mxc://example.com/1", "user.sticker.added_at": 1000 },
+                "zzz_newest": { "url": "mxc://example.com/2", "user.sticker.added_at": 3000 },
+                "mmm_middle": { "url": "mxc://example.com/3", "user.sticker.added_at": 2000 },
+                "undated": { "url": "mxc://example.com/4" }
+            }
+        }
+        """)
+        
+        let collection = await service.loadStickers()
+        
+        // Dated stickers newest first, with anything undated below them.
+        #expect(collection.userStickers.map(\.id) == ["zzz_newest", "mmm_middle", "aaa_oldest", "undated"])
+    }
+    
+    @Test
     mutating func sendingBuiltInStickerUploadsOnceAndCachesTheURI() async throws {
         try setup()
         let sticker = try #require(service.builtInStickers.first)
