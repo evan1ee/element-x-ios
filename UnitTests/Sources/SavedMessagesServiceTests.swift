@@ -7,6 +7,7 @@
 
 @testable import ElementX
 import Foundation
+import MatrixRustSDKMocks
 import Testing
 
 @MainActor
@@ -120,6 +121,51 @@ struct SavedMessagesServiceTests {
         
         #expect(!service.isSavedMessagesRoom(existingRoomID))
         #expect(service.roomIDPublisher.value == nil)
+    }
+    
+    @Test
+    func savingSendsTheContentIntoTheResolvedRoom() async throws {
+        let clientProxy = makeClientProxy()
+        clientProxy.accountDataEventTypeReturnValue = .success(accountDataContent(roomID: existingRoomID))
+        
+        // Pinned so the send can be asserted on; the default closure builds a fresh proxy per call.
+        let roomProxy = JoinedRoomProxyMock(.init(id: existingRoomID, name: "Saved Messages"))
+        let timeline = TimelineProxyMock(.init())
+        roomProxy.timeline = timeline
+        clientProxy.roomForIdentifierClosure = { $0 == existingRoomID ? .joined(roomProxy) : nil }
+        
+        let service = SavedMessagesService(clientProxy: clientProxy)
+        
+        let result = await service.save(RoomMessageEventContentWithoutRelationSDKMock())
+        
+        #expect(throws: Never.self) { try result.get() }
+        #expect(timeline.sendMessageEventContentCallsCount == 1)
+    }
+    
+    @Test
+    func savingCreatesTheRoomWhenItHasNotBeenSetUpYet() async {
+        // Nothing has called `setUp`, so saving has to resolve the room on the spot.
+        let clientProxy = makeClientProxy()
+        clientProxy.accountDataEventTypeReturnValue = .success(nil)
+        clientProxy.createRoomNameTopicAccessTypeIsSpaceUserIDsAvatarURLAliasLocalPartReturnValue = .success(existingRoomID)
+        clientProxy.setAccountDataEventTypeContentReturnValue = .success(())
+        let service = SavedMessagesService(clientProxy: clientProxy)
+        
+        _ = await service.save(RoomMessageEventContentWithoutRelationSDKMock())
+        
+        #expect(clientProxy.createRoomNameTopicAccessTypeIsSpaceUserIDsAvatarURLAliasLocalPartCallsCount == 1)
+    }
+    
+    @Test
+    func savingFailsWhenTheRoomCannotBeRetrieved() async {
+        let clientProxy = makeClientProxy()
+        clientProxy.accountDataEventTypeReturnValue = .success(accountDataContent(roomID: existingRoomID))
+        clientProxy.createRoomNameTopicAccessTypeIsSpaceUserIDsAvatarURLAliasLocalPartReturnValue = .failure(.sdkError(ClientProxyMockError.generic))
+        let service = SavedMessagesService(clientProxy: clientProxy)
+        
+        let result = await service.save(RoomMessageEventContentWithoutRelationSDKMock())
+        
+        #expect(throws: SavedMessagesServiceError.self) { try result.get() }
     }
     
     // MARK: - Helpers

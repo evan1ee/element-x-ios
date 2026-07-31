@@ -11481,6 +11481,48 @@ nonisolated class SavedMessagesServiceMock: SavedMessagesServiceProtocol, @unche
             return isSavedMessagesRoomReturnValue
         }
     }
+    //MARK: - save
+
+    private let saveCallsCountLock = NSLock()
+    private nonisolated(unsafe) var saveUnderlyingCallsCount = 0
+    var saveCallsCount: Int {
+        get { saveCallsCountLock.withLock { saveUnderlyingCallsCount } }
+        set { saveCallsCountLock.withLock { saveUnderlyingCallsCount = newValue } }
+    }
+    var saveCalled: Bool {
+        return saveCallsCount > 0
+    }
+    private let saveReceivedContentLock = NSLock()
+    private nonisolated(unsafe) var saveUnderlyingReceivedContent: RoomMessageEventContentWithoutRelation?
+    var saveReceivedContent: RoomMessageEventContentWithoutRelation? {
+        get { saveReceivedContentLock.withLock { saveUnderlyingReceivedContent } }
+        set { saveReceivedContentLock.withLock { saveUnderlyingReceivedContent = newValue } }
+    }
+    private let saveReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var saveUnderlyingReceivedInvocations: [RoomMessageEventContentWithoutRelation] = []
+    var saveReceivedInvocations: [RoomMessageEventContentWithoutRelation] {
+        get { saveReceivedInvocationsLock.withLock { saveUnderlyingReceivedInvocations } }
+        set { saveReceivedInvocationsLock.withLock { saveUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let saveReturnValueLock = NSLock()
+    private nonisolated(unsafe) var saveUnderlyingReturnValue: Result<Void, SavedMessagesServiceError>!
+    var saveReturnValue: Result<Void, SavedMessagesServiceError>! {
+        get { saveReturnValueLock.withLock { saveUnderlyingReturnValue } }
+        set { saveReturnValueLock.withLock { saveUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var saveClosure: ((RoomMessageEventContentWithoutRelation) async -> Result<Void, SavedMessagesServiceError>)?
+
+    @concurrent func save(_ content: RoomMessageEventContentWithoutRelation) async -> Result<Void, SavedMessagesServiceError> {
+        saveCallsCountLock.withLock { saveUnderlyingCallsCount += 1 }
+        saveReceivedContent = content
+        saveReceivedInvocationsLock.withLock { saveUnderlyingReceivedInvocations.append(content) }
+        if let saveClosure = saveClosure {
+            return await saveClosure(content)
+        } else {
+            return saveReturnValue
+        }
+    }
 }
 nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked Sendable {
 

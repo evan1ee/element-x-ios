@@ -19,6 +19,8 @@ struct TimelineItemMenuActionProvider {
     let areThreadsEnabled: Bool
     let timelineKind: TimelineKind
     let emojiProvider: EmojiProviderProtocol
+    /// Saving inside Saved Messages itself would only duplicate the message, so the action is hidden there.
+    var isSavedMessagesRoom = false
     
     // swiftlint:disable:next cyclomatic_complexity
     func makeActions() -> TimelineItemMenuActions? {
@@ -61,9 +63,7 @@ struct TimelineItemMenuActionProvider {
             }
         }
         
-        if item.isForwardable {
-            actions.append(.forward(itemID: item.id))
-        }
+        actions.append(contentsOf: forwardingActions(for: item))
         
         // Stickers and GIFs can both be kept, whoever sent them — collecting one you sent yourself
         // is the natural way to hold on to a GIF you found in the picker. The event has to exist on
@@ -152,6 +152,16 @@ struct TimelineItemMenuActionProvider {
         let isReactable = timelineKind == .live || timelineKind == .detached || timelineKind.isThread ? item.isReactable : false
         
         return .init(isReactable: isReactable, actions: actions, secondaryActions: secondaryActions, emojiProvider: emojiProvider)
+    }
+    
+    /// Forwarding and its one-tap variant, which are eligible under the same conditions.
+    private func forwardingActions(for item: EventBasedTimelineItemProtocol) -> [TimelineItemMenuAction] {
+        guard item.isForwardable else { return [] }
+        
+        // Saving inside Saved Messages itself would only duplicate the message.
+        guard !isSavedMessagesRoom else { return [.forward(itemID: item.id)] }
+        
+        return [.forward(itemID: item.id), .saveToSavedMessages(itemID: item.id)]
     }
     
     private func makeEncryptedItemActions() -> TimelineItemMenuActions? {

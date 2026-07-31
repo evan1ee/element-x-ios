@@ -72,6 +72,13 @@ class RoomDetailsScreenViewModel: RoomDetailsScreenViewModelType, RoomDetailsScr
             state.reportRoomEnabled = await userSession.clientProxy.isReportRoomSupported
         }
         
+        userSession.savedMessagesService.roomIDPublisher
+            .map { $0 == roomProxy.id }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .weakAssign(to: \.state.isSavedMessagesRoom, on: self)
+            .store(in: &cancellables)
+        
         userSession.historyDownloadManager.roomStatesPublisher
             .map { $0[roomProxy.id] }
             .removeDuplicates()

@@ -699,6 +699,7 @@
 		6BAE34CFA9821709CFE61E50 /* DeveloperOptionsScreenHook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F60FDB3AEFC60830BD289FE /* DeveloperOptionsScreenHook.swift */; };
 		6BEB10499149444909EBE42F /* TrackedUserDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D751743B20B314D84D79FE /* TrackedUserDefaults.swift */; };
 		6C34237AFB808E38FC8776B9 /* RoomStateEventStringBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D55702474F279D910D2D162 /* RoomStateEventStringBuilder.swift */; };
+		6C55CE7A74AE7C1633060986 /* SavedMessagesEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8AB0E6F244EA03E349A47AA /* SavedMessagesEmptyStateView.swift */; };
 		6C8BAF1E91618D69E7D652B2 /* NotificationServiceExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A1AD6389A4659AF0CEAE62 /* NotificationServiceExtension.swift */; };
 		6C98153D60FF9B648C166C27 /* TimelineItemMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FFE1F410969ECB23FE9BB2 /* TimelineItemMenu.swift */; };
 		6CAADDC6318E41C7D7AA9526 /* SpaceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646B50583A2CE6DA67F7739A /* SpaceScreen.swift */; };
@@ -2871,6 +2872,7 @@
 		B858A61F2A570DFB8DE570A7 /* AggregratedReaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AggregratedReaction.swift; sourceTree = "<group>"; };
 		B88CE0A058727BC68EEEC6B6 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		B8A3B7637DDBD6AA97AC2545 /* CameraPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPicker.swift; sourceTree = "<group>"; };
+		B8AB0E6F244EA03E349A47AA /* SavedMessagesEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedMessagesEmptyStateView.swift; sourceTree = "<group>"; };
 		B8F28602AC7AC881AED37EBA /* NavigationCoordinators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationCoordinators.swift; sourceTree = "<group>"; };
 		B902EA6CD3296B0E10EE432B /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		B91AD590B0B40718A0AA0C61 /* DeferredFulfillment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeferredFulfillment.swift; sourceTree = "<group>"; };
@@ -7574,6 +7576,7 @@
 			isa = PBXGroup;
 			children = (
 				ECEC9A622AA2F8DBE928AC78 /* FloatingDateBadge.swift */,
+				B8AB0E6F244EA03E349A47AA /* SavedMessagesEmptyStateView.swift */,
 				BCDA016D05107DED3B9495CB /* TimelineItemDebugView.swift */,
 				D53FCCE44F96E0BC411A6CF0 /* TimelineSenderAvatarView.swift */,
 				93C713D124FE915ABF47A6B7 /* TimelineView.swift */,
@@ -9454,6 +9457,7 @@
 				82434593648CB74121F1A821 /* RowDivider.swift in Sources */,
 				3F55721B5C08E8D9F1295592 /* SDKListener.swift in Sources */,
 				88CBF1595E39CE697928DE48 /* SFNumberedListView.swift in Sources */,
+				6C55CE7A74AE7C1633060986 /* SavedMessagesEmptyStateView.swift in Sources */,
 				D9DBC1A1039F0C56FD1BAC38 /* SavedMessagesRoomInfo.swift in Sources */,
 				99D93FED992909A07D525E39 /* SavedMessagesService.swift in Sources */,
 				AC3B2D297A35724813A1345A /* SavedMessagesServiceProtocol.swift in Sources */,

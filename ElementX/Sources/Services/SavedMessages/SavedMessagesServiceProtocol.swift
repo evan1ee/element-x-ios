@@ -7,10 +7,13 @@
 
 import Combine
 import Foundation
+import MatrixRustSDK
 
 enum SavedMessagesServiceError: Error {
     case roomCreationFailed
     case accountDataUpdateFailed
+    case roomUnavailable
+    case sendFailed
 }
 
 // sourcery: AutoMockable
@@ -31,4 +34,7 @@ protocol SavedMessagesServiceProtocol {
     /// Whether the given room is the one backing Saved Messages. `false` until `setUp`
     /// has resolved, so callers that need certainty should observe `roomIDPublisher`.
     func isSavedMessagesRoom(_ roomID: String) -> Bool
+    
+    /// Sends the given event content to Saved Messages, resolving the room first if needed.
+    func save(_ content: RoomMessageEventContentWithoutRelation) async -> Result<Void, SavedMessagesServiceError>
 }

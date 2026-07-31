@@ -3,6 +3,7 @@
 "action_add_to_stickers" = "Add to stickers";
 "action_save_to_saved_messages" = "Save to Saved Messages";
 "common_saved_messages" = "Saved Messages";
+"common_saved_messages_saved" = "Saved";
 "common_saved_messages_subtitle" = "Keep messages, photos, files and more.";
 "common_sticker_added" = "Sticker added";
 "screen_backup_confirm_disable_delete" = "Delete existing backup";

@@ -17,6 +17,11 @@ struct TimelineView: View {
     var body: some View {
         TimelineViewRepresentable()
             .id(timelineContext.viewState.roomID)
+            .overlay {
+                if timelineContext.viewState.shouldShowSavedMessagesEmptyState {
+                    SavedMessagesEmptyStateView()
+                }
+            }
             // It is tempting to inject these environment values last to avoid also injecting them into the sheets,
             // and that approach works great on iOS. But it doesn't work on macOS (as of 15.5) where the app goes 💥
             .environmentObject(timelineContext)
@@ -37,7 +42,8 @@ struct TimelineView: View {
                                                              isViewSourceEnabled: timelineContext.viewState.isViewSourceEnabled,
                                                              areThreadsEnabled: timelineContext.viewState.areThreadsEnabled,
                                                              timelineKind: timelineContext.viewState.timelineKind,
-                                                             emojiProvider: timelineContext.viewState.emojiProvider)
+                                                             emojiProvider: timelineContext.viewState.emojiProvider,
+                                                             isSavedMessagesRoom: timelineContext.viewState.isSavedMessagesRoom)
                     .makeActions()
                 if let actions {
                     TimelineItemMenu(item: info.item, actions: actions)

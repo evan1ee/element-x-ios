@@ -7,6 +7,7 @@
 
 import Combine
 import Foundation
+import MatrixRustSDK
 
 /// Resolves the room backing Saved Messages, creating it on first use.
 ///
@@ -59,6 +60,26 @@ class SavedMessagesService: SavedMessagesServiceProtocol {
     
     func isSavedMessagesRoom(_ roomID: String) -> Bool {
         roomIDSubject.value == roomID
+    }
+    
+    func save(_ content: RoomMessageEventContentWithoutRelation) async -> Result<Void, SavedMessagesServiceError> {
+        // Saving is usually the first thing to need the room on a fresh account, so resolve
+        // rather than assume `start` has already finished.
+        guard case let .success(roomID) = await setUp() else {
+            return .failure(.roomCreationFailed)
+        }
+        
+        guard case let .joined(roomProxy) = await clientProxy.roomForIdentifier(roomID) else {
+            MXLog.error("Failed retrieving the Saved Messages room to save into")
+            return .failure(.roomUnavailable)
+        }
+        
+        if case let .failure(error) = await roomProxy.timeline.sendMessageEventContent(content) {
+            MXLog.error("Failed saving to Saved Messages with error: \(error)")
+            return .failure(.sendFailed)
+        }
+        
+        return .success(())
     }
     
     // MARK: - Private

@@ -20,6 +20,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var actionSaveToSavedMessages: String { return UntranslatedL10n.tr("Untranslated", "action_save_to_saved_messages") }
   /// Saved Messages
   internal static var commonSavedMessages: String { return UntranslatedL10n.tr("Untranslated", "common_saved_messages") }
+  /// Saved
+  internal static var commonSavedMessagesSaved: String { return UntranslatedL10n.tr("Untranslated", "common_saved_messages_saved") }
   /// Keep messages, photos, files and more.
   internal static var commonSavedMessagesSubtitle: String { return UntranslatedL10n.tr("Untranslated", "common_saved_messages_subtitle") }
   /// Sticker added

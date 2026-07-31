@@ -170,6 +170,8 @@ class TimelineInteractionHandler {
             actionsSubject.send(.displayThread(itemID: eventTimelineItem.id))
         case .forward(let itemID):
             actionsSubject.send(.displayMessageForwarding(itemID: itemID))
+        case .saveToSavedMessages(let itemID):
+            saveToSavedMessages(itemID: itemID)
         case .viewSource:
             let debugInfo = timelineController.debugInfo(for: eventTimelineItem.id)
             MXLog.info("Showing debug info for \(eventTimelineItem.id)")
@@ -208,6 +210,24 @@ class TimelineInteractionHandler {
         
         if action.switchToDefaultComposer {
             actionsSubject.send(.composer(action: .setMode(mode: .default)))
+        }
+    }
+    
+    /// Sends a copy of the item to Saved Messages. This is the forwarding flow with the room
+    /// picker skipped, since the destination is always the same.
+    private func saveToSavedMessages(itemID: TimelineItemIdentifier) {
+        Task {
+            guard let content = await timelineController.messageEventContent(for: itemID) else {
+                actionsSubject.send(.displayErrorToast(L10n.errorUnknown))
+                return
+            }
+            
+            switch await userSession.savedMessagesService.save(content) {
+            case .success:
+                userIndicatorController.submitIndicator(UserIndicator(title: UntranslatedL10n.commonSavedMessagesSaved, icon: \.check))
+            case .failure:
+                actionsSubject.send(.displayErrorToast(L10n.errorUnknown))
+            }
         }
     }
     

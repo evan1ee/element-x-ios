@@ -44,6 +44,9 @@ struct RoomDetailsScreenViewState: BindableState {
     
     var isEncrypted: Bool
     var isDirect: Bool
+    /// The user's own Saved Messages room, which hides the affordances that only make
+    /// sense in a room shared with other people.
+    var isSavedMessagesRoom = false
     var permalink: URL?
     
     var topic: AttributedString?
@@ -97,7 +100,7 @@ struct RoomDetailsScreenViewState: BindableState {
     }
     
     var canEditBaseInfo: Bool {
-        !isDirect && (canEditRoomName || canEditRoomTopic || canEditRoomAvatar)
+        !isDirect && !isSavedMessagesRoom && (canEditRoomName || canEditRoomTopic || canEditRoomAvatar)
     }
     
     var hasTopicSection: Bool {
@@ -118,7 +121,7 @@ struct RoomDetailsScreenViewState: BindableState {
             shortcuts.append(.videoCall)
         }
         // The invite flow is different for DMs
-        if dmRecipientInfo == nil, canInviteUsers {
+        if dmRecipientInfo == nil, canInviteUsers, !isSavedMessagesRoom {
             shortcuts.append(.invite)
         }
         if let permalink = dmRecipientInfo?.member.permalink {

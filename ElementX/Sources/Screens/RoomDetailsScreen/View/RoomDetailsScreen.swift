@@ -326,12 +326,17 @@ struct RoomDetailsScreen: View {
         }
     }
     
+    @ViewBuilder
     private var leaveRoomSection: some View {
-        Section {
-            ListRow(label: .action(title: L10n.screenRoomDetailsLeaveRoomTitle,
-                                   icon: \.leave,
-                                   role: .destructive),
-                    kind: .button { context.send(viewAction: .processTapLeave) })
+        // Leaving Saved Messages would strand the account data pointer and lose the contents,
+        // so the room offers no way out of itself.
+        if !context.viewState.isSavedMessagesRoom {
+            Section {
+                ListRow(label: .action(title: L10n.screenRoomDetailsLeaveRoomTitle,
+                                       icon: \.leave,
+                                       role: .destructive),
+                        kind: .button { context.send(viewAction: .processTapLeave) })
+            }
         }
     }
     

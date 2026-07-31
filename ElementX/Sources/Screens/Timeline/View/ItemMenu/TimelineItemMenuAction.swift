@@ -68,6 +68,7 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
     case reply(isThread: Bool)
     case replyInThread
     case forward(itemID: TimelineItemIdentifier)
+    case saveToSavedMessages(itemID: TimelineItemIdentifier)
     case viewSource
     case report
     case react
@@ -125,7 +126,7 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
     
     var canAppearInPinnedEventsTimeline: Bool {
         switch self {
-        case .viewInRoomTimeline, .pin, .unpin, .forward:
+        case .viewInRoomTimeline, .pin, .unpin, .forward, .saveToSavedMessages:
             true
         default:
             false
@@ -134,7 +135,7 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
     
     var canAppearInMediaDetails: Bool {
         switch self {
-        case .viewInRoomTimeline, .downloadMedia, .redact, .forward:
+        case .viewInRoomTimeline, .downloadMedia, .redact, .forward, .saveToSavedMessages:
             true
         default:
             false
@@ -170,6 +171,8 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
             Label(L10n.actionReplyInThread, icon: \.threads)
         case .forward:
             Label(L10n.actionForward, icon: \.forward)
+        case .saveToSavedMessages:
+            Label(UntranslatedL10n.actionSaveToSavedMessages, icon: \.save)
         case .redact(let isMedia):
             Label(isMedia ? L10n.actionDeleteFile : L10n.actionRemoveMessage, icon: \.delete)
         case .viewSource:

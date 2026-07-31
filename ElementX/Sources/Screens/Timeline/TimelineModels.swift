@@ -108,7 +108,18 @@ struct TimelineViewState: BindableState {
     var showLoading = false
     var showReadReceipts = false
     var isDM = false
+    /// Whether this is the user's own Saved Messages room, which drops a few affordances
+    /// that only make sense in a room shared with other people.
+    var isSavedMessagesRoom = false
     var timelineState: TimelineState // check the doc before changing this
+    
+    /// Explains what the room is for while it's still empty. Held back until the timeline has
+    /// finished paginating, so it doesn't flash up over a room that does have messages.
+    var shouldShowSavedMessagesEmptyState: Bool {
+        isSavedMessagesRoom &&
+            timelineState.itemsDictionary.isEmpty &&
+            timelineState.paginationState.backward == .endReached
+    }
     
     var ownUserID: String
     var canCurrentUserSendMessage = false

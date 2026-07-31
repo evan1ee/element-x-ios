@@ -611,6 +611,10 @@ extension AccessibilityTests {
         try await performAccessibilityAudit(named: "SFNumberedListView_Previews")
     }
 
+    func testSavedMessagesEmptyStateView() async throws {
+        try await performAccessibilityAudit(named: "SavedMessagesEmptyStateView_Previews")
+    }
+
     func testScanStateMediaEventsTimelineViews() async throws {
         try await performAccessibilityAudit(named: "ScanStateMediaEventsTimelineViews_Previews")
     }

@@ -99,6 +99,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
         super.init(initialViewState: TimelineViewState(timelineKind: timelineController.timelineKind,
                                                        roomID: roomProxy.id,
                                                        isDM: roomProxy.infoPublisher.value.isDM,
+                                                       isSavedMessagesRoom: userSession.savedMessagesService.isSavedMessagesRoom(roomProxy.id),
                                                        timelineState: TimelineState(focussedEvent: focussedEventID.map { .init(eventID: $0, appearance: .immediate) }),
                                                        ownUserID: roomProxy.ownUserID,
                                                        hideTimelineMedia: hideTimelineMedia,
@@ -476,6 +477,15 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
     }
     
     private func setupSubscriptions() {
+        // The service may not have resolved the room by the time this timeline is built,
+        // so track it rather than reading it once.
+        userSession.savedMessagesService.roomIDPublisher
+            .map { [roomID = roomProxy.id] in $0 == roomID }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .weakAssign(to: \.state.isSavedMessagesRoom, on: self)
+            .store(in: &cancellables)
+        
         timelineController.callbacks
             .receive(on: DispatchQueue.main)
             .sink { [weak self] callback in
