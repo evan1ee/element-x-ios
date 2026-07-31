@@ -6,6 +6,8 @@
 "common_saved_messages_saved" = "Saved";
 "common_saved_messages_subtitle" = "Keep messages, photos, files and more.";
 "common_sticker_added" = "Sticker added";
+"screen_advanced_settings_show_saved_messages_description" = "Keep a personal space at the top of your chats for messages, files and notes. Turning this off hides it without deleting anything.";
+"screen_advanced_settings_show_saved_messages_title" = "Saved Messages";
 "screen_backup_confirm_disable_delete" = "Delete existing backup";
 "screen_backup_confirm_disable_keep" = "Keep existing backup";
 "screen_backup_confirm_disable_message" = "What should happen to the backup that is already stored?";

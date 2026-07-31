@@ -334,6 +334,12 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: RoomListActivityVisibility.current)
     var roomListActivityVisibility: RoomListActivityVisibility
     
+    /// Whether the personal Saved Messages room is offered at all. Turning this off hides the
+    /// room from the chat list and drops the save action; the room itself is left untouched, so
+    /// turning it back on restores everything that was saved.
+    @UserPreference(defaultValue: true)
+    var showSavedMessages: Bool
+    
     // MARK: - Room Screen
     
     @UserPreference(defaultValue: AppBuildType.current == .debug)

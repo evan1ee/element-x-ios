@@ -111,7 +111,15 @@ struct TimelineViewState: BindableState {
     /// Whether this is the user's own Saved Messages room, which drops a few affordances
     /// that only make sense in a room shared with other people.
     var isSavedMessagesRoom = false
+    /// Whether the user has the Saved Messages feature switched on at all.
+    var isSavedMessagesEnabled = true
     var timelineState: TimelineState // check the doc before changing this
+    
+    /// Saving is pointless inside Saved Messages itself, and shouldn't be offered when the
+    /// user has switched the feature off and can't see where things would go.
+    var canSaveToSavedMessages: Bool {
+        isSavedMessagesEnabled && !isSavedMessagesRoom
+    }
     
     /// Explains what the room is for while it's still empty. Held back until the timeline has
     /// finished paginating, so it doesn't flash up over a room that does have messages.

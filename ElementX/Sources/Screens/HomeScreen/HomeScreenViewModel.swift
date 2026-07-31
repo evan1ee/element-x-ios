@@ -139,6 +139,13 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
             }
             .store(in: &cancellables)
         
+        appSettings.showSavedMessagesPublisher
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.updateRooms()
+            }
+            .store(in: &cancellables)
+        
         appSettings.hasSeenNewSoundBannerPublisher
             .sink { [weak self] hasSeenNewSoundBanner in
                 self?.state.shouldShowNewSoundBanner = !hasSeenNewSoundBanner
@@ -375,10 +382,18 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         let seenInvites = appSettings.seenInvites
         
         for summary in roomSummaryProvider.roomListPublisher.value {
+            let isSavedMessages = summary.id == savedMessagesRoomID
+            
+            // Switching Saved Messages off takes the room out of the list entirely. The room
+            // itself is left alone, so everything reappears when it's switched back on.
+            if isSavedMessages, !appSettings.showSavedMessages {
+                continue
+            }
+            
             let room = HomeScreenRoom(summary: summary,
                                       roomListActivityVisibility: appSettings.roomListActivityVisibility,
                                       seenInvites: seenInvites,
-                                      isSavedMessages: summary.id == savedMessagesRoomID)
+                                      isSavedMessages: isSavedMessages)
             rooms.append(room)
         }
         

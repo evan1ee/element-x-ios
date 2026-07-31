@@ -100,6 +100,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
                                                        roomID: roomProxy.id,
                                                        isDM: roomProxy.infoPublisher.value.isDM,
                                                        isSavedMessagesRoom: userSession.savedMessagesService.isSavedMessagesRoom(roomProxy.id),
+                                                       isSavedMessagesEnabled: appSettings.showSavedMessages,
                                                        timelineState: TimelineState(focussedEvent: focussedEventID.map { .init(eventID: $0, appearance: .immediate) }),
                                                        ownUserID: roomProxy.ownUserID,
                                                        hideTimelineMedia: hideTimelineMedia,
@@ -484,6 +485,12 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .weakAssign(to: \.state.isSavedMessagesRoom, on: self)
+            .store(in: &cancellables)
+        
+        appSettings.showSavedMessagesPublisher
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .weakAssign(to: \.state.isSavedMessagesEnabled, on: self)
             .store(in: &cancellables)
         
         timelineController.callbacks

@@ -59,6 +59,7 @@ protocol AdvancedSettingsProtocol: AnyObject {
     var appAppearance: AppAppearance { get set }
     var sharePresence: Bool { get set }
     var optimizeMediaUploads: Bool { get set }
+    var showSavedMessages: Bool { get set }
     var liveLocationMinimumDistanceUpdate: Int { get set }
 }
 

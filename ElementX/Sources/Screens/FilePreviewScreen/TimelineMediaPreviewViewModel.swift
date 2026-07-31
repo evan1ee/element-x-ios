@@ -200,7 +200,7 @@ class TimelineMediaPreviewViewModel: TimelineMediaPreviewViewModelType {
                                            areThreadsEnabled: timelineContext.viewState.areThreadsEnabled,
                                            timelineKind: timelineContext.viewState.timelineKind,
                                            emojiProvider: timelineContext.viewState.emojiProvider,
-                                           isSavedMessagesRoom: timelineContext.viewState.isSavedMessagesRoom)
+                                           canSaveToSavedMessages: timelineContext.viewState.canSaveToSavedMessages)
                 .makeActions()
         }
     }

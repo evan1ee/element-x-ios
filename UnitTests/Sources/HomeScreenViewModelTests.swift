@@ -386,9 +386,49 @@ final class HomeScreenViewModelTests {
     
     // MARK: - Helpers
     
+    // MARK: - Saved Messages
+    
+    @Test
+    func savedMessagesIsPinnedToTheTopOfTheList() async throws {
+        // "2" sits in the middle of the mock list, so being first can only come from pinning.
+        setupViewModel(savedMessagesRoomID: "2")
+        
+        let deferred = deferFulfillment(context.$viewState) { $0.rooms.first?.isSavedMessages == true }
+        try await deferred.fulfill()
+        
+        let firstRoom = try #require(context.viewState.rooms.first)
+        #expect(firstRoom.roomID == "2")
+        #expect(firstRoom.displayedName == UntranslatedL10n.commonSavedMessages)
+    }
+    
+    @Test
+    func theSettingHidesAndRestoresSavedMessages() async throws {
+        setupViewModel(savedMessagesRoomID: "2")
+        
+        let pinned = deferFulfillment(context.$viewState) { $0.rooms.first?.isSavedMessages == true }
+        try await pinned.fulfill()
+        
+        // Switching off takes the room out of the list entirely.
+        let hidden = deferFulfillment(context.$viewState) { state in !state.rooms.contains { $0.roomID == "2" } }
+        appSettings.showSavedMessages = false
+        try await hidden.fulfill()
+        
+        // Every other room is untouched.
+        #expect(context.viewState.rooms.contains { $0.roomID == "1" })
+        
+        // Switching back on restores it, pinned as before.
+        let restored = deferFulfillment(context.$viewState) { $0.rooms.first?.isSavedMessages == true }
+        appSettings.showSavedMessages = true
+        try await restored.fulfill()
+        
+        #expect(context.viewState.rooms.first?.roomID == "2")
+    }
+    
     enum InviteType { case rooms, spaces }
     
-    private func setupViewModel(securityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never>? = nil, invites: InviteType? = nil) {
+    private func setupViewModel(securityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never>? = nil,
+                                invites: InviteType? = nil,
+                                savedMessagesRoomID: String? = nil) {
         cancellables.removeAll()
         
         var rooms: [RoomSummary] = .mockRooms
@@ -428,6 +468,13 @@ final class HomeScreenViewModelTests {
         let userSession = UserSessionMock(.init(clientProxy: clientProxy))
         if let securityStatePublisher {
             userSession.sessionSecurityStatePublisher = securityStatePublisher
+        }
+        
+        if let savedMessagesRoomID {
+            let savedMessagesService = SavedMessagesServiceMock()
+            savedMessagesService.underlyingRoomIDPublisher = CurrentValueSubject<String?, Never>(savedMessagesRoomID).asCurrentValuePublisher()
+            savedMessagesService.isSavedMessagesRoomClosure = { $0 == savedMessagesRoomID }
+            userSession.savedMessagesService = savedMessagesService
         }
         
         notificationManager = NotificationManagerMock()

@@ -40,6 +40,10 @@ struct AdvancedSettingsScreen: View {
                     .onChange(of: context.optimizeMediaUploads) {
                         context.send(viewAction: .optimizeMediaUploadsChanged)
                     }
+                
+                ListRow(label: .plain(title: UntranslatedL10n.screenAdvancedSettingsShowSavedMessagesTitle,
+                                      description: UntranslatedL10n.screenAdvancedSettingsShowSavedMessagesDescription),
+                        kind: .toggle($context.showSavedMessages))
             }
             
             moderationAndSafetySection

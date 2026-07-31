@@ -26,6 +26,10 @@ internal nonisolated enum UntranslatedL10n {
   internal static var commonSavedMessagesSubtitle: String { return UntranslatedL10n.tr("Untranslated", "common_saved_messages_subtitle") }
   /// Sticker added
   internal static var commonStickerAdded: String { return UntranslatedL10n.tr("Untranslated", "common_sticker_added") }
+  /// Keep a personal space at the top of your chats for messages, files and notes. Turning this off hides it without deleting anything.
+  internal static var screenAdvancedSettingsShowSavedMessagesDescription: String { return UntranslatedL10n.tr("Untranslated", "screen_advanced_settings_show_saved_messages_description") }
+  /// Saved Messages
+  internal static var screenAdvancedSettingsShowSavedMessagesTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_advanced_settings_show_saved_messages_title") }
   /// Delete existing backup
   internal static var screenBackupConfirmDisableDelete: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_confirm_disable_delete") }
   /// Keep existing backup

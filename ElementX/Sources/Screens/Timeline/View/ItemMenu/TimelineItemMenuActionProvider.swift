@@ -19,8 +19,9 @@ struct TimelineItemMenuActionProvider {
     let areThreadsEnabled: Bool
     let timelineKind: TimelineKind
     let emojiProvider: EmojiProviderProtocol
-    /// Saving inside Saved Messages itself would only duplicate the message, so the action is hidden there.
-    var isSavedMessagesRoom = false
+    /// False inside Saved Messages itself, where saving would only duplicate the message, and
+    /// whenever the user has switched the feature off.
+    var canSaveToSavedMessages = true
     
     // swiftlint:disable:next cyclomatic_complexity
     func makeActions() -> TimelineItemMenuActions? {
@@ -157,9 +158,7 @@ struct TimelineItemMenuActionProvider {
     /// Forwarding and its one-tap variant, which are eligible under the same conditions.
     private func forwardingActions(for item: EventBasedTimelineItemProtocol) -> [TimelineItemMenuAction] {
         guard item.isForwardable else { return [] }
-        
-        // Saving inside Saved Messages itself would only duplicate the message.
-        guard !isSavedMessagesRoom else { return [.forward(itemID: item.id)] }
+        guard canSaveToSavedMessages else { return [.forward(itemID: item.id)] }
         
         return [.forward(itemID: item.id), .saveToSavedMessages(itemID: item.id)]
     }
