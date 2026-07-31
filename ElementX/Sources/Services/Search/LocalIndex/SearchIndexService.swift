@@ -38,7 +38,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     /// throwing it away costs only the re-indexing.
     /// Internal rather than private so a backup can record which schema its copy of
     /// the index was written with, and refuse to restore a newer one.
-    nonisolated static let schemaVersion = 2
+    nonisolated static let schemaVersion = 3
     
     init(databaseURL: URL) {
         self.databaseURL = databaseURL
@@ -66,8 +66,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             INSERT INTO events
                 (event_id, room_id, sender_id, sender_display_name, timestamp, kind,
                  message_body, filename, mime_type, url, thread_root_id,
+                 file_size, width, height, duration, is_voice_message,
                  message_body_segmented, filename_segmented, sender_display_name_segmented)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(event_id) DO UPDATE SET
                 sender_display_name = excluded.sender_display_name,
                 timestamp = excluded.timestamp,
@@ -77,6 +78,11 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 mime_type = excluded.mime_type,
                 url = excluded.url,
                 thread_root_id = excluded.thread_root_id,
+                file_size = excluded.file_size,
+                width = excluded.width,
+                height = excluded.height,
+                duration = excluded.duration,
+                is_voice_message = excluded.is_voice_message,
                 message_body_segmented = excluded.message_body_segmented,
                 filename_segmented = excluded.filename_segmented,
                 sender_display_name_segmented = excluded.sender_display_name_segmented
@@ -98,11 +104,16 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 bind(entry.mimeType, to: statement, at: 9)
                 bind(entry.url, to: statement, at: 10)
                 bind(entry.threadRootID, to: statement, at: 11)
+                bind(entry.fileSize.map(Int64.init), to: statement, at: 12)
+                bind(entry.width.map(Int64.init), to: statement, at: 13)
+                bind(entry.height.map(Int64.init), to: statement, at: 14)
+                bind(entry.duration.map { Int64($0 * 1000) }, to: statement, at: 15)
+                sqlite3_bind_int64(statement, 16, entry.isVoiceMessage ? 1 : 0)
                 // The searchable copies. Segmenting on write means the query only has
                 // to segment itself the same way to line up.
-                bind(entry.body.map(Self.segmented), to: statement, at: 12)
-                bind(entry.filename.map(Self.segmented), to: statement, at: 13)
-                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 14)
+                bind(entry.body.map(Self.segmented), to: statement, at: 17)
+                bind(entry.filename.map(Self.segmented), to: statement, at: 18)
+                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 19)
                 
                 guard sqlite3_step(statement) == SQLITE_DONE else {
                     throw SearchIndexError.query(lastErrorMessage(database))
@@ -242,6 +253,113 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         // NULL for a room with nothing indexed, which reads as 0 here.
         guard sqlite3_column_type(statement, 0) != SQLITE_NULL else { return nil }
         return Date(timeIntervalSince1970: Double(sqlite3_column_int64(statement, 0)) / 1000)
+    }
+    
+    func browse(_ query: SearchIndexBrowseQuery) async throws -> [SearchIndexEntry] {
+        let database = try connection()
+        
+        // Kinds rather than categories, because kind is what's stored and indexed. Photos,
+        // videos and GIFs all live under `media`, so they're separated afterwards in Swift
+        // using the same rule the rest of the app derives categories with.
+        let kinds = query.categories.reduce(into: Set<SearchIndexEventKind>()) { kinds, category in
+            kinds.formUnion(Self.kinds(for: category))
+        }
+        
+        var sql = """
+        SELECT event_id, room_id, sender_id, sender_display_name, timestamp, kind,
+               message_body, filename, mime_type, url, thread_root_id,
+               file_size, width, height, duration, is_voice_message
+        FROM events
+        WHERE kind != 'message'
+        """
+        if !kinds.isEmpty {
+            sql += " AND kind IN (\(kinds.map { "'\($0.rawValue)'" }.sorted().joined(separator: ", ")))"
+        }
+        if query.senderID != nil {
+            sql += " AND sender_id = ?"
+        }
+        if query.after != nil {
+            sql += " AND timestamp >= ?"
+        }
+        if query.before != nil {
+            sql += " AND timestamp < ?"
+        }
+        sql += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
+        
+        let statement = try prepare(sql, on: database)
+        defer { sqlite3_finalize(statement) }
+        
+        var position: Int32 = 1
+        if let senderID = query.senderID {
+            bind(senderID, to: statement, at: position)
+            position += 1
+        }
+        for date in [query.after, query.before].compacted() {
+            bind(Int64(date.timeIntervalSince1970 * 1000), to: statement, at: position)
+            position += 1
+        }
+        sqlite3_bind_int(statement, position, Int32(query.limit))
+        sqlite3_bind_int(statement, position + 1, Int32(query.offset))
+        
+        var entries: [SearchIndexEntry] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let entry = entry(from: statement) else { continue }
+            
+            // The category filter is finished here rather than in SQL, since telling a photo
+            // from a video from a GIF means reading the MIME type.
+            if !query.categories.isEmpty {
+                guard let category = MediaCategory(kind: entry.kind,
+                                                   mimeType: entry.mimeType,
+                                                   isVoiceMessage: entry.isVoiceMessage),
+                    query.categories.contains(category) else {
+                    continue
+                }
+            }
+            
+            entries.append(entry)
+        }
+        
+        return entries
+    }
+    
+    /// The stored kinds a category can come from. Deliberately a superset: this only narrows
+    /// what SQL reads, and the exact category is decided afterwards from the MIME type.
+    ///
+    /// `.file` spans both stored kinds. An audio file or an attachment we couldn't type is
+    /// stored as `.media` but belongs under files, so restricting to `kind = 'file'` here
+    /// would hide it before the category check ever ran.
+    private nonisolated static func kinds(for category: MediaCategory) -> Set<SearchIndexEventKind> {
+        switch category {
+        case .photo, .video, .gif, .voice: [.media]
+        case .file: [.file, .media]
+        case .link: [.link]
+        }
+    }
+    
+    private func entry(from statement: OpaquePointer?) -> SearchIndexEntry? {
+        guard let eventID = string(from: statement, at: 0),
+              let roomID = string(from: statement, at: 1),
+              let senderID = string(from: statement, at: 2),
+              let kind = string(from: statement, at: 5).flatMap(SearchIndexEventKind.init(rawValue:)) else {
+            return nil
+        }
+        
+        return SearchIndexEntry(eventID: eventID,
+                                roomID: roomID,
+                                senderID: senderID,
+                                senderDisplayName: string(from: statement, at: 3),
+                                timestamp: Date(timeIntervalSince1970: Double(sqlite3_column_int64(statement, 4)) / 1000),
+                                kind: kind,
+                                body: string(from: statement, at: 6),
+                                filename: string(from: statement, at: 7),
+                                mimeType: string(from: statement, at: 8),
+                                url: string(from: statement, at: 9),
+                                threadRootID: string(from: statement, at: 10),
+                                fileSize: integer(from: statement, at: 11).map(UInt.init),
+                                width: integer(from: statement, at: 12).map(Int.init),
+                                height: integer(from: statement, at: 13).map(Int.init),
+                                duration: integer(from: statement, at: 14).map { Double($0) / 1000 },
+                                isVoiceMessage: sqlite3_column_int64(statement, 15) == 1)
     }
     
     func clear() async throws {
@@ -461,6 +579,12 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             mime_type TEXT,
             url TEXT,
             thread_root_id TEXT,
+            -- Attachment metadata, so a library row renders without fetching the media.
+            file_size INTEGER,
+            width INTEGER,
+            height INTEGER,
+            duration INTEGER,
+            is_voice_message INTEGER NOT NULL DEFAULT 0,
             -- Indexed copies, CJK split per character. Kept apart from the columns
             -- above so what's searched and what's shown can differ.
             message_body_segmented TEXT,
@@ -481,6 +605,8 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         
         try execute("CREATE INDEX IF NOT EXISTS events_room_idx ON events(room_id)", on: database)
         try execute("CREATE INDEX IF NOT EXISTS events_timestamp_idx ON events(timestamp DESC)", on: database)
+        // Browsing filters on kind and orders by time, so the two together earn an index.
+        try execute("CREATE INDEX IF NOT EXISTS events_kind_timestamp_idx ON events(kind, timestamp DESC)", on: database)
         
         // External content: the FTS table stores only the terms and points back at
         // `events` by rowid, so metadata isn't duplicated and deleting an event by
@@ -545,6 +671,21 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         } else {
             sqlite3_bind_null(statement, index)
         }
+    }
+    
+    private func bind(_ value: Int64?, to statement: OpaquePointer?, at index: Int32) {
+        if let value {
+            sqlite3_bind_int64(statement, index, value)
+        } else {
+            sqlite3_bind_null(statement, index)
+        }
+    }
+    
+    /// Nil rather than zero when the column was never written, so "no duration recorded"
+    /// stays distinguishable from "zero seconds long".
+    private func integer(from statement: OpaquePointer?, at column: Int32) -> Int64? {
+        guard sqlite3_column_type(statement, column) != SQLITE_NULL else { return nil }
+        return sqlite3_column_int64(statement, column)
     }
     
     private func string(from statement: OpaquePointer?, at column: Int32) -> String? {

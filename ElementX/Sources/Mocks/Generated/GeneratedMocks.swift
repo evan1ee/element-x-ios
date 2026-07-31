@@ -11677,6 +11677,52 @@ nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked
             return searchReturnValue
         }
     }
+    //MARK: - browse
+
+    nonisolated(unsafe) var browseThrowableError: Error?
+    private let browseCallsCountLock = NSLock()
+    private nonisolated(unsafe) var browseUnderlyingCallsCount = 0
+    var browseCallsCount: Int {
+        get { browseCallsCountLock.withLock { browseUnderlyingCallsCount } }
+        set { browseCallsCountLock.withLock { browseUnderlyingCallsCount = newValue } }
+    }
+    var browseCalled: Bool {
+        return browseCallsCount > 0
+    }
+    private let browseReceivedQueryLock = NSLock()
+    private nonisolated(unsafe) var browseUnderlyingReceivedQuery: SearchIndexBrowseQuery?
+    var browseReceivedQuery: SearchIndexBrowseQuery? {
+        get { browseReceivedQueryLock.withLock { browseUnderlyingReceivedQuery } }
+        set { browseReceivedQueryLock.withLock { browseUnderlyingReceivedQuery = newValue } }
+    }
+    private let browseReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var browseUnderlyingReceivedInvocations: [SearchIndexBrowseQuery] = []
+    var browseReceivedInvocations: [SearchIndexBrowseQuery] {
+        get { browseReceivedInvocationsLock.withLock { browseUnderlyingReceivedInvocations } }
+        set { browseReceivedInvocationsLock.withLock { browseUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let browseReturnValueLock = NSLock()
+    private nonisolated(unsafe) var browseUnderlyingReturnValue: [SearchIndexEntry]!
+    var browseReturnValue: [SearchIndexEntry]! {
+        get { browseReturnValueLock.withLock { browseUnderlyingReturnValue } }
+        set { browseReturnValueLock.withLock { browseUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var browseClosure: ((SearchIndexBrowseQuery) async throws -> [SearchIndexEntry])?
+
+    @concurrent func browse(_ query: SearchIndexBrowseQuery) async throws -> [SearchIndexEntry] {
+        if let error = browseThrowableError {
+            throw error
+        }
+        browseCallsCountLock.withLock { browseUnderlyingCallsCount += 1 }
+        browseReceivedQuery = query
+        browseReceivedInvocationsLock.withLock { browseUnderlyingReceivedInvocations.append(query) }
+        if let browseClosure = browseClosure {
+            return try await browseClosure(query)
+        } else {
+            return browseReturnValue
+        }
+    }
     //MARK: - count
 
     nonisolated(unsafe) var countThrowableError: Error?

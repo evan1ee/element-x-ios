@@ -23,18 +23,31 @@ struct SearchIndexServiceTests {
                            kind: SearchIndexEventKind = .message,
                            body: String? = "Can we have the meeting tomorrow?",
                            filename: String? = nil,
-                           url: String? = nil) -> SearchIndexEntry {
+                           url: String? = nil,
+                           senderID: String = "@john:example.com",
+                           timestamp: Date = .init(timeIntervalSince1970: 1_700_000_000),
+                           mimeType: String? = nil,
+                           fileSize: UInt? = nil,
+                           width: Int? = nil,
+                           height: Int? = nil,
+                           duration: TimeInterval? = nil,
+                           isVoiceMessage: Bool = false) -> SearchIndexEntry {
         SearchIndexEntry(eventID: eventID,
                          roomID: roomID,
-                         senderID: "@john:example.com",
+                         senderID: senderID,
                          senderDisplayName: "John",
-                         timestamp: .init(timeIntervalSince1970: 1_700_000_000),
+                         timestamp: timestamp,
                          kind: kind,
                          body: body,
                          filename: filename,
-                         mimeType: nil,
+                         mimeType: mimeType,
                          url: url,
-                         threadRootID: nil)
+                         threadRootID: nil,
+                         fileSize: fileSize,
+                         width: width,
+                         height: height,
+                         duration: duration,
+                         isVoiceMessage: isVoiceMessage)
     }
     
     // MARK: - Indexing
@@ -252,5 +265,130 @@ struct SearchIndexServiceTests {
         // The whole point of an on-disk index: a relaunch keeps the history searchable.
         let second = SearchIndexService(databaseURL: url)
         #expect(try await second.search(.init(text: "meeting")).count == 1)
+    }
+    
+    // MARK: - Browsing
+    
+    @Test
+    func browsingReturnsAttachmentsNewestFirstAndSkipsPlainMessages() async throws {
+        let service = makeService()
+        try await service.index([
+            makeEntry(eventID: "$chat", kind: .message, body: "just talking"),
+            makeEntry(eventID: "$old", kind: .media, filename: "old.jpg",
+                      timestamp: .init(timeIntervalSince1970: 1000), mimeType: "image/jpeg"),
+            makeEntry(eventID: "$new", kind: .media, filename: "new.jpg",
+                      timestamp: .init(timeIntervalSince1970: 2000), mimeType: "image/jpeg")
+        ])
+        
+        let entries = try await service.browse(.init())
+        
+        // The plain message has nothing to show in a library, so it stays out.
+        #expect(entries.map(\.eventID) == ["$new", "$old"])
+    }
+    
+    @Test
+    func browsingWithNoQueryTextWorksWhereSearchingDoesNot() async throws {
+        let service = makeService()
+        try await service.index([makeEntry(eventID: "$photo", kind: .media,
+                                           filename: "cat.jpg", mimeType: "image/jpeg")])
+        
+        // The whole reason browse exists: FTS has nothing to match on.
+        #expect(try await service.search(.init(text: "")).isEmpty)
+        #expect(try await service.browse(.init()).count == 1)
+    }
+    
+    @Test
+    func browsingSeparatesPhotosVideosAndGIFsByMIMEType() async throws {
+        let service = makeService()
+        try await service.index([
+            makeEntry(eventID: "$photo", kind: .media, filename: "a.jpg", mimeType: "image/jpeg"),
+            makeEntry(eventID: "$gif", kind: .media, filename: "b.gif", mimeType: "image/gif"),
+            makeEntry(eventID: "$video", kind: .media, filename: "c.mp4", mimeType: "video/mp4")
+        ])
+        
+        // All three are stored as `.media`; only the MIME type tells them apart.
+        #expect(try await service.browse(.init(categories: [.photo])).map(\.eventID) == ["$photo"])
+        #expect(try await service.browse(.init(categories: [.gif])).map(\.eventID) == ["$gif"])
+        #expect(try await service.browse(.init(categories: [.video])).map(\.eventID) == ["$video"])
+    }
+    
+    @Test
+    func browsingSeparatesVoiceNotesFromAudioFiles() async throws {
+        let service = makeService()
+        try await service.index([
+            makeEntry(eventID: "$voice", kind: .media, filename: "voice.ogg",
+                      mimeType: "audio/ogg", duration: 12, isVoiceMessage: true),
+            makeEntry(eventID: "$audio", kind: .media, filename: "song.ogg", mimeType: "audio/ogg")
+        ])
+        
+        // Same MIME type, so the flag is the only thing separating them.
+        #expect(try await service.browse(.init(categories: [.voice])).map(\.eventID) == ["$voice"])
+        
+        let audio = try await service.browse(.init(categories: [.file]))
+        #expect(audio.map(\.eventID) == ["$audio"])
+    }
+    
+    @Test
+    func browsingFiltersBySenderAndDate() async throws {
+        let service = makeService()
+        try await service.index([
+            makeEntry(eventID: "$alice", kind: .media, filename: "a.jpg",
+                      senderID: "@alice:example.com",
+                      timestamp: .init(timeIntervalSince1970: 2000), mimeType: "image/jpeg"),
+            makeEntry(eventID: "$bob", kind: .media, filename: "b.jpg",
+                      senderID: "@bob:example.com",
+                      timestamp: .init(timeIntervalSince1970: 3000), mimeType: "image/jpeg"),
+            makeEntry(eventID: "$aliceOld", kind: .media, filename: "c.jpg",
+                      senderID: "@alice:example.com",
+                      timestamp: .init(timeIntervalSince1970: 500), mimeType: "image/jpeg")
+        ])
+        
+        let bySender = try await service.browse(.init(senderID: "@alice:example.com"))
+        #expect(bySender.map(\.eventID) == ["$alice", "$aliceOld"])
+        
+        let byDate = try await service.browse(.init(after: .init(timeIntervalSince1970: 1000),
+                                                    before: .init(timeIntervalSince1970: 2500)))
+        #expect(byDate.map(\.eventID) == ["$alice"])
+    }
+    
+    @Test
+    func browsingRoundTripsTheAttachmentMetadata() async throws {
+        let service = makeService()
+        try await service.index([makeEntry(eventID: "$video", kind: .media, filename: "clip.mp4",
+                                           mimeType: "video/mp4", fileSize: 2048,
+                                           width: 1920, height: 1080, duration: 23.5)])
+        
+        let entry = try #require(try await service.browse(.init()).first)
+        #expect(entry.fileSize == 2048)
+        #expect(entry.width == 1920)
+        #expect(entry.height == 1080)
+        // Stored as milliseconds, so this also covers the conversion back.
+        #expect(entry.duration == 23.5)
+    }
+    
+    @Test
+    func browsingPaginates() async throws {
+        let service = makeService()
+        try await service.index((0..<5).map { index in
+            makeEntry(eventID: "$\(index)", kind: .media, filename: "\(index).jpg",
+                      timestamp: .init(timeIntervalSince1970: Double(index) * 1000),
+                      mimeType: "image/jpeg")
+        })
+        
+        let firstPage = try await service.browse(.init(limit: 2))
+        let secondPage = try await service.browse(.init(limit: 2, offset: 2))
+        
+        #expect(firstPage.map(\.eventID) == ["$4", "$3"])
+        #expect(secondPage.map(\.eventID) == ["$2", "$1"])
+    }
+    
+    @Test
+    func anUntypedAttachmentStaysReachableUnderFiles() async throws {
+        let service = makeService()
+        try await service.index([makeEntry(eventID: "$unknown", kind: .media,
+                                           filename: "mystery", mimeType: nil)])
+        
+        // Better to file it somewhere wrong than drop it out of the library entirely.
+        #expect(try await service.browse(.init(categories: [.file])).map(\.eventID) == ["$unknown"])
     }
 }

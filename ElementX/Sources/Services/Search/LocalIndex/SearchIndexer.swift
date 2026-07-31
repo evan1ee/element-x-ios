@@ -80,25 +80,61 @@ nonisolated struct SearchIndexer: Sendable {
                                 // The timeline item knows it's threaded but not which root it
                                 // hangs off, so the column stays empty until thread-only search
                                 // needs it.
-                                threadRootID: nil)
+                                threadRootID: nil,
+                                fileSize: attachment?.fileSize,
+                                width: attachment?.width,
+                                height: attachment?.height,
+                                duration: attachment?.duration,
+                                isVoiceMessage: attachment?.isVoiceMessage ?? false)
     }
     
     private struct Attachment {
         let kind: SearchIndexEventKind
         let filename: String
         let mimeType: String?
+        var fileSize: UInt?
+        var width: Int?
+        var height: Int?
+        var duration: TimeInterval?
+        /// A recorded voice note. Audio files share its MIME type, so nothing else tells them apart.
+        var isVoiceMessage = false
     }
     
     private static func attachment(in contentType: EventBasedMessageTimelineItemContentType) -> Attachment? {
         switch contentType {
         case .file(let content):
-            Attachment(kind: .file, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+            Attachment(kind: .file,
+                       filename: content.filename,
+                       mimeType: content.contentType?.preferredMIMEType,
+                       fileSize: content.fileSize)
         case .image(let content):
-            Attachment(kind: .media, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+            Attachment(kind: .media,
+                       filename: content.filename,
+                       mimeType: content.contentType?.preferredMIMEType,
+                       fileSize: content.imageInfo.fileSize,
+                       width: content.imageInfo.size.map { Int($0.width) },
+                       height: content.imageInfo.size.map { Int($0.height) })
         case .video(let content):
-            Attachment(kind: .media, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
-        case .audio(let content), .voice(let content):
-            Attachment(kind: .media, filename: content.filename, mimeType: content.contentType?.preferredMIMEType)
+            Attachment(kind: .media,
+                       filename: content.filename,
+                       mimeType: content.contentType?.preferredMIMEType,
+                       fileSize: content.videoInfo.fileSize,
+                       width: content.videoInfo.size.map { Int($0.width) },
+                       height: content.videoInfo.size.map { Int($0.height) },
+                       duration: content.videoInfo.duration)
+        case .audio(let content):
+            Attachment(kind: .media,
+                       filename: content.filename,
+                       mimeType: content.contentType?.preferredMIMEType,
+                       fileSize: content.fileSize,
+                       duration: content.duration)
+        case .voice(let content):
+            Attachment(kind: .media,
+                       filename: content.filename,
+                       mimeType: content.contentType?.preferredMIMEType,
+                       fileSize: content.fileSize,
+                       duration: content.duration,
+                       isVoiceMessage: true)
         case .text, .notice, .emote, .location:
             nil
         }

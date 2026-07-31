@@ -39,6 +39,81 @@ struct SearchIndexEntry: Equatable, Sendable {
     /// Any URL found in the body, so links stay searchable by host.
     let url: String?
     let threadRootID: String?
+    
+    /// Attachment metadata, for showing a library row without fetching the media. All nil on
+    /// events that carry no attachment, and on rows indexed before these were recorded.
+    var fileSize: UInt?
+    var width: Int?
+    var height: Int?
+    var duration: TimeInterval?
+    /// A recorded voice note rather than an audio file that happens to be attached. The two
+    /// share a MIME type, so this is the only thing that separates them.
+    var isVoiceMessage = false
+}
+
+/// What the library shows a row as. Derived rather than stored: `kind` and `mimeType` already
+/// carry enough to tell these apart, and deriving means a wrong rule is fixed by shipping code
+/// instead of reindexing every row.
+nonisolated enum MediaCategory: String, CaseIterable, Sendable {
+    case photo
+    case video
+    case gif
+    case file
+    case link
+    case voice
+    
+    init?(kind: SearchIndexEventKind, mimeType: String?, isVoiceMessage: Bool) {
+        switch kind {
+        case .message:
+            return nil
+        case .link:
+            self = .link
+        case .file:
+            self = .file
+        case .media:
+            guard let mimeType else {
+                // An attachment we couldn't type. Filing it under files keeps it reachable
+                // rather than dropping it out of the library entirely.
+                self = .file
+                return
+            }
+            
+            if isVoiceMessage {
+                self = .voice
+            } else if mimeType == "image/gif" {
+                self = .gif
+            } else if mimeType.hasPrefix("image/") {
+                self = .photo
+            } else if mimeType.hasPrefix("video/") {
+                self = .video
+            } else if mimeType.hasPrefix("audio/") {
+                self = .file
+            } else {
+                self = .file
+            }
+        }
+    }
+    
+    /// Categories laid out in a grid rather than a list.
+    var isVisual: Bool {
+        switch self {
+        case .photo, .video, .gif: true
+        case .file, .link, .voice: false
+        }
+    }
+}
+
+/// Browsing rather than searching: no text, ordered newest first. The library needs this
+/// because `search` goes through FTS and returns nothing for an empty query.
+struct SearchIndexBrowseQuery: Equatable, Sendable {
+    var categories: Set<MediaCategory> = []
+    var senderID: String?
+    /// Inclusive lower bound, for the date filter.
+    var after: Date?
+    /// Exclusive upper bound.
+    var before: Date?
+    var limit = 100
+    var offset = 0
 }
 
 /// Narrows a query. `.all` matches every kind.
@@ -81,6 +156,10 @@ protocol SearchIndexServiceProtocol: Sendable {
     func removeAll(inRoom roomID: String) async throws
     
     func search(_ query: SearchIndexQuery) async throws -> [SearchIndexResult]
+    
+    /// Newest-first browse over attachments, for the media library. Unlike `search` this
+    /// doesn't touch FTS, so it works with no query text at all.
+    func browse(_ query: SearchIndexBrowseQuery) async throws -> [SearchIndexEntry]
     
     /// Number of indexed events, for diagnostics and tests.
     func count() async throws -> Int
