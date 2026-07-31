@@ -123,6 +123,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             // The provider is shared, so other consumers may have changed its filter while we were off-screen.
             // Re-apply ours on every appearance to keep the displayed results in sync with the query.
             updateFilter(for: state.bindings.searchQuery)
+            loadMedia(reset: true)
         case .selectRoom(let roomID):
             actionsSubject.send(.presentRoom(roomID: roomID, eventID: nil))
         case .selectMessage(let roomID, let eventID):
@@ -137,10 +138,77 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
                 updateVisibleRange(edge: .bottom)
             case .messages:
                 Task { await searchService.paginate() }
+            case .media:
+                break // The grid drives its own paging through `reachedMediaBottom`.
             }
         case .cancel:
             actionsSubject.send(.cancel)
+        case .selectAsset(let asset):
+            actionsSubject.send(.presentRoom(roomID: asset.roomID, eventID: asset.id))
+        case .reachedMediaBottom:
+            loadMedia(reset: false)
+        case .mediaFiltersChanged:
+            loadMedia(reset: true)
         }
+    }
+    
+    // MARK: - Media library
+    
+    private var mediaLoadTask: Task<Void, Never>?
+    /// Stops the grid asking for another page once the index has run out.
+    private var hasLoadedAllMedia = false
+    
+    private static let mediaPageSize = 60
+    
+    private func loadMedia(reset: Bool) {
+        if reset {
+            mediaLoadTask?.cancel()
+            hasLoadedAllMedia = false
+        } else if hasLoadedAllMedia || state.isLoadingMedia {
+            return
+        }
+        
+        let offset = reset ? 0 : state.media.count
+        state.isLoadingMedia = true
+        
+        mediaLoadTask = Task { [weak self] in
+            guard let self else { return }
+            
+            var query = SearchIndexBrowseQuery(limit: Self.mediaPageSize, offset: offset)
+            if let category = state.bindings.mediaCategory {
+                query.categories = [category]
+            }
+            query.senderID = state.bindings.mediaSenderID
+            query.after = state.bindings.mediaDateRange.after
+            
+            let entries = await (try? searchIndexService.browse(query)) ?? []
+            
+            guard !Task.isCancelled else { return }
+            
+            let assets = entries.compactMap {
+                SearchScreenMediaAsset($0, roomSummary: clientProxy.roomSummaryForIdentifier($0.roomID))
+            }
+            
+            // Short of a full page means the index has nothing more to give, so stop asking.
+            hasLoadedAllMedia = entries.count < Self.mediaPageSize
+            state.media = reset ? assets : state.media + assets
+            state.isLoadingMedia = false
+            
+            if reset {
+                updateMediaSenders()
+            }
+        }
+    }
+    
+    /// Names for the sender filter, taken from what's on screen. Cheap, and it can only
+    /// offer someone who has actually shared something.
+    private func updateMediaSenders() {
+        var seen = Set<String>()
+        var senders: [SearchScreenMediaSender] = []
+        for asset in state.media where seen.insert(asset.senderID).inserted {
+            senders.append(SearchScreenMediaSender(id: asset.senderID, name: asset.senderName))
+        }
+        state.mediaSenders = senders.sorted { $0.name < $1.name }
     }
     
     // MARK: - Private

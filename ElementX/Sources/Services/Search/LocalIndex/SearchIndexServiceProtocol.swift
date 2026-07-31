@@ -49,6 +49,10 @@ struct SearchIndexEntry: Equatable, Sendable {
     /// A recorded voice note rather than an audio file that happens to be attached. The two
     /// share a MIME type, so this is the only thing that separates them.
     var isVoiceMessage = false
+    /// `mxc://` URI of the attachment, and of its thumbnail where the sender provided one.
+    /// Stored so the library can render a grid without asking the server what these events were.
+    var mediaSource: String?
+    var thumbnailSource: String?
 }
 
 /// What the library shows a row as. Derived rather than stored: `kind` and `mimeType` already

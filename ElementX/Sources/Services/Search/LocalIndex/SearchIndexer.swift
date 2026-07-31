@@ -85,7 +85,9 @@ nonisolated struct SearchIndexer: Sendable {
                                 width: attachment?.width,
                                 height: attachment?.height,
                                 duration: attachment?.duration,
-                                isVoiceMessage: attachment?.isVoiceMessage ?? false)
+                                isVoiceMessage: attachment?.isVoiceMessage ?? false,
+                                mediaSource: attachment?.mediaSource,
+                                thumbnailSource: attachment?.thumbnailSource)
     }
     
     private struct Attachment {
@@ -98,6 +100,8 @@ nonisolated struct SearchIndexer: Sendable {
         var duration: TimeInterval?
         /// A recorded voice note. Audio files share its MIME type, so nothing else tells them apart.
         var isVoiceMessage = false
+        var mediaSource: String?
+        var thumbnailSource: String?
     }
     
     private static func attachment(in contentType: EventBasedMessageTimelineItemContentType) -> Attachment? {
@@ -113,7 +117,9 @@ nonisolated struct SearchIndexer: Sendable {
                        mimeType: content.contentType?.preferredMIMEType,
                        fileSize: content.imageInfo.fileSize,
                        width: content.imageInfo.size.map { Int($0.width) },
-                       height: content.imageInfo.size.map { Int($0.height) })
+                       height: content.imageInfo.size.map { Int($0.height) },
+                       mediaSource: content.imageInfo.source.url.absoluteString,
+                       thumbnailSource: content.thumbnailInfo?.source.url.absoluteString)
         case .video(let content):
             Attachment(kind: .media,
                        filename: content.filename,
@@ -121,7 +127,9 @@ nonisolated struct SearchIndexer: Sendable {
                        fileSize: content.videoInfo.fileSize,
                        width: content.videoInfo.size.map { Int($0.width) },
                        height: content.videoInfo.size.map { Int($0.height) },
-                       duration: content.videoInfo.duration)
+                       duration: content.videoInfo.duration,
+                       mediaSource: content.videoInfo.source.url.absoluteString,
+                       thumbnailSource: content.thumbnailInfo?.source.url.absoluteString)
         case .audio(let content):
             Attachment(kind: .media,
                        filename: content.filename,

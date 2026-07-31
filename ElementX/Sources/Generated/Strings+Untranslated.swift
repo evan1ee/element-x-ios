@@ -206,10 +206,42 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchEmptyStateTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_title") }
   /// Older messages are still downloading. Results may be incomplete.
   internal static var screenSearchIncompleteHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_search_incomplete_history") }
+  /// Any time
+  internal static var screenSearchMediaDateAnyTime: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_date_any_time") }
+  /// This month
+  internal static var screenSearchMediaDateThisMonth: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_date_this_month") }
+  /// This week
+  internal static var screenSearchMediaDateThisWeek: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_date_this_week") }
+  /// Today
+  internal static var screenSearchMediaDateToday: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_date_today") }
+  /// No media yet
+  internal static var screenSearchMediaEmpty: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_empty") }
+  /// Photos, videos, files and links shared in your chats appear here.
+  internal static var screenSearchMediaEmptyMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_empty_message") }
+  /// Anyone
+  internal static var screenSearchMediaFilterAllSenders: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_filter_all_senders") }
+  /// Older media isn’t indexed yet.
+  internal static var screenSearchMediaIncompleteHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_incomplete_history") }
+  /// All
+  internal static var screenSearchMediaTypeAll: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_all") }
+  /// Files
+  internal static var screenSearchMediaTypeFile: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_file") }
+  /// GIFs
+  internal static var screenSearchMediaTypeGif: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_gif") }
+  /// Links
+  internal static var screenSearchMediaTypeLink: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_link") }
+  /// Photos
+  internal static var screenSearchMediaTypePhoto: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_photo") }
+  /// Videos
+  internal static var screenSearchMediaTypeVideo: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_video") }
+  /// Voice
+  internal static var screenSearchMediaTypeVoice: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_voice") }
   /// There are no results for “%1$@.” Try a new search term.
   internal static func screenSearchNoResultsMessage(_ p1: Any) -> String {
     return UntranslatedL10n.tr("Untranslated", "screen_search_no_results_message", String(describing: p1))
   }
+  /// Media
+  internal static var screenSearchTabMedia: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_media") }
   /// Messages
   internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
   /// Rooms

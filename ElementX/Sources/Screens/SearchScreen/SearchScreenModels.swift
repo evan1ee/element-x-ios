@@ -15,6 +15,7 @@ enum SearchScreenViewModelAction {
 enum SearchScreenMode: CaseIterable, Identifiable {
     case rooms
     case messages
+    case media
     
     var id: Self {
         self
@@ -24,6 +25,7 @@ enum SearchScreenMode: CaseIterable, Identifiable {
         switch self {
         case .rooms: UntranslatedL10n.screenSearchTabRooms
         case .messages: UntranslatedL10n.screenSearchTabMessages
+        case .media: UntranslatedL10n.screenSearchTabMedia
         }
     }
 }
@@ -31,8 +33,13 @@ enum SearchScreenMode: CaseIterable, Identifiable {
 struct SearchScreenViewState: BindableState {
     var rooms = [SearchScreenRoom]()
     var messages = [SearchScreenMessage]()
+    var media = [SearchScreenMediaAsset]()
     var isLoadingRooms = false
     var isLoadingMessages = false
+    var isLoadingMedia = false
+    /// Senders who have actually shared something, so the filter only offers names
+    /// that can return a result.
+    var mediaSenders = [SearchScreenMediaSender]()
     /// Set while history is still downloading, so results can say they're partial
     /// rather than letting an empty result read as "nothing was ever said".
     var isHistoryIncomplete = false
@@ -46,6 +53,137 @@ struct SearchScreenViewState: BindableState {
 struct SearchScreenViewStateBindings {
     var searchQuery = ""
     var searchMode: SearchScreenMode = .rooms
+    
+    /// Empty means every category, which is what the library opens on.
+    var mediaCategory: MediaCategory?
+    var mediaSenderID: String?
+    var mediaDateRange: SearchScreenMediaDateRange = .anyTime
+}
+
+/// Coarse ranges rather than a date picker: browsing is usually "recently" or "a while ago",
+/// and a picker is a lot of chrome for a filter bar.
+enum SearchScreenMediaDateRange: CaseIterable, Identifiable {
+    case anyTime
+    case today
+    case thisWeek
+    case thisMonth
+    
+    var id: Self {
+        self
+    }
+    
+    var title: String {
+        switch self {
+        case .anyTime: UntranslatedL10n.screenSearchMediaDateAnyTime
+        case .today: UntranslatedL10n.screenSearchMediaDateToday
+        case .thisWeek: UntranslatedL10n.screenSearchMediaDateThisWeek
+        case .thisMonth: UntranslatedL10n.screenSearchMediaDateThisMonth
+        }
+    }
+    
+    /// The lower bound to filter on, or nil for no bound at all.
+    var after: Date? {
+        let calendar = Calendar.current
+        return switch self {
+        case .anyTime: nil
+        case .today: calendar.startOfDay(for: .now)
+        case .thisWeek: calendar.dateInterval(of: .weekOfYear, for: .now)?.start
+        case .thisMonth: calendar.dateInterval(of: .month, for: .now)?.start
+        }
+    }
+}
+
+struct SearchScreenMediaSender: Identifiable, Equatable {
+    let id: String
+    let name: String
+}
+
+/// One row or grid cell in the media library.
+struct SearchScreenMediaAsset: Identifiable, Equatable {
+    let id: String
+    let roomID: String
+    let roomName: String
+    let category: MediaCategory
+    let senderID: String
+    let senderName: String
+    let timestamp: Date
+    let filename: String?
+    let body: String?
+    let fileSize: UInt?
+    let width: Int?
+    let height: Int?
+    let duration: TimeInterval?
+    /// Thumbnail first, falling back to the full media when the sender sent no thumbnail.
+    let thumbnailSource: MediaSourceProxy?
+    
+    init?(_ entry: SearchIndexEntry, roomSummary: RoomSummary?) {
+        guard let category = MediaCategory(kind: entry.kind,
+                                           mimeType: entry.mimeType,
+                                           isVoiceMessage: entry.isVoiceMessage) else {
+            return nil
+        }
+        
+        id = entry.eventID
+        roomID = entry.roomID
+        roomName = roomSummary?.name ?? entry.roomID
+        self.category = category
+        senderID = entry.senderID
+        senderName = entry.senderDisplayName ?? entry.senderID
+        timestamp = entry.timestamp
+        filename = entry.filename
+        body = entry.body
+        fileSize = entry.fileSize
+        width = entry.width
+        height = entry.height
+        duration = entry.duration
+        
+        let source = entry.thumbnailSource ?? entry.mediaSource
+        thumbnailSource = source
+            .flatMap(URL.init(string:))
+            .flatMap { try? MediaSourceProxy(url: $0, mimeType: entry.mimeType) }
+    }
+    
+    /// What the row calls this. Links show their host, which is how people remember them.
+    var title: String {
+        switch category {
+        case .link:
+            body.flatMap(URL.init(string:))?.host() ?? body ?? filename ?? ""
+        case .voice:
+            L10n.commonVoiceMessage
+        default:
+            filename ?? body ?? ""
+        }
+    }
+    
+    /// Sender, room and whatever measurement suits the kind of asset.
+    var subtitle: String {
+        var parts = [senderName, roomName]
+        if let duration, category == .video || category == .voice {
+            parts.append(Self.durationFormatter.string(from: duration) ?? "")
+        } else if let fileSize {
+            parts.append(ByteCountFormatter.string(fromByteCount: Int64(fileSize), countStyle: .file))
+        }
+        return parts.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+    
+    /// Overlaid on a grid cell, for the kinds where it says something.
+    var badge: String? {
+        switch category {
+        case .video:
+            duration.flatMap { Self.durationFormatter.string(from: $0) }
+        case .gif:
+            "GIF"
+        default:
+            nil
+        }
+    }
+    
+    private static let durationFormatter = {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+        return formatter
+    }()
 }
 
 enum SearchScreenViewAction {
@@ -55,6 +193,9 @@ enum SearchScreenViewAction {
     case reachedTop
     case reachedBottom
     case cancel
+    case selectAsset(SearchScreenMediaAsset)
+    case reachedMediaBottom
+    case mediaFiltersChanged
 }
 
 struct SearchScreenRoom: Identifiable, Equatable {

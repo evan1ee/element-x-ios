@@ -26,6 +26,7 @@ struct SearchScreen: View {
         switch context.viewState.bindings.searchMode {
         case .rooms: context.viewState.rooms.map(\.id)
         case .messages: context.viewState.messages.map(\.id)
+        case .media: context.viewState.media.map(\.id)
         }
     }
     
@@ -91,6 +92,8 @@ struct SearchScreen: View {
                 } else {
                     messagesList
                 }
+            case .media:
+                SearchScreenMediaView(context: context)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
@@ -225,6 +228,9 @@ struct SearchScreen: View {
         case .messages:
             guard let message = context.viewState.messages.first(where: { $0.id == selectedID }) else { return }
             context.send(viewAction: .selectMessage(roomID: message.roomID, eventID: message.id))
+        case .media:
+            guard let asset = context.viewState.media.first(where: { $0.id == selectedID }) else { return }
+            context.send(viewAction: .selectAsset(asset))
         }
     }
     

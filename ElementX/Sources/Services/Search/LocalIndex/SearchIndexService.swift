@@ -38,7 +38,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     /// throwing it away costs only the re-indexing.
     /// Internal rather than private so a backup can record which schema its copy of
     /// the index was written with, and refuse to restore a newer one.
-    nonisolated static let schemaVersion = 3
+    nonisolated static let schemaVersion = 4
     
     init(databaseURL: URL) {
         self.databaseURL = databaseURL
@@ -67,8 +67,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 (event_id, room_id, sender_id, sender_display_name, timestamp, kind,
                  message_body, filename, mime_type, url, thread_root_id,
                  file_size, width, height, duration, is_voice_message,
+                 media_source, thumbnail_source,
                  message_body_segmented, filename_segmented, sender_display_name_segmented)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(event_id) DO UPDATE SET
                 sender_display_name = excluded.sender_display_name,
                 timestamp = excluded.timestamp,
@@ -83,6 +84,8 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 height = excluded.height,
                 duration = excluded.duration,
                 is_voice_message = excluded.is_voice_message,
+                media_source = excluded.media_source,
+                thumbnail_source = excluded.thumbnail_source,
                 message_body_segmented = excluded.message_body_segmented,
                 filename_segmented = excluded.filename_segmented,
                 sender_display_name_segmented = excluded.sender_display_name_segmented
@@ -109,11 +112,13 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 bind(entry.height.map(Int64.init), to: statement, at: 14)
                 bind(entry.duration.map { Int64($0 * 1000) }, to: statement, at: 15)
                 sqlite3_bind_int64(statement, 16, entry.isVoiceMessage ? 1 : 0)
+                bind(entry.mediaSource, to: statement, at: 17)
+                bind(entry.thumbnailSource, to: statement, at: 18)
                 // The searchable copies. Segmenting on write means the query only has
                 // to segment itself the same way to line up.
-                bind(entry.body.map(Self.segmented), to: statement, at: 17)
-                bind(entry.filename.map(Self.segmented), to: statement, at: 18)
-                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 19)
+                bind(entry.body.map(Self.segmented), to: statement, at: 19)
+                bind(entry.filename.map(Self.segmented), to: statement, at: 20)
+                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 21)
                 
                 guard sqlite3_step(statement) == SQLITE_DONE else {
                     throw SearchIndexError.query(lastErrorMessage(database))
@@ -268,7 +273,8 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         var sql = """
         SELECT event_id, room_id, sender_id, sender_display_name, timestamp, kind,
                message_body, filename, mime_type, url, thread_root_id,
-               file_size, width, height, duration, is_voice_message
+               file_size, width, height, duration, is_voice_message,
+               media_source, thumbnail_source
         FROM events
         WHERE kind != 'message'
         """
@@ -359,7 +365,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                                 width: integer(from: statement, at: 12).map(Int.init),
                                 height: integer(from: statement, at: 13).map(Int.init),
                                 duration: integer(from: statement, at: 14).map { Double($0) / 1000 },
-                                isVoiceMessage: sqlite3_column_int64(statement, 15) == 1)
+                                isVoiceMessage: sqlite3_column_int64(statement, 15) == 1,
+                                mediaSource: string(from: statement, at: 16),
+                                thumbnailSource: string(from: statement, at: 17))
     }
     
     func clear() async throws {
@@ -585,6 +593,8 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             height INTEGER,
             duration INTEGER,
             is_voice_message INTEGER NOT NULL DEFAULT 0,
+            media_source TEXT,
+            thumbnail_source TEXT,
             -- Indexed copies, CJK split per character. Kept apart from the columns
             -- above so what's searched and what's shown can differ.
             message_body_segmented TEXT,
