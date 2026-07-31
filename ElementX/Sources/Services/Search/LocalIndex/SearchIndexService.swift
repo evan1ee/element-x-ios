@@ -263,13 +263,6 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     func browse(_ query: SearchIndexBrowseQuery) async throws -> [SearchIndexEntry] {
         let database = try connection()
         
-        // Kinds rather than categories, because kind is what's stored and indexed. Photos,
-        // videos and GIFs all live under `media`, so they're separated afterwards in Swift
-        // using the same rule the rest of the app derives categories with.
-        let kinds = query.categories.reduce(into: Set<SearchIndexEventKind>()) { kinds, category in
-            kinds.formUnion(Self.kinds(for: category))
-        }
-        
         var sql = """
         SELECT event_id, room_id, sender_id, sender_display_name, timestamp, kind,
                message_body, filename, mime_type, url, thread_root_id,
@@ -278,8 +271,13 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         FROM events
         WHERE kind != 'message'
         """
-        if !kinds.isEmpty {
-            sql += " AND kind IN (\(kinds.map { "'\($0.rawValue)'" }.sorted().joined(separator: ", ")))"
+        // Categories are matched here rather than afterwards in Swift. Narrowing a page once
+        // it has been read would make LIMIT count rows we then discard, so a page of sixty
+        // that yields fifteen photos would look like the end of the results — and the offset
+        // for the next page would be wrong by the difference.
+        if !query.categories.isEmpty {
+            let predicates = query.categories.map(Self.predicate(for:)).sorted()
+            sql += " AND (\(predicates.joined(separator: " OR ")))"
         }
         if query.senderID != nil {
             sql += " AND sender_id = ?"
@@ -310,35 +308,36 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         var entries: [SearchIndexEntry] = []
         while sqlite3_step(statement) == SQLITE_ROW {
             guard let entry = entry(from: statement) else { continue }
-            
-            // The category filter is finished here rather than in SQL, since telling a photo
-            // from a video from a GIF means reading the MIME type.
-            if !query.categories.isEmpty {
-                guard let category = MediaCategory(kind: entry.kind,
-                                                   mimeType: entry.mimeType,
-                                                   isVoiceMessage: entry.isVoiceMessage),
-                    query.categories.contains(category) else {
-                    continue
-                }
-            }
-            
             entries.append(entry)
         }
         
         return entries
     }
     
-    /// The stored kinds a category can come from. Deliberately a superset: this only narrows
-    /// what SQL reads, and the exact category is decided afterwards from the MIME type.
-    ///
-    /// `.file` spans both stored kinds. An audio file or an attachment we couldn't type is
-    /// stored as `.media` but belongs under files, so restricting to `kind = 'file'` here
-    /// would hide it before the category check ever ran.
-    private nonisolated static func kinds(for category: MediaCategory) -> Set<SearchIndexEventKind> {
+    /// The same rule as `MediaCategory.init(kind:mimeType:isVoiceMessage:)`, written in SQL.
+    /// The two have to agree: this decides what a page contains, and that decides what each
+    /// row in it is labelled as.
+    private nonisolated static func predicate(for category: MediaCategory) -> String {
+        let isImage = "mime_type LIKE 'image/%'"
+        let isVideo = "mime_type LIKE 'video/%'"
+        let isGIF = "mime_type = 'image/gif'"
+        let notVoice = "is_voice_message = 0"
+        
         switch category {
-        case .photo, .video, .gif, .voice: [.media]
-        case .file: [.file, .media]
-        case .link: [.link]
+        case .photo:
+            return "(kind = 'media' AND \(notVoice) AND \(isImage) AND NOT \(isGIF))"
+        case .gif:
+            return "(kind = 'media' AND \(notVoice) AND \(isGIF))"
+        case .video:
+            return "(kind = 'media' AND \(notVoice) AND \(isVideo))"
+        case .voice:
+            return "(kind = 'media' AND is_voice_message = 1)"
+        case .link:
+            return "(kind = 'link')"
+        case .file:
+            // Anything attached that isn't a picture, a clip or a voice note — including
+            // media we couldn't type at all, which would otherwise be unreachable.
+            return "(kind = 'file' OR (kind = 'media' AND \(notVoice) AND (mime_type IS NULL OR (NOT \(isImage) AND NOT \(isVideo)))))"
         }
     }
     

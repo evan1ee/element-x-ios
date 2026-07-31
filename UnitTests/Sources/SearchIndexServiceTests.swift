@@ -391,4 +391,30 @@ struct SearchIndexServiceTests {
         // Better to file it somewhere wrong than drop it out of the library entirely.
         #expect(try await service.browse(.init(categories: [.file])).map(\.eventID) == ["$unknown"])
     }
+    
+    @Test
+    func aFilteredPageIsFullLengthSoPaginationKnowsToContinue() async throws {
+        let service = makeService()
+        // Photos and videos interleaved, so a page read without filtering in SQL would come
+        // back half empty and be mistaken for the end of the results.
+        try await service.index((0..<40).map { index in
+            makeEntry(eventID: "$\(index)",
+                      kind: .media,
+                      filename: "\(index)",
+                      timestamp: .init(timeIntervalSince1970: Double(index) * 1000),
+                      mimeType: index.isMultiple(of: 2) ? "image/jpeg" : "video/mp4")
+        })
+        
+        let firstPage = try await service.browse(.init(categories: [.photo], limit: 10))
+        #expect(firstPage.count == 10)
+        
+        let secondPage = try await service.browse(.init(categories: [.photo], limit: 10, offset: 10))
+        #expect(secondPage.count == 10)
+        
+        // The offset counts matching rows, so the two pages mustn't overlap.
+        #expect(Set(firstPage.map(\.eventID)).isDisjoint(with: secondPage.map(\.eventID)))
+        
+        // Twenty photos in total, so asking beyond them returns nothing.
+        #expect(try await service.browse(.init(categories: [.photo], limit: 10, offset: 20)).isEmpty)
+    }
 }
