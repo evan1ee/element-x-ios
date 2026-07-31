@@ -124,7 +124,8 @@ struct StickerServiceTests {
         
         let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
         #expect(arguments.eventType == "im.ponies.user_emotes")
-        #expect(arguments.content.contains("io.element.sha256"))
+        #expect(arguments.content.contains("user.sticker.sha256"))
+        #expect(!arguments.content.contains("io.element."))
         
         let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
         let image = try #require(pack.images["fancy_cat"])
@@ -153,6 +154,7 @@ struct StickerServiceTests {
         try setup()
         let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
         let hash = try sha256Hex(ofFileAt: imageURL)
+        // Deliberately in the pre-namespace-move format, so this also covers the fallback read.
         clientProxy.accountDataEventTypeReturnValue = .success("""
         { "images": { "cat": { "url": "mxc://example.com/cat", "io.element.sha256": "\(hash)" } } }
         """)
@@ -162,6 +164,35 @@ struct StickerServiceTests {
         #expect(summary == StickerBatchSummary(added: 0, duplicates: 1, failed: 0))
         #expect(!clientProxy.uploadMediaCalled)
         #expect(!clientProxy.setAccountDataEventTypeContentCalled)
+    }
+    
+    @Test
+    mutating func aPackInTheOldFormatIsReadAndRewrittenInTheNew() async throws {
+        try setup()
+        clientProxy.accountDataEventTypeReturnValue = .success("""
+        {
+            "images": {
+                "cat": {
+                    "url": "mxc://example.com/cat",
+                    "io.element.sha256": "abc123",
+                    "io.element.added_at": 1700000000000
+                }
+            }
+        }
+        """)
+        
+        // Adding anything triggers a save, which is what migrates the pack.
+        let imageURL = try makeTestImageFile(named: "Fancy Cat", color: .red)
+        _ = await service.addUserStickers(fromMediaAt: [imageURL])
+        
+        let arguments = try #require(clientProxy.setAccountDataEventTypeContentReceivedArguments)
+        #expect(!arguments.content.contains("io.element."))
+        
+        // The existing sticker kept both values, they just moved keys.
+        let pack = try JSONDecoder().decode(UserStickerPack.self, from: Data(arguments.content.utf8))
+        let migrated = try #require(pack.images["cat"])
+        #expect(migrated.sha256 == "abc123")
+        #expect(migrated.addedAt == 1_700_000_000_000)
     }
     
     @Test

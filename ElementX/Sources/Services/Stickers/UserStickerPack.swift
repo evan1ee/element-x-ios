@@ -36,6 +36,14 @@ struct UserStickerPack: Codable, Equatable {
         
         enum CodingKeys: String, CodingKey {
             case url, body, info, usage
+            case sha256 = "user.sticker.sha256"
+            case addedAt = "user.sticker.added_at"
+        }
+        
+        /// Where these two fields lived before they moved out of Element's namespace, which
+        /// isn't ours to write in. Read so an existing pack keeps its dedup and its ordering;
+        /// never written, so the first save after this drops them from the account data.
+        enum LegacyCodingKeys: String, CodingKey {
             case sha256 = "io.element.sha256"
             case addedAt = "io.element.added_at"
         }
@@ -102,5 +110,28 @@ struct UserStickerPack: Codable, Equatable {
                         mimeType: image.info?.mimetype)
             }
             .sorted { $0.id < $1.id }
+    }
+}
+
+extension UserStickerPack.Image {
+    /// Reads the two custom fields from their current keys, falling back to the ones they used
+    /// while they lived in Element's namespace. Encoding stays synthesised, so a pack read in the
+    /// old format is written back in the new one — account data is replaced wholesale, which
+    /// means the first save after this drops the old keys for good.
+    ///
+    /// Declared in an extension so the memberwise initialiser survives.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let legacyContainer = try decoder.container(keyedBy: LegacyCodingKeys.self)
+        
+        url = try container.decode(String.self, forKey: .url)
+        body = try container.decodeIfPresent(String.self, forKey: .body)
+        info = try container.decodeIfPresent(Info.self, forKey: .info)
+        usage = try container.decodeIfPresent([String].self, forKey: .usage)
+        
+        sha256 = try container.decodeIfPresent(String.self, forKey: .sha256)
+            ?? legacyContainer.decodeIfPresent(String.self, forKey: .sha256)
+        addedAt = try container.decodeIfPresent(UInt64.self, forKey: .addedAt)
+            ?? legacyContainer.decodeIfPresent(UInt64.self, forKey: .addedAt)
     }
 }
