@@ -11386,6 +11386,102 @@ nonisolated class RoomThreadListServiceProxyMock: RoomThreadListServiceProxyProt
         }
     }
 }
+nonisolated class SavedMessagesServiceMock: SavedMessagesServiceProtocol, @unchecked Sendable {
+    var roomIDPublisher: CurrentValuePublisher<String?, Never> {
+        get { return underlyingRoomIDPublisher }
+        set(value) { underlyingRoomIDPublisher = value }
+    }
+    nonisolated(unsafe) var underlyingRoomIDPublisher: CurrentValuePublisher<String?, Never>!
+
+    //MARK: - setUp
+
+    private let setUpCallsCountLock = NSLock()
+    private nonisolated(unsafe) var setUpUnderlyingCallsCount = 0
+    var setUpCallsCount: Int {
+        get { setUpCallsCountLock.withLock { setUpUnderlyingCallsCount } }
+        set { setUpCallsCountLock.withLock { setUpUnderlyingCallsCount = newValue } }
+    }
+    var setUpCalled: Bool {
+        return setUpCallsCount > 0
+    }
+
+    private let setUpReturnValueLock = NSLock()
+    private nonisolated(unsafe) var setUpUnderlyingReturnValue: Result<String, SavedMessagesServiceError>!
+    var setUpReturnValue: Result<String, SavedMessagesServiceError>! {
+        get { setUpReturnValueLock.withLock { setUpUnderlyingReturnValue } }
+        set { setUpReturnValueLock.withLock { setUpUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var setUpClosure: (() async -> Result<String, SavedMessagesServiceError>)?
+
+    @discardableResult
+    @concurrent func setUp() async -> Result<String, SavedMessagesServiceError> {
+        setUpCallsCountLock.withLock { setUpUnderlyingCallsCount += 1 }
+        if let setUpClosure = setUpClosure {
+            return await setUpClosure()
+        } else {
+            return setUpReturnValue
+        }
+    }
+    //MARK: - start
+
+    private let startCallsCountLock = NSLock()
+    private nonisolated(unsafe) var startUnderlyingCallsCount = 0
+    var startCallsCount: Int {
+        get { startCallsCountLock.withLock { startUnderlyingCallsCount } }
+        set { startCallsCountLock.withLock { startUnderlyingCallsCount = newValue } }
+    }
+    var startCalled: Bool {
+        return startCallsCount > 0
+    }
+    nonisolated(unsafe) var startClosure: (() -> Void)?
+
+    func start() {
+        startCallsCountLock.withLock { startUnderlyingCallsCount += 1 }
+        startClosure?()
+    }
+    //MARK: - isSavedMessagesRoom
+
+    private let isSavedMessagesRoomCallsCountLock = NSLock()
+    private nonisolated(unsafe) var isSavedMessagesRoomUnderlyingCallsCount = 0
+    var isSavedMessagesRoomCallsCount: Int {
+        get { isSavedMessagesRoomCallsCountLock.withLock { isSavedMessagesRoomUnderlyingCallsCount } }
+        set { isSavedMessagesRoomCallsCountLock.withLock { isSavedMessagesRoomUnderlyingCallsCount = newValue } }
+    }
+    var isSavedMessagesRoomCalled: Bool {
+        return isSavedMessagesRoomCallsCount > 0
+    }
+    private let isSavedMessagesRoomReceivedRoomIDLock = NSLock()
+    private nonisolated(unsafe) var isSavedMessagesRoomUnderlyingReceivedRoomID: String?
+    var isSavedMessagesRoomReceivedRoomID: String? {
+        get { isSavedMessagesRoomReceivedRoomIDLock.withLock { isSavedMessagesRoomUnderlyingReceivedRoomID } }
+        set { isSavedMessagesRoomReceivedRoomIDLock.withLock { isSavedMessagesRoomUnderlyingReceivedRoomID = newValue } }
+    }
+    private let isSavedMessagesRoomReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var isSavedMessagesRoomUnderlyingReceivedInvocations: [String] = []
+    var isSavedMessagesRoomReceivedInvocations: [String] {
+        get { isSavedMessagesRoomReceivedInvocationsLock.withLock { isSavedMessagesRoomUnderlyingReceivedInvocations } }
+        set { isSavedMessagesRoomReceivedInvocationsLock.withLock { isSavedMessagesRoomUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let isSavedMessagesRoomReturnValueLock = NSLock()
+    private nonisolated(unsafe) var isSavedMessagesRoomUnderlyingReturnValue: Bool!
+    var isSavedMessagesRoomReturnValue: Bool! {
+        get { isSavedMessagesRoomReturnValueLock.withLock { isSavedMessagesRoomUnderlyingReturnValue } }
+        set { isSavedMessagesRoomReturnValueLock.withLock { isSavedMessagesRoomUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var isSavedMessagesRoomClosure: ((String) -> Bool)?
+
+    func isSavedMessagesRoom(_ roomID: String) -> Bool {
+        isSavedMessagesRoomCallsCountLock.withLock { isSavedMessagesRoomUnderlyingCallsCount += 1 }
+        isSavedMessagesRoomReceivedRoomID = roomID
+        isSavedMessagesRoomReceivedInvocationsLock.withLock { isSavedMessagesRoomUnderlyingReceivedInvocations.append(roomID) }
+        if let isSavedMessagesRoomClosure = isSavedMessagesRoomClosure {
+            return isSavedMessagesRoomClosure(roomID)
+        } else {
+            return isSavedMessagesRoomReturnValue
+        }
+    }
+}
 nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked Sendable {
 
     //MARK: - index
@@ -15856,6 +15952,11 @@ nonisolated class UserSessionMock: UserSessionProtocol, @unchecked Sendable {
         set(value) { underlyingBackupManager = value }
     }
     nonisolated(unsafe) var underlyingBackupManager: BackupManagerProtocol!
+    var savedMessagesService: SavedMessagesServiceProtocol {
+        get { return underlyingSavedMessagesService }
+        set(value) { underlyingSavedMessagesService = value }
+    }
+    nonisolated(unsafe) var underlyingSavedMessagesService: SavedMessagesServiceProtocol!
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> {
         get { return underlyingSessionSecurityStatePublisher }
         set(value) { underlyingSessionSecurityStatePublisher = value }

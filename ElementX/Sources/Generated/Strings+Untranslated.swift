@@ -16,6 +16,12 @@ internal nonisolated enum UntranslatedL10n {
   internal static var a11yShowMediaInput: String { return UntranslatedL10n.tr("Untranslated", "a11y_show_media_input") }
   /// Add to stickers
   internal static var actionAddToStickers: String { return UntranslatedL10n.tr("Untranslated", "action_add_to_stickers") }
+  /// Save to Saved Messages
+  internal static var actionSaveToSavedMessages: String { return UntranslatedL10n.tr("Untranslated", "action_save_to_saved_messages") }
+  /// Saved Messages
+  internal static var commonSavedMessages: String { return UntranslatedL10n.tr("Untranslated", "common_saved_messages") }
+  /// Keep messages, photos, files and more.
+  internal static var commonSavedMessagesSubtitle: String { return UntranslatedL10n.tr("Untranslated", "common_saved_messages_subtitle") }
   /// Sticker added
   internal static var commonStickerAdded: String { return UntranslatedL10n.tr("Untranslated", "common_sticker_added") }
   /// Delete existing backup
@@ -184,6 +190,10 @@ internal nonisolated enum UntranslatedL10n {
   internal static func screenRoomTimelineLegacyCallIos(_ p1: Any) -> String {
     return UntranslatedL10n.tr("Untranslated", "screen_room_timeline_legacy_call_ios", String(describing: p1))
   }
+  /// Everything syncs securely across your devices.
+  internal static var screenSavedMessagesEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_saved_messages_empty_state_message") }
+  /// Save messages, photos, videos, files and links here.
+  internal static var screenSavedMessagesEmptyStateTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_saved_messages_empty_state_title") }
   /// Search for chats and messages
   internal static var screenSearchEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_message") }
   /// Start searching...

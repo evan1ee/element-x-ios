@@ -34,6 +34,9 @@ class UserSession: UserSessionProtocol {
     /// the user turns it on.
     let backupManager: BackupManagerProtocol
     
+    /// Resolves the personal room backing Saved Messages, creating it on first use.
+    let savedMessagesService: SavedMessagesServiceProtocol
+    
     let callbacks = PassthroughSubject<UserSessionCallback, Never>()
     
     let sessionSecurityStateSubject = CurrentValueSubject<SessionSecurityState, Never>(.init(verificationState: .unknown, recoveryState: .unknown))
@@ -89,6 +92,10 @@ class UserSession: UserSessionProtocol {
                                       userID: clientProxy.userID,
                                       deviceName: UIDevice.current.name,
                                       appVersion: InfoPlistReader.main.bundleShortVersionString)
+        
+        let savedMessagesService = SavedMessagesService(clientProxy: clientProxy)
+        self.savedMessagesService = savedMessagesService
+        savedMessagesService.start()
         
         authErrorCancellable = clientProxy.actionsPublisher
             .receive(on: DispatchQueue.main)

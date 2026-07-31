@@ -35,6 +35,9 @@ protocol UserSessionProtocol: Sendable {
     var historyDownloadManager: HistoryDownloadManagerProtocol { get }
     var backupManager: BackupManagerProtocol { get }
     
+    /// Resolves the personal room backing Saved Messages, creating it on first use.
+    var savedMessagesService: SavedMessagesServiceProtocol { get }
+    
     var sessionSecurityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never> { get }
     
     var callbacks: PassthroughSubject<UserSessionCallback, Never> { get }

@@ -43,5 +43,12 @@ struct UserSessionMockConfiguration {
         backupManagerMock.underlyingSelectedProviderID = .iCloud
         backupManagerMock.underlyingIsEnabled = false
         backupManager = backupManagerMock
+        
+        // Resolved to nothing, so screens asking whether a room is Saved Messages get a
+        // plain no. Tests exercising the feature substitute a mock with a room ID.
+        let savedMessagesServiceMock = SavedMessagesServiceMock()
+        savedMessagesServiceMock.underlyingRoomIDPublisher = CurrentValueSubject<String?, Never>(nil).asCurrentValuePublisher()
+        savedMessagesServiceMock.isSavedMessagesRoomReturnValue = false
+        savedMessagesService = savedMessagesServiceMock
     }
 }
