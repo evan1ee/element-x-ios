@@ -1069,6 +1069,13 @@ extension PreviewTests {
     }
 
     @Test
+    func savedMessagesAvatarImage() async throws {
+        for (index, preview) in SavedMessagesAvatarImage_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func savedMessagesEmptyStateView() async throws {
         for (index, preview) in SavedMessagesEmptyStateView_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)

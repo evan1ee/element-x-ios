@@ -611,6 +611,10 @@ extension AccessibilityTests {
         try await performAccessibilityAudit(named: "SFNumberedListView_Previews")
     }
 
+    func testSavedMessagesAvatarImage() async throws {
+        try await performAccessibilityAudit(named: "SavedMessagesAvatarImage_Previews")
+    }
+
     func testSavedMessagesEmptyStateView() async throws {
         try await performAccessibilityAudit(named: "SavedMessagesEmptyStateView_Previews")
     }

@@ -49,7 +49,7 @@ struct HomeScreenRoomCell: View {
         if dynamicTypeSize < .accessibility3 {
             Group {
                 if room.isSavedMessages {
-                    savedMessagesAvatar
+                    SavedMessagesAvatarImage(avatarSize: .room(on: .chats))
                 } else {
                     RoomAvatarImage(avatar: room.avatar,
                                     avatarSize: .room(on: .chats),
@@ -59,22 +59,6 @@ struct HomeScreenRoomCell: View {
             .dynamicTypeSize(dynamicTypeSize < .accessibility1 ? dynamicTypeSize : .accessibility1)
             .accessibilityHidden(true)
         }
-    }
-    
-    /// A fixed icon rather than the room's avatar, so Saved Messages looks the same on every
-    /// device. Drawn in the logo's gradient, on a tint of it faint enough to keep the room
-    /// aligned with the circular avatars either side.
-    private var savedMessagesAvatar: some View {
-        let size = Avatars.Size.room(on: .chats).value
-        
-        return Image(asset: Asset.Images.savedMessagesIcon)
-            .resizable()
-            .renderingMode(.template)
-            .aspectRatio(contentMode: .fit)
-            .foregroundStyle(HaloBrand.gradient)
-            .frame(width: size * 0.55, height: size * 0.55)
-            .frame(width: size, height: size)
-            .background(HaloBrand.gradientTop.opacity(0.14), in: Circle())
     }
     
     private var content: some View {

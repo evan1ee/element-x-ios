@@ -42,6 +42,8 @@ enum RoomScreenViewAction {
 struct RoomScreenViewState: BindableState {
     var roomTitle = ""
     var roomAvatar: RoomAvatar
+    /// The user's own Saved Messages room, which shows its own mark rather than a room avatar.
+    var isSavedMessagesRoom = false
     var dmRecipientDetails = RoomHeaderView.DMRecipientDetails()
     
     var lastScrollDirection: ScrollDirection?

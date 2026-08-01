@@ -16,6 +16,7 @@ typealias RoomScreenViewModelType = StateStoreViewModel<RoomScreenViewState, Roo
 
 class RoomScreenViewModel: RoomScreenViewModelType, RoomScreenViewModelProtocol {
     private let clientProxy: ClientProxyProtocol
+    private let savedMessagesService: SavedMessagesServiceProtocol
     private let roomProxy: JoinedRoomProxyProtocol
     private let appSettings: AppSettings
     private let analyticsService: AnalyticsServiceProtocol
@@ -59,6 +60,7 @@ class RoomScreenViewModel: RoomScreenViewModelType, RoomScreenViewModelProtocol 
          analyticsService: AnalyticsServiceProtocol,
          userIndicatorController: UserIndicatorControllerProtocol) {
         clientProxy = userSession.clientProxy
+        savedMessagesService = userSession.savedMessagesService
         self.roomProxy = roomProxy
         self.appSettings = appSettings
         self.analyticsService = analyticsService
@@ -163,6 +165,15 @@ class RoomScreenViewModel: RoomScreenViewModelType, RoomScreenViewModelProtocol 
     // MARK: - Private
     
     private func setupSubscriptions(ongoingCallRoomIDPublisher: CurrentValuePublisher<String?, Never>) {
+        // Tracked rather than read once, since the service may not have resolved the room
+        // by the time this screen is built.
+        savedMessagesService.roomIDPublisher
+            .map { [roomID = roomProxy.id] in $0 == roomID }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .weakAssign(to: \.state.isSavedMessagesRoom, on: self)
+            .store(in: &cancellables)
+        
         appSettings.roomThreadListEnabledPublisher
             .weakAssign(to: \.state.roomThreadListEnabled, on: self)
             .store(in: &cancellables)

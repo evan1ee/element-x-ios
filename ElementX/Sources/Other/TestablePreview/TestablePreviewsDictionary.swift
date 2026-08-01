@@ -155,6 +155,7 @@ enum TestablePreviewsDictionary {
             "RoomSelectionScreen_Previews" : RoomSelectionScreen_Previews.self,
             "RoomThreadListScreen_Previews" : RoomThreadListScreen_Previews.self,
             "SFNumberedListView_Previews" : SFNumberedListView_Previews.self,
+            "SavedMessagesAvatarImage_Previews" : SavedMessagesAvatarImage_Previews.self,
             "SavedMessagesEmptyStateView_Previews" : SavedMessagesEmptyStateView_Previews.self,
             "ScanStateMediaEventsTimelineViews_Previews" : ScanStateMediaEventsTimelineViews_Previews.self,
             "SearchScreen_Previews" : SearchScreen_Previews.self,
