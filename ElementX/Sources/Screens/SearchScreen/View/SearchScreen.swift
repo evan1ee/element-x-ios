@@ -87,7 +87,9 @@ struct SearchScreen: View {
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.compound.bgCanvasDefault)
-        .conditionalSearchable(searchQuery: $context.searchQuery)
+        // Media is browsed rather than searched, so the field would only take up room.
+        .conditionalSearchable(searchQuery: $context.searchQuery,
+                               isEnabled: context.viewState.bindings.searchMode != .media)
         .searchFocused($isSearchFieldFocused)
         .autocorrectionDisabled(true)
         .background(tabShortcuts)
@@ -228,8 +230,8 @@ struct SearchScreen: View {
 
 private extension View {
     /// Searchable makes the preview contents randomly appear lower
-    @ViewBuilder func conditionalSearchable(searchQuery: Binding<String>) -> some View {
-        if !ProcessInfo.isXcodePreview, !ProcessInfo.isRunningTests {
+    @ViewBuilder func conditionalSearchable(searchQuery: Binding<String>, isEnabled: Bool) -> some View {
+        if isEnabled, !ProcessInfo.isXcodePreview, !ProcessInfo.isRunningTests {
             searchable(text: searchQuery, placement: .toolbarPrincipal)
         } else {
             self
