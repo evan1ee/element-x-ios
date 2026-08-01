@@ -6,6 +6,7 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
+import Combine
 import SwiftUI
 
 /// Information about a room avatar such as it's URL or the heroes to use as a fallback.
@@ -45,11 +46,21 @@ enum RoomAvatar: Equatable {
     }
 }
 
+extension EnvironmentValues {
+    /// The Saved Messages room for the signed-in account, injected once for the whole app.
+    ///
+    /// Read here rather than passed in: a room avatar is drawn in dozens of places, and a flag
+    /// threaded through each of their view states is a flag that gets forgotten in the next one.
+    @Entry var savedMessagesRoomID: String?
+}
+
 /// A view that shows the avatar for a room, or a cluster of heroes if provided.
 ///
 /// This should be preferred over `LoadableAvatarImage` when displaying a
 /// room avatar so that DMs have a consistent appearance throughout the app.
 struct RoomAvatarImage: View {
+    @Environment(\.savedMessagesRoomID) private var savedMessagesRoomID
+    
     let avatar: RoomAvatar
     
     let avatarSize: Avatars.Size
@@ -60,12 +71,18 @@ struct RoomAvatarImage: View {
     var body: some View {
         switch avatar {
         case .room(let id, let name, let avatarURL):
-            LoadableAvatarImage(url: avatarURL,
-                                name: name,
-                                contentID: id,
-                                avatarSize: avatarSize,
-                                mediaProvider: mediaProvider,
-                                onTap: onAvatarTap)
+            // Saved Messages carries its own mark wherever it appears, so the row you tap,
+            // the header you land on and every picker in between agree on what it looks like.
+            if id == savedMessagesRoomID {
+                SavedMessagesAvatarImage(avatarSize: avatarSize)
+            } else {
+                LoadableAvatarImage(url: avatarURL,
+                                    name: name,
+                                    contentID: id,
+                                    avatarSize: avatarSize,
+                                    mediaProvider: mediaProvider,
+                                    onTap: onAvatarTap)
+            }
         case .heroes(let users):
             // We will expand upon this with more stack sizes in the future.
             if users.isEmpty {
@@ -176,5 +193,22 @@ struct RoomAvatarImage_Previews: PreviewProvider, TestablePreview {
                                 mediaProvider: MediaProviderMock(.init()))
             }
         }
+    }
+}
+
+/// Puts the Saved Messages room into the environment for everything below it.
+///
+/// A view rather than a plain `.environment(_:_:)` call because the tree is built once, before
+/// the session has resolved which room that is — so the value has to arrive later.
+struct SavedMessagesRoomIDReader<Content: View>: View {
+    let publisher: AnyPublisher<String?, Never>
+    let content: Content
+    
+    @State private var roomID: String?
+    
+    var body: some View {
+        content
+            .environment(\.savedMessagesRoomID, roomID)
+            .onReceive(publisher) { roomID = $0 }
     }
 }

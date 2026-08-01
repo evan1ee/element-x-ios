@@ -35,6 +35,11 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
     private var backgroundTask: UIBackgroundTaskIdentifier?
     
     private var userSessionMigrationsOldVersion: Version?
+    /// Handed to the whole view tree so that anything drawing a room avatar recognises
+    /// Saved Messages. Empty until the session's service has resolved it, and a subject
+    /// rather than a stored value because the view tree is built once and has to be told.
+    private let savedMessagesRoomIDSubject = CurrentValueSubject<String?, Never>(nil)
+    private var savedMessagesObserver: AnyCancellable?
     private var userSession: UserSessionProtocol? {
         didSet {
             userSessionObserver?.cancel()
@@ -220,16 +225,17 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
     }
     
     func toPresentable() -> AnyView {
-        AnyView(navigationRootCoordinator.toPresentable()
-            .environment(\.analyticsService, analyticsService)
-            .onReceive(appSettings.appAppearancePublisher) { [weak self] appAppearance in
-                guard let self else { return }
-                
-                windowManager.windows.forEach { window in
-                    // Unfortunately .preferredColorScheme doesn't propagate properly throughout the app when changed
-                    window.overrideUserInterfaceStyle = appAppearance.interfaceStyle
-                }
-            })
+        AnyView(SavedMessagesRoomIDReader(publisher: savedMessagesRoomIDSubject.eraseToAnyPublisher(),
+                                          content: navigationRootCoordinator.toPresentable())
+                .environment(\.analyticsService, analyticsService)
+                .onReceive(appSettings.appAppearancePublisher) { [weak self] appAppearance in
+                    guard let self else { return }
+                    
+                    windowManager.windows.forEach { window in
+                        // Unfortunately .preferredColorScheme doesn't propagate properly throughout the app when changed
+                        window.overrideUserInterfaceStyle = appAppearance.interfaceStyle
+                    }
+                })
     }
     
     func handlePotentialPhishingAttempt(url: URL, openURLAction: @escaping (URL) -> Void) -> Bool {
@@ -918,6 +924,13 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
         guard let userSession else {
             fatalError("User session not setup")
         }
+        
+        savedMessagesObserver = userSession.savedMessagesService.roomIDPublisher
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] roomID in
+                self?.savedMessagesRoomIDSubject.send(roomID)
+            }
         
         userSessionObserver = userSession.callbacks
             .receive(on: DispatchQueue.main)

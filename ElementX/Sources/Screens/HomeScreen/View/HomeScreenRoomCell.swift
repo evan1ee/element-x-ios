@@ -47,17 +47,11 @@ struct HomeScreenRoomCell: View {
     @ViewBuilder
     private var avatar: some View {
         if dynamicTypeSize < .accessibility3 {
-            Group {
-                if room.isSavedMessages {
-                    SavedMessagesAvatarImage(avatarSize: .room(on: .chats))
-                } else {
-                    RoomAvatarImage(avatar: room.avatar,
-                                    avatarSize: .room(on: .chats),
-                                    mediaProvider: mediaProvider)
-                }
-            }
-            .dynamicTypeSize(dynamicTypeSize < .accessibility1 ? dynamicTypeSize : .accessibility1)
-            .accessibilityHidden(true)
+            RoomAvatarImage(avatar: room.avatar,
+                            avatarSize: .room(on: .chats),
+                            mediaProvider: mediaProvider)
+                .dynamicTypeSize(dynamicTypeSize < .accessibility1 ? dynamicTypeSize : .accessibility1)
+                .accessibilityHidden(true)
         }
     }
     

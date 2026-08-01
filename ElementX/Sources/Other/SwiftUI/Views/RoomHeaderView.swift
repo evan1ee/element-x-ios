@@ -19,9 +19,6 @@ struct RoomHeaderView: View {
     let roomName: String
     var roomSubtitle: String?
     let roomAvatar: RoomAvatar
-    /// Draws the Saved Messages mark instead of the room's avatar, so the header matches
-    /// the row that opened it.
-    var isSavedMessages = false
     var dmRecipientDetails = DMRecipientDetails()
     var roomHistorySharingState: RoomHistorySharingState?
     
@@ -92,16 +89,10 @@ struct RoomHeaderView: View {
     }
     
     private var avatarImage: some View {
-        Group {
-            if isSavedMessages {
-                SavedMessagesAvatarImage(avatarSize: .room(on: .timeline))
-            } else {
-                RoomAvatarImage(avatar: roomAvatar,
-                                avatarSize: .room(on: .timeline),
-                                mediaProvider: mediaProvider)
-            }
-        }
-        .accessibilityIdentifier(A11yIdentifiers.roomScreen.avatar)
+        RoomAvatarImage(avatar: roomAvatar,
+                        avatarSize: .room(on: .timeline),
+                        mediaProvider: mediaProvider)
+            .accessibilityIdentifier(A11yIdentifiers.roomScreen.avatar)
     }
     
     private var historySharingIcon: KeyPath<CompoundIcons, Image>? {
