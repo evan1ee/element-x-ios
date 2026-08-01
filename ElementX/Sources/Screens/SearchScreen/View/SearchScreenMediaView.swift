@@ -200,11 +200,15 @@ struct SearchScreenMediaGridCell: View {
                     // A size is what makes this ask the server for a scaled thumbnail.
                     // Without one the loader fetches the full original, and fifteen of those
                     // at once is enough to stall the grid indefinitely.
+                    //
+                    // `.generic` rather than `.timelineItem` for the sake of the placeholder:
+                    // the timeline's is a spinner captioned "Loading", which is a lot of words
+                    // for a tile this size.
                     LoadableImage(mediaSource: source,
-                                  mediaType: .timelineItem(uniqueID: .init(asset.id)),
+                                  mediaType: .generic,
                                   size: Self.thumbnailSize,
                                   mediaProvider: mediaProvider) {
-                        placeholder
+                        loadingPlaceholder
                     }
                     .scaledToFill()
                 } else {
@@ -228,6 +232,17 @@ struct SearchScreenMediaGridCell: View {
         .aspectRatio(1, contentMode: .fit)
     }
     
+    /// Shown while the thumbnail is on its way.
+    private var loadingPlaceholder: some View {
+        Color.compound.bgSubtleSecondary
+            .overlay {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(.compound.iconQuaternary)
+            }
+    }
+    
+    /// Shown when there's no thumbnail to wait for, where a spinner would never stop.
     private var placeholder: some View {
         Color.compound.bgSubtleSecondary
             .overlay {
@@ -265,9 +280,15 @@ struct SearchScreenMediaRow: View {
     private var icon: some View {
         if asset.category.isVisual, let source = asset.thumbnailSource {
             LoadableImage(mediaSource: source,
-                          mediaType: .timelineItem(uniqueID: .init(asset.id)),
+                          mediaType: .generic,
+                          size: CGSize(width: 132, height: 132),
                           mediaProvider: mediaProvider) {
                 Color.compound.bgSubtleSecondary
+                    .overlay {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(.compound.iconQuaternary)
+                    }
             }
             .aspectRatio(contentMode: .fill)
             .frame(width: 44, height: 44)
