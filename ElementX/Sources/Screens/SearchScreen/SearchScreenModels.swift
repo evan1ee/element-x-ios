@@ -14,7 +14,6 @@ enum SearchScreenViewModelAction {
 }
 
 enum SearchScreenMode: CaseIterable, Identifiable {
-    case rooms
     case messages
     case media
     
@@ -24,7 +23,6 @@ enum SearchScreenMode: CaseIterable, Identifiable {
     
     var title: String {
         switch self {
-        case .rooms: UntranslatedL10n.screenSearchTabRooms
         case .messages: UntranslatedL10n.screenSearchTabMessages
         case .media: UntranslatedL10n.screenSearchTabMedia
         }
@@ -53,7 +51,7 @@ struct SearchScreenViewState: BindableState {
 
 struct SearchScreenViewStateBindings {
     var searchQuery = ""
-    var searchMode: SearchScreenMode = .rooms
+    var searchMode: SearchScreenMode = .messages
     
     /// Empty means every category, which is what the library opens on.
     var mediaCategory: MediaCategory?

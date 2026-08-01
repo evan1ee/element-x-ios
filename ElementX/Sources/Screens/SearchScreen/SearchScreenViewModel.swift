@@ -34,7 +34,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
          searchIndexService: SearchIndexServiceProtocol,
          historyDownloadManager: HistoryDownloadManagerProtocol,
          initialSearchQuery: String = "",
-         initialSearchMode: SearchScreenMode = .rooms) {
+         initialSearchMode: SearchScreenMode = .messages) {
         self.roomSummaryProvider = roomSummaryProvider
         self.searchIndexService = searchIndexService
         self.clientProxy = clientProxy
@@ -129,13 +129,9 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
         case .selectMessage(let roomID, let eventID):
             actionsSubject.send(.presentRoom(roomID: roomID, eventID: eventID))
         case .reachedTop:
-            if state.bindings.searchMode == .rooms {
-                updateVisibleRange(edge: .top)
-            }
+            break // Only the room list paged upwards, and it no longer has a tab.
         case .reachedBottom:
             switch state.bindings.searchMode {
-            case .rooms:
-                updateVisibleRange(edge: .bottom)
             case .messages:
                 Task { await searchService.paginate() }
             case .media:

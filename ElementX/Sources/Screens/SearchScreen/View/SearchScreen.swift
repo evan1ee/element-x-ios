@@ -24,7 +24,6 @@ struct SearchScreen: View {
     /// The ids of the results in the active tab, in display order.
     private var selectableIDs: [String] {
         switch context.viewState.bindings.searchMode {
-        case .rooms: context.viewState.rooms.map(\.id)
         case .messages: context.viewState.messages.map(\.id)
         case .media: context.viewState.media.map(\.id)
         }
@@ -72,16 +71,6 @@ struct SearchScreen: View {
             }
             
             switch context.viewState.bindings.searchMode {
-            case .rooms:
-                if context.viewState.rooms.isEmpty {
-                    if context.viewState.isLoadingRooms {
-                        loadingState
-                    } else {
-                        emptyState
-                    }
-                } else {
-                    roomList
-                }
             case .messages:
                 if context.viewState.messages.isEmpty {
                     if context.viewState.isLoadingMessages {
@@ -223,8 +212,6 @@ struct SearchScreen: View {
     private func selectCurrent() {
         guard let selectedID else { return }
         switch context.viewState.bindings.searchMode {
-        case .rooms:
-            context.send(viewAction: .selectRoom(roomID: selectedID))
         case .messages:
             guard let message = context.viewState.messages.first(where: { $0.id == selectedID }) else { return }
             context.send(viewAction: .selectMessage(roomID: message.roomID, eventID: message.id))
