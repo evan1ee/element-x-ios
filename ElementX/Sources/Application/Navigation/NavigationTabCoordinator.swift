@@ -92,11 +92,26 @@ import SwiftUI
         var transaction = Transaction()
         transaction.disablesAnimations = !animated
         
+        // A tab that's staying keeps the module it already has. Wrapping the same coordinator
+        // in a fresh module would give it a new identity, and the diff above would then tear
+        // down the very coordinator being put back — leaving a blank tab behind.
+        let existingModules = tabModules
+        
         withTransaction(transaction) {
-            tabModules = tabs.map { TabModule(module: .init($0.coordinator, dismissalCallback: $0.dismissalCallback), details: $0.details) }
+            tabModules = tabs.map { tab in
+                if let existing = existingModules.first(where: { $0.module.coordinator === tab.coordinator }) {
+                    TabModule(module: existing.module, details: tab.details)
+                } else {
+                    TabModule(module: .init(tab.coordinator, dismissalCallback: tab.dismissalCallback), details: tab.details)
+                }
+            }
         }
         
-        selectedTab = tabModules.first?.details.tag
+        // Only when the selection has gone away, so switching a tab on or off doesn't also
+        // throw you back to the first one.
+        if selectedTab == nil || !tabModules.contains(where: { $0.details.tag == selectedTab }) {
+            selectedTab = tabModules.first?.details.tag
+        }
     }
     
     /// The currently selected tab's tag.

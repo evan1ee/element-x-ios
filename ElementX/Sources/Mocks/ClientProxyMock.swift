@@ -112,6 +112,7 @@ extension ClientProxyMock {
         resetIdentityReturnValue = .success(IdentityResetHandleSDKMock(.init()))
         
         spaceService = SpaceServiceProxyMock(configuration.spaceServiceConfiguration)
+        searchService = Self.makeSearchService()
         linkNewDeviceServiceReturnValue = LinkNewDeviceServiceMock(.init())
         
         let capabilities = HomeserverCapabilitiesProxyMock()
@@ -167,5 +168,14 @@ extension ClientProxyMock {
         underlyingMaxMediaUploadSize = .success(configuration.maxMediaUploadSize)
         
         storeSizesReturnValue = .success(.init(cryptoStore: 1, stateStore: 9, eventCacheStore: 8, mediaStore: 6))
+    }
+    
+    /// Idle and empty. The search tab is built alongside the session from iOS 26 on, so every
+    /// test reaches this whether it searches or not, and an un-configured mock traps.
+    private static func makeSearchService() -> SearchServiceProxyProtocol {
+        let mock = SearchServiceProxyMock()
+        mock.underlyingResultsPublisher = CurrentValueSubject<[SearchServiceResult], Never>([]).asCurrentValuePublisher()
+        mock.underlyingPaginationStatePublisher = CurrentValueSubject<SearchServicePaginationState, Never>(.idle(endReached: true)).asCurrentValuePublisher()
+        return mock
     }
 }

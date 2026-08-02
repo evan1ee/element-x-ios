@@ -127,6 +127,10 @@ extension AccessibilityTests {
         try await performAccessibilityAudit(named: "DeclineAndBlockScreen_Previews")
     }
 
+    func testDisplaySettingsScreen() async throws {
+        try await performAccessibilityAudit(named: "DisplaySettingsScreen_Previews")
+    }
+
     func testEditRoomAddressScreen() async throws {
         try await performAccessibilityAudit(named: "EditRoomAddressScreen_Previews")
     }
@@ -409,6 +413,10 @@ extension AccessibilityTests {
 
     func testPaginationIndicatorRoomTimelineView() async throws {
         try await performAccessibilityAudit(named: "PaginationIndicatorRoomTimelineView_Previews")
+    }
+
+    func testPhotosScreen() async throws {
+        try await performAccessibilityAudit(named: "PhotosScreen_Previews")
     }
 
     func testPillViewOnBubble() async throws {

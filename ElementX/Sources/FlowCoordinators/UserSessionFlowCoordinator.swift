@@ -20,10 +20,12 @@ enum UserSessionFlowCoordinatorAction {
 }
 
 class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
-    enum HomeTab: Hashable { case chats, spaces, search }
+    enum HomeTab: Hashable { case chats, spaces, photos, search }
     
     private let navigationRootCoordinator: NavigationRootCoordinator
     private let navigationTabCoordinator: NavigationTabCoordinator<HomeTab>
+    private let chatsSplitCoordinator: NavigationSplitCoordinator
+    private var spacesSplitCoordinator: NavigationSplitCoordinator
     private let appLockService: AppLockServiceProtocol
     private let flowParameters: CommonFlowParameters
     
@@ -35,12 +37,24 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
     private let onboardingStackCoordinator: NavigationStackCoordinator
     private let chatsTabFlowCoordinator: ChatsTabFlowCoordinator
     private let chatsTabDetails: NavigationTabCoordinator<HomeTab>.TabDetails
-    private let spacesTabFlowCoordinator: SpacesTabFlowCoordinator
+    private var spacesTabFlowCoordinator: SpacesTabFlowCoordinator
     private let spacesTabDetails: NavigationTabCoordinator<HomeTab>.TabDetails
+    /// Kept apart from `cancellables` so a rebuilt Spaces tab drops the old subscriptions
+    /// rather than ending up observed twice.
+    private var spacesTabCancellables = Set<AnyCancellable>()
+    /// Same again for Photos.
+    private var photosTabCancellables = Set<AnyCancellable>()
     
     private let searchScreenCoordinator: SearchScreenCoordinator?
     private let searchTabNavigationStackCoordinator: NavigationStackCoordinator?
     private let searchTabDetails: NavigationTabCoordinator<HomeTab>.TabDetails?
+    private var photosScreenCoordinator: PhotosScreenCoordinator
+    private var photosTabNavigationStackCoordinator: NavigationStackCoordinator
+    private let photosTabDetails: NavigationTabCoordinator<HomeTab>.TabDetails
+    
+    /// The tabs currently in the tab bar. Leaving the bar stops a tab's coordinators, so one
+    /// coming back has to be built again rather than reusing what it had before.
+    private var liveTabs: Set<HomeTab> = []
     
     private var settingsFlowCoordinator: SettingsFlowCoordinator?
     
@@ -94,7 +108,15 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
         spacesTabDetails = .init(tag: HomeTab.spaces, title: L10n.screenHomeTabSpaces, icon: \.space, selectedIcon: \.spaceSolid)
         spacesTabDetails.navigationSplitCoordinator = spacesSplitCoordinator
         
-        if flowParameters.appSettings.globalSearchEnabled, #available(iOS 26.0, *) {
+        (photosScreenCoordinator, photosTabNavigationStackCoordinator) = Self.makePhotosTab(flowParameters: flowParameters)
+        photosTabDetails = .init(tag: HomeTab.photos,
+                                 title: UntranslatedL10n.screenHomeTabPhotos,
+                                 icon: \.image,
+                                 selectedIcon: \.image)
+        
+        // Search lives in the tab bar wherever the OS can draw it there. The chat list keeps its
+        // own field below iOS 26 only because the search tab role doesn't exist there.
+        if #available(iOS 26.0, *) {
             let searchCoordinator = SearchScreenCoordinator(parameters: .init(roomSummaryProvider: flowParameters.userSession.clientProxy.alternateRoomSummaryProvider,
                                                                               clientProxy: flowParameters.userSession.clientProxy,
                                                                               mediaProvider: flowParameters.userSession.mediaProvider,
@@ -118,18 +140,18 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
                                                               navigationStackCoordinator: onboardingStackCoordinator,
                                                               flowParameters: flowParameters)
         
-        var tabs: [NavigationTabCoordinator<HomeTab>.Tab] = [
-            .init(coordinator: chatsSplitCoordinator, details: chatsTabDetails),
-            .init(coordinator: spacesSplitCoordinator, details: spacesTabDetails)
-        ]
-        if let searchTabNavigationStackCoordinator, let searchTabDetails {
-            tabs.append(.init(coordinator: searchTabNavigationStackCoordinator, details: searchTabDetails))
-        }
-        navigationTabCoordinator.setTabs(tabs)
+        self.chatsSplitCoordinator = chatsSplitCoordinator
+        self.spacesSplitCoordinator = spacesSplitCoordinator
         
         stateMachine = flowParameters.stateMachineFactory.makeUserSessionFlowStateMachine(state: .initial)
         configureStateMachine()
         
+        // Everything has just been built, so the first pass has nothing to rebuild whichever
+        // tabs are switched on.
+        liveTabs = [.chats, .spaces, .photos, .search]
+        
+        updateTabs()
+        observeTabSettings()
         setupObservers()
     }
     
@@ -223,7 +245,104 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
         }
     }
     
-    // swiftlint:disable:next function_body_length
+    private static func makePhotosTab(flowParameters: CommonFlowParameters) -> (PhotosScreenCoordinator, NavigationStackCoordinator) {
+        let coordinator = PhotosScreenCoordinator(parameters: .init(clientProxy: flowParameters.userSession.clientProxy,
+                                                                    mediaProvider: flowParameters.userSession.mediaProvider,
+                                                                    searchIndexService: flowParameters.userSession.searchIndexService,
+                                                                    historyDownloadManager: flowParameters.userSession.historyDownloadManager))
+        let stackCoordinator = NavigationStackCoordinator()
+        stackCoordinator.setRootCoordinator(coordinator)
+        return (coordinator, stackCoordinator)
+    }
+    
+    /// Rebuilt rather than hidden, so a tab the user has switched off costs nothing while
+    /// it isn't there.
+    private func updateTabs() {
+        var tabs: [NavigationTabCoordinator<HomeTab>.Tab] = [
+            .init(coordinator: chatsSplitCoordinator, details: chatsTabDetails)
+        ]
+        
+        if flowParameters.appSettings.showPhotosTab {
+            if !liveTabs.contains(.photos) {
+                rebuildPhotosTab()
+            }
+            tabs.append(.init(coordinator: photosTabNavigationStackCoordinator, details: photosTabDetails))
+        }
+        if flowParameters.appSettings.showSpacesTab {
+            if !liveTabs.contains(.spaces) {
+                rebuildSpacesTab()
+            }
+            tabs.append(.init(coordinator: spacesSplitCoordinator, details: spacesTabDetails))
+        }
+        if let searchTabNavigationStackCoordinator, let searchTabDetails {
+            tabs.append(.init(coordinator: searchTabNavigationStackCoordinator, details: searchTabDetails))
+        }
+        
+        navigationTabCoordinator.setTabs(tabs)
+        liveTabs = Set(tabs.map(\.details.tag))
+    }
+    
+    private func rebuildPhotosTab() {
+        (photosScreenCoordinator, photosTabNavigationStackCoordinator) = Self.makePhotosTab(flowParameters: flowParameters)
+        observePhotosTab()
+    }
+    
+    private func observePhotosTab() {
+        photosTabCancellables.removeAll()
+        
+        photosScreenCoordinator.actionsPublisher
+            .sink { [weak self] action in
+                guard let self else { return }
+                switch action {
+                case .presentRoom(let roomID, let eventID):
+                    handleAppRoute(.event(eventID: eventID, roomID: roomID, via: []), animated: true)
+                }
+            }
+            .store(in: &photosTabCancellables)
+    }
+    
+    private func rebuildSpacesTab() {
+        spacesTabCancellables.removeAll()
+        
+        let splitCoordinator = NavigationSplitCoordinator(placeholderCoordinator: PlaceholderScreenCoordinator(hideBrandChrome: flowParameters.appSettings.hideBrandChrome))
+        spacesTabFlowCoordinator = SpacesTabFlowCoordinator(navigationSplitCoordinator: splitCoordinator,
+                                                            flowParameters: flowParameters)
+        spacesSplitCoordinator = splitCoordinator
+        spacesTabDetails.navigationSplitCoordinator = splitCoordinator
+        
+        observeSpacesTab()
+        spacesTabFlowCoordinator.start()
+    }
+    
+    private func observeSpacesTab() {
+        spacesTabFlowCoordinator.actionsPublisher
+            .sink { [weak self] action in
+                guard let self else { return }
+                switch action {
+                case .presentCallScreen(let roomProxy, let isVoiceCall):
+                    presentCallScreen(roomProxy: roomProxy, voiceOnly: isVoiceCall)
+                case .verifyUser(let userID):
+                    presentSessionVerificationScreen(flow: .userInitiator(userID: userID))
+                case .showSettings:
+                    stateMachine.tryEvent(.showSettingsScreen)
+                }
+            }
+            .store(in: &spacesTabCancellables)
+    }
+    
+    /// Kept apart from `setupObservers` so that neither grows without the other noticing.
+    private func observeTabSettings() {
+        flowParameters.appSettings.showPhotosTabPublisher
+            .removeDuplicates()
+            .combineLatest(flowParameters.appSettings.showSpacesTabPublisher.removeDuplicates())
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _, _ in
+                self?.updateTabs()
+            }
+            .store(in: &cancellables)
+    }
+    
     private func setupObservers() {
         chatsTabFlowCoordinator.actionsPublisher
             .sink { [weak self] action in
@@ -247,19 +366,8 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
             }
             .store(in: &cancellables)
         
-        spacesTabFlowCoordinator.actionsPublisher
-            .sink { [weak self] action in
-                guard let self else { return }
-                switch action {
-                case .presentCallScreen(let roomProxy, let isVoiceCall):
-                    presentCallScreen(roomProxy: roomProxy, voiceOnly: isVoiceCall)
-                case .verifyUser(let userID):
-                    presentSessionVerificationScreen(flow: .userInitiator(userID: userID))
-                case .showSettings:
-                    stateMachine.tryEvent(.showSettingsScreen)
-                }
-            }
-            .store(in: &cancellables)
+        observeSpacesTab()
+        observePhotosTab()
         
         userSession.sessionSecurityStatePublisher
             .map(\.verificationState)

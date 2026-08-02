@@ -52,7 +52,8 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
                                            bindings: .init(filtersState: .init(appSettings: appSettings))),
                    mediaProvider: userSession.mediaProvider)
         
-        if appSettings.globalSearchEnabled, #available(iOS 26.0, *) {
+        // Superseded by the search tab, which is where searching happens from iOS 26 on.
+        if #available(iOS 26.0, *) {
             state.isRoomListSearchEnabled = false
         }
         

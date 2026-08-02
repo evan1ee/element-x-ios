@@ -49,11 +49,6 @@ struct DeveloperOptionsScreen: View {
                     Text("Link new device with QR code")
                 }
                 
-                Toggle(isOn: $context.globalSearchEnabled) {
-                    Text("Global search")
-                    Text("Moves search to a separate tab")
-                }
-                
                 Toggle(isOn: $context.userStatusEnabled) {
                     Text("User status")
                 }

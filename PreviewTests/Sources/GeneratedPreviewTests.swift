@@ -222,6 +222,13 @@ extension PreviewTests {
     }
 
     @Test
+    func displaySettingsScreen() async throws {
+        for (index, preview) in DisplaySettingsScreen_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func editRoomAddressScreen() async throws {
         for (index, preview) in EditRoomAddressScreen_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
@@ -714,6 +721,13 @@ extension PreviewTests {
     @Test
     func paginationIndicatorRoomTimelineView() async throws {
         for (index, preview) in PaginationIndicatorRoomTimelineView_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
+    func photosScreen() async throws {
+        for (index, preview) in PhotosScreen_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
         }
     }

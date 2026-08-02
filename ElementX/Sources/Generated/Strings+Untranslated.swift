@@ -16,6 +16,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var a11yShowMediaInput: String { return UntranslatedL10n.tr("Untranslated", "a11y_show_media_input") }
   /// Add to stickers
   internal static var actionAddToStickers: String { return UntranslatedL10n.tr("Untranslated", "action_add_to_stickers") }
+  /// Open in chat
+  internal static var actionOpenInChat: String { return UntranslatedL10n.tr("Untranslated", "action_open_in_chat") }
   /// Save to Saved Messages
   internal static var actionSaveToSavedMessages: String { return UntranslatedL10n.tr("Untranslated", "action_save_to_saved_messages") }
   /// Saved Messages
@@ -130,6 +132,22 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenBackupUpNow: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_up_now") }
   /// Wi-Fi only
   internal static var screenBackupWifiOnly: String { return UntranslatedL10n.tr("Untranslated", "screen_backup_wifi_only") }
+  /// Every photo and video shared with you, newest first.
+  internal static var screenDisplaySettingsPhotosDescription: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_photos_description") }
+  /// Photos
+  internal static var screenDisplaySettingsPhotosTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_photos_title") }
+  /// Groups of rooms you have been added to.
+  internal static var screenDisplaySettingsSpacesDescription: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_spaces_description") }
+  /// Spaces
+  internal static var screenDisplaySettingsSpacesTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_spaces_title") }
+  /// Chats is always shown.
+  internal static var screenDisplaySettingsTabsFooter: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_tabs_footer") }
+  /// Tabs
+  internal static var screenDisplaySettingsTabsHeader: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_tabs_header") }
+  /// Display
+  internal static var screenDisplaySettingsTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_title") }
+  /// Photos
+  internal static var screenHomeTabPhotos: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_photos") }
   /// Search
   internal static var screenHomeTabSearch: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_search") }
   /// Add image or GIF
@@ -178,6 +196,16 @@ internal nonisolated enum UntranslatedL10n {
   internal static func screenOnboardingWelcomeTitleIos(_ p1: Any) -> String {
     return UntranslatedL10n.tr("Untranslated", "screen_onboarding_welcome_title_ios", String(describing: p1))
   }
+  /// All chats
+  internal static var screenPhotosAllChats: String { return UntranslatedL10n.tr("Untranslated", "screen_photos_all_chats") }
+  /// Photos and videos shared in your chats appear here.
+  internal static var screenPhotosEmptyMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_photos_empty_message") }
+  /// No photos yet
+  internal static var screenPhotosEmptyTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_photos_empty_title") }
+  /// Older photos are still being indexed.
+  internal static var screenPhotosIncompleteHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_photos_incomplete_history") }
+  /// Photos
+  internal static var screenPhotosTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_photos_title") }
   /// Sticker
   internal static var screenRoomAttachmentSourceSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_room_attachment_source_sticker") }
   /// Offline history

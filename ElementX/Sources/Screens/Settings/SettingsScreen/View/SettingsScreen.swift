@@ -163,6 +163,12 @@ struct SettingsScreen: View {
     
     private var generalSection: some View {
         Section {
+            ListRow(label: .default(title: UntranslatedL10n.screenDisplaySettingsTitle,
+                                    icon: \.image),
+                    kind: .navigationLink {
+                        context.send(viewAction: .displaySettings)
+                    })
+            
             ListRow(label: .default(title: L10n.commonAdvancedSettings,
                                     icon: \.settings),
                     kind: .navigationLink {

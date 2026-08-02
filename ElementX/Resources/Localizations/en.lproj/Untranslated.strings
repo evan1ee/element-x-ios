@@ -1,6 +1,7 @@
 "a11y_show_keyboard" = "Show keyboard";
 "a11y_show_media_input" = "Show emoji, GIFs and stickers";
 "action_add_to_stickers" = "Add to stickers";
+"action_open_in_chat" = "Open in chat";
 "action_save_to_saved_messages" = "Save to Saved Messages";
 "common_saved_messages" = "Saved Messages";
 "common_saved_messages_saved" = "Saved";
@@ -56,6 +57,14 @@
 "screen_backup_title" = "Storage & Backup";
 "screen_backup_up_now" = "Back up now";
 "screen_backup_wifi_only" = "Wi-Fi only";
+"screen_display_settings_photos_description" = "Every photo and video shared with you, newest first.";
+"screen_display_settings_photos_title" = "Photos";
+"screen_display_settings_spaces_description" = "Groups of rooms you have been added to.";
+"screen_display_settings_spaces_title" = "Spaces";
+"screen_display_settings_tabs_footer" = "Chats is always shown.";
+"screen_display_settings_tabs_header" = "Tabs";
+"screen_display_settings_title" = "Display";
+"screen_home_tab_photos" = "Photos";
 "screen_home_tab_search" = "Search";
 "screen_media_input_add_sticker" = "Add image or GIF";
 "screen_media_input_category_activity" = "Activity";
@@ -77,6 +86,11 @@
 "screen_notification_settings_sound_app_default_ios" = "%1$@ Default";
 "screen_notification_settings_sound_app_fade_ios" = "%1$@ Fade";
 "screen_onboarding_welcome_title_ios" = "Be in your %1$@";
+"screen_photos_all_chats" = "All chats";
+"screen_photos_empty_message" = "Photos and videos shared in your chats appear here.";
+"screen_photos_empty_title" = "No photos yet";
+"screen_photos_incomplete_history" = "Older photos are still being indexed.";
+"screen_photos_title" = "Photos";
 "screen_room_attachment_source_sticker" = "Sticker";
 "screen_room_details_offline_history" = "Offline history";
 "screen_room_details_offline_history_complete" = "Available";

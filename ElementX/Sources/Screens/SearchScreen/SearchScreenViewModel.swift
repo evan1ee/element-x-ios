@@ -182,7 +182,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             guard !Task.isCancelled else { return }
             
             let assets = entries.compactMap {
-                SearchScreenMediaAsset($0, roomSummary: clientProxy.roomSummaryForIdentifier($0.roomID))
+                MediaLibraryAsset($0, roomSummary: clientProxy.roomSummaryForIdentifier($0.roomID))
             }
             
             // Short of a full page means the index has nothing more to give, so stop asking.

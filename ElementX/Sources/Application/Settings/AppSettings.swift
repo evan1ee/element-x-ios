@@ -334,6 +334,16 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: RoomListActivityVisibility.current)
     var roomListActivityVisibility: RoomListActivityVisibility
     
+    // MARK: - Tabs
+    
+    /// Spaces are off by default: most accounts have none, and an empty tab is worse than
+    /// no tab. Photos is on, being the point of having a library at all.
+    @UserPreference(defaultValue: false)
+    var showSpacesTab: Bool
+    
+    @UserPreference(defaultValue: true)
+    var showPhotosTab: Bool
+    
     /// Whether the personal Saved Messages room is offered at all. Turning this off hides the
     /// room from the chat list and drops the save action; the room itself is left untouched, so
     /// turning it back on restores everything that was saved.
@@ -459,9 +469,6 @@ final nonisolated class AppSettings: @unchecked Sendable {
     
     @UserPreference(defaultValue: false)
     var roomThreadListEnabled: Bool
-    
-    @UserPreference(defaultValue: ProcessInfo().isiOSAppOnMac)
-    var globalSearchEnabled: Bool
     
     @UserPreference(defaultValue: false)
     var focusEventOnNotificationTap: Bool

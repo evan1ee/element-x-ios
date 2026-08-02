@@ -113,6 +113,8 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                     presentNotificationSettings()
                 case .advancedSettings:
                     presentAdvancedSettings()
+                case .displaySettings:
+                    presentDisplaySettings()
                 case .stickers:
                     presentStickerSettings()
                 case .syncStorage:
@@ -264,6 +266,11 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                                                                               analytics: flowParameters.analytics,
                                                                               clientProxy: flowParameters.userSession.clientProxy,
                                                                               userIndicatorController: flowParameters.userIndicatorController))
+        navigationStackCoordinator.push(coordinator)
+    }
+    
+    private func presentDisplaySettings() {
+        let coordinator = DisplaySettingsScreenCoordinator(parameters: .init(appSettings: flowParameters.appSettings))
         navigationStackCoordinator.push(coordinator)
     }
     

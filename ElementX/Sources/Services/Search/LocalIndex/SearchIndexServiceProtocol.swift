@@ -111,6 +111,7 @@ nonisolated enum MediaCategory: String, CaseIterable, Sendable {
 /// because `search` goes through FTS and returns nothing for an empty query.
 struct SearchIndexBrowseQuery: Equatable, Sendable {
     var categories: Set<MediaCategory> = []
+    var roomID: String?
     var senderID: String?
     /// Inclusive lower bound, for the date filter.
     var after: Date?
@@ -164,6 +165,10 @@ protocol SearchIndexServiceProtocol: Sendable {
     /// Newest-first browse over attachments, for the media library. Unlike `search` this
     /// doesn't touch FTS, so it works with no query text at all.
     func browse(_ query: SearchIndexBrowseQuery) async throws -> [SearchIndexEntry]
+    
+    /// Every room holding something in these categories. Asked of the index rather than
+    /// worked out from a page of results, which only knows about what's been scrolled to.
+    func rooms(withMediaIn categories: Set<MediaCategory>) async throws -> [String]
     
     /// Number of indexed events, for diagnostics and tests.
     func count() async throws -> Int

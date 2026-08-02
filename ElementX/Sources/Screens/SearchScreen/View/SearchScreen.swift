@@ -525,6 +525,8 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
     static func makeSearchIndexService() -> SearchIndexServiceProtocol {
         let mock = SearchIndexServiceMock()
         mock.searchReturnValue = []
+        mock.browseReturnValue = []
+        mock.roomsWithMediaInReturnValue = []
         return mock
     }
     

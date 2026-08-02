@@ -279,6 +279,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             let predicates = query.categories.map(Self.predicate(for:)).sorted()
             sql += " AND (\(predicates.joined(separator: " OR ")))"
         }
+        if query.roomID != nil {
+            sql += " AND room_id = ?"
+        }
         if query.senderID != nil {
             sql += " AND sender_id = ?"
         }
@@ -294,6 +297,10 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         defer { sqlite3_finalize(statement) }
         
         var position: Int32 = 1
+        if let roomID = query.roomID {
+            bind(roomID, to: statement, at: position)
+            position += 1
+        }
         if let senderID = query.senderID {
             bind(senderID, to: statement, at: position)
             position += 1
@@ -312,6 +319,27 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         }
         
         return entries
+    }
+    
+    func rooms(withMediaIn categories: Set<MediaCategory>) async throws -> [String] {
+        let database = try connection()
+        
+        var sql = "SELECT DISTINCT room_id FROM events WHERE kind != 'message'"
+        if !categories.isEmpty {
+            let predicates = categories.map(Self.predicate(for:)).sorted()
+            sql += " AND (\(predicates.joined(separator: " OR ")))"
+        }
+        
+        let statement = try prepare(sql, on: database)
+        defer { sqlite3_finalize(statement) }
+        
+        var roomIDs: [String] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let roomID = sqlite3_column_text(statement, 0) else { continue }
+            roomIDs.append(String(cString: roomID))
+        }
+        
+        return roomIDs
     }
     
     /// The same rule as `MediaCategory.init(kind:mimeType:isVoiceMessage:)`, written in SQL.

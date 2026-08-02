@@ -11723,6 +11723,52 @@ nonisolated class SearchIndexServiceMock: SearchIndexServiceProtocol, @unchecked
             return browseReturnValue
         }
     }
+    //MARK: - rooms
+
+    nonisolated(unsafe) var roomsWithMediaInThrowableError: Error?
+    private let roomsWithMediaInCallsCountLock = NSLock()
+    private nonisolated(unsafe) var roomsWithMediaInUnderlyingCallsCount = 0
+    var roomsWithMediaInCallsCount: Int {
+        get { roomsWithMediaInCallsCountLock.withLock { roomsWithMediaInUnderlyingCallsCount } }
+        set { roomsWithMediaInCallsCountLock.withLock { roomsWithMediaInUnderlyingCallsCount = newValue } }
+    }
+    var roomsWithMediaInCalled: Bool {
+        return roomsWithMediaInCallsCount > 0
+    }
+    private let roomsWithMediaInReceivedCategoriesLock = NSLock()
+    private nonisolated(unsafe) var roomsWithMediaInUnderlyingReceivedCategories: Set<MediaCategory>?
+    var roomsWithMediaInReceivedCategories: Set<MediaCategory>? {
+        get { roomsWithMediaInReceivedCategoriesLock.withLock { roomsWithMediaInUnderlyingReceivedCategories } }
+        set { roomsWithMediaInReceivedCategoriesLock.withLock { roomsWithMediaInUnderlyingReceivedCategories = newValue } }
+    }
+    private let roomsWithMediaInReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var roomsWithMediaInUnderlyingReceivedInvocations: [Set<MediaCategory>] = []
+    var roomsWithMediaInReceivedInvocations: [Set<MediaCategory>] {
+        get { roomsWithMediaInReceivedInvocationsLock.withLock { roomsWithMediaInUnderlyingReceivedInvocations } }
+        set { roomsWithMediaInReceivedInvocationsLock.withLock { roomsWithMediaInUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let roomsWithMediaInReturnValueLock = NSLock()
+    private nonisolated(unsafe) var roomsWithMediaInUnderlyingReturnValue: [String]!
+    var roomsWithMediaInReturnValue: [String]! {
+        get { roomsWithMediaInReturnValueLock.withLock { roomsWithMediaInUnderlyingReturnValue } }
+        set { roomsWithMediaInReturnValueLock.withLock { roomsWithMediaInUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var roomsWithMediaInClosure: ((Set<MediaCategory>) async throws -> [String])?
+
+    @concurrent func rooms(withMediaIn categories: Set<MediaCategory>) async throws -> [String] {
+        if let error = roomsWithMediaInThrowableError {
+            throw error
+        }
+        roomsWithMediaInCallsCountLock.withLock { roomsWithMediaInUnderlyingCallsCount += 1 }
+        roomsWithMediaInReceivedCategories = categories
+        roomsWithMediaInReceivedInvocationsLock.withLock { roomsWithMediaInUnderlyingReceivedInvocations.append(categories) }
+        if let roomsWithMediaInClosure = roomsWithMediaInClosure {
+            return try await roomsWithMediaInClosure(categories)
+        } else {
+            return roomsWithMediaInReturnValue
+        }
+    }
     //MARK: - count
 
     nonisolated(unsafe) var countThrowableError: Error?

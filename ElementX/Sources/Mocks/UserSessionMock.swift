@@ -44,6 +44,13 @@ struct UserSessionMockConfiguration {
         backupManagerMock.underlyingIsEnabled = false
         backupManager = backupManagerMock
         
+        // An empty index. The Photos tab reads this as the session starts, so leaving it
+        // un-configured traps before any test gets going.
+        let searchIndexServiceMock = SearchIndexServiceMock()
+        searchIndexServiceMock.browseReturnValue = []
+        searchIndexServiceMock.roomsWithMediaInReturnValue = []
+        searchIndexService = searchIndexServiceMock
+        
         // Resolved to nothing, so screens asking whether a room is Saved Messages get a
         // plain no. Tests exercising the feature substitute a mock with a room ID.
         let savedMessagesServiceMock = SavedMessagesServiceMock()

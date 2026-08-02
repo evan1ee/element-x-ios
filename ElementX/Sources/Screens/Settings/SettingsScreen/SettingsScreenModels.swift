@@ -21,6 +21,7 @@ enum SettingsScreenViewModelAction: Equatable {
     case secureBackup
     case notifications
     case advancedSettings
+    case displaySettings
     case stickers
     case syncStorage
     case backup
@@ -89,6 +90,7 @@ enum SettingsScreenViewAction {
     case enableDeveloperOptions
     case developerOptions
     case advancedSettings
+    case displaySettings
     case stickers
     case syncStorage
     case backup

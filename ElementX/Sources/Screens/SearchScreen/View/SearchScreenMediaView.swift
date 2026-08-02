@@ -16,14 +16,6 @@ import SwiftUI
 struct SearchScreenMediaView: View {
     let context: SearchScreenViewModel.Context
     
-    /// Three across with hairline gutters, so the photos themselves carry the screen.
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 1.5), count: 3)
-    private static let gridSpacing: CGFloat = 1.5
-    
-    /// The month of whatever is at the top of the screen, so you always know roughly when
-    /// you're looking at without opening anything.
-    @State private var visibleMonth: Date?
-    
     var body: some View {
         VStack(spacing: 0) {
             filterBar
@@ -131,56 +123,14 @@ struct SearchScreenMediaView: View {
     // MARK: - Results
     
     private var grid: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
-                    ForEach(context.viewState.media) { asset in
-                        Button {
-                            context.send(viewAction: .selectAsset(asset))
-                        } label: {
-                            SearchScreenMediaGridCell(asset: asset, mediaProvider: context.mediaProvider)
-                        }
-                        .buttonStyle(.plain)
-                        .onAppear { paginateIfNeeded(at: asset) }
-                    }
-                }
-                
-                if context.viewState.isLoadingMedia {
-                    ProgressView().padding()
-                }
-            }
-            // The cells are a uniform square, so the topmost row can be worked out from the
-            // offset alone rather than by asking every cell where it is.
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, offset in
-                updateVisibleMonth(scrollOffset: offset, width: proxy.size.width)
-            }
-        }
-        .overlay(alignment: .top) {
-            FloatingDateBadge(dateText: (visibleMonth ?? context.viewState.media.first?.timestamp)
-                .map(Self.monthFormatter.string(from:)))
-                .padding(.top, 8)
+        MediaLibraryGrid(assets: context.viewState.media,
+                         isLoading: context.viewState.isLoadingMedia,
+                         mediaProvider: context.mediaProvider) { asset in
+            context.send(viewAction: .selectAsset(asset))
+        } onReachBottom: {
+            context.send(viewAction: .reachedMediaBottom)
         }
     }
-    
-    private func updateVisibleMonth(scrollOffset: CGFloat, width: CGFloat) {
-        let media = context.viewState.media
-        guard !media.isEmpty, width > 0 else { return }
-        
-        let columnCount = CGFloat(columns.count)
-        let cellSize = (width - Self.gridSpacing * (columnCount - 1)) / columnCount
-        let rowHeight = cellSize + Self.gridSpacing
-        guard rowHeight > 0 else { return }
-        
-        let row = max(0, Int(scrollOffset / rowHeight))
-        let index = min(max(0, row * columns.count), media.count - 1)
-        visibleMonth = media[index].timestamp
-    }
-    
-    private static let monthFormatter = {
-        let formatter = DateFormatter()
-        formatter.setLocalizedDateFormatFromTemplate("MMMMyyyy")
-        return formatter
-    }()
     
     private var list: some View {
         List {
@@ -198,7 +148,7 @@ struct SearchScreenMediaView: View {
         .compoundList(.plain)
     }
     
-    private func paginateIfNeeded(at asset: SearchScreenMediaAsset) {
+    private func paginateIfNeeded(at asset: MediaLibraryAsset) {
         guard asset.id == context.viewState.media.last?.id else { return }
         context.send(viewAction: .reachedMediaBottom)
     }
@@ -219,79 +169,9 @@ struct SearchScreenMediaView: View {
     }
 }
 
-/// One tile in the grid. Falls back to an icon when the thumbnail hasn't been fetched,
-/// so the layout doesn't shift once images arrive.
-struct SearchScreenMediaGridCell: View {
-    /// Roughly a third of the screen at 3x, which is all a cell can show.
-    private static let thumbnailSize = CGSize(width: 400, height: 400)
-    
-    let asset: SearchScreenMediaAsset
-    let mediaProvider: MediaProviderProtocol?
-    
-    var body: some View {
-        // The image is sized to the cell rather than to itself. Left to its own devices a
-        // loaded photo takes its intrinsic size and blows the grid apart.
-        GeometryReader { proxy in
-            Group {
-                if let source = asset.thumbnailSource {
-                    // A size is what makes this ask the server for a scaled thumbnail.
-                    // Without one the loader fetches the full original, and fifteen of those
-                    // at once is enough to stall the grid indefinitely.
-                    //
-                    // `.generic` rather than `.timelineItem` for the sake of the placeholder:
-                    // the timeline's is a spinner captioned "Loading", which is a lot of words
-                    // for a tile this size.
-                    LoadableImage(mediaSource: source,
-                                  mediaType: .generic,
-                                  size: Self.thumbnailSize,
-                                  mediaProvider: mediaProvider) {
-                        loadingPlaceholder
-                    }
-                    .scaledToFill()
-                } else {
-                    placeholder
-                }
-            }
-            .frame(width: proxy.size.width, height: proxy.size.width)
-            .clipped()
-            .overlay(alignment: .bottomTrailing) {
-                if let badge = asset.badge {
-                    Text(badge)
-                        .font(.compound.bodyXSSemibold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(.black.opacity(0.55), in: Capsule())
-                        .padding(4)
-                }
-            }
-        }
-        .aspectRatio(1, contentMode: .fit)
-    }
-    
-    /// Shown while the thumbnail is on its way.
-    private var loadingPlaceholder: some View {
-        Color.compound.bgSubtleSecondary
-            .overlay {
-                ProgressView()
-                    .controlSize(.small)
-                    .tint(.compound.iconQuaternary)
-            }
-    }
-    
-    /// Shown when there's no thumbnail to wait for, where a spinner would never stop.
-    private var placeholder: some View {
-        Color.compound.bgSubtleSecondary
-            .overlay {
-                CompoundIcon(asset.category.icon, size: .small, relativeTo: .compound.bodySM)
-                    .foregroundStyle(.compound.iconQuaternary)
-            }
-    }
-}
-
 /// A row for the things a thumbnail wouldn't help with.
 struct SearchScreenMediaRow: View {
-    let asset: SearchScreenMediaAsset
+    let asset: MediaLibraryAsset
     let mediaProvider: MediaProviderProtocol?
     
     var body: some View {
