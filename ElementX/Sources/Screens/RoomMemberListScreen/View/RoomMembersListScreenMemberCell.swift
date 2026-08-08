@@ -55,6 +55,12 @@ struct RoomMembersListScreenMemberCell: View {
                             .font(.compound.bodyLG)
                             .foregroundStyle(.compound.textSecondary)
                     }
+                    
+                    if listEntry.isActiveRoomCallParticipant {
+                        CompoundIcon(\.videoCallSolid, size: .small, relativeTo: .compound.bodyLG)
+                            .foregroundStyle(.compound.iconAccentPrimary)
+                            .accessibilityLabel(L10n.commonOnACall)
+                    }
                 }
                 .overlay(alignment: .bottom) {
                     if !isLast {
@@ -68,6 +74,7 @@ struct RoomMembersListScreenMemberCell: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
         }
+        .accessibilityIdentifier(A11yIdentifiers.roomMembersListScreen.member(listEntry.member.id))
     }
     
     var role: String? {
@@ -117,6 +124,9 @@ struct RoomMembersListMemberCell_Previews: PreviewProvider, TestablePreview {
               verificationState: .verified),
         .init(member: .init(withProxy: RoomMemberProxyMock.mockModerator),
               verificationState: .verificationViolation),
+        .init(member: .init(withProxy: RoomMemberProxyMock.mockFrank),
+              verificationState: .notVerified,
+              isActiveRoomCallParticipant: true),
         .init(member: .init(withProxy: RoomMemberProxyMock(with: .init(userID: "@nodisplayname:matrix.org",
                                                                        membership: .join))),
         verificationState: .notVerified),

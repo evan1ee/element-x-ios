@@ -96,16 +96,12 @@ struct SpacesScreen: View {
             Button {
                 context.send(viewAction: .showSettings)
             } label: {
-                LoadableAvatarImage(url: context.viewState.userProfile.avatarURL,
-                                    name: context.viewState.userProfile.displayName,
-                                    contentID: context.viewState.userProfile.id,
-                                    avatarSize: .user(on: .spaces),
-                                    mediaProvider: context.mediaProvider)
-                    .accessibilityIdentifier(A11yIdentifiers.homeScreen.userAvatar)
-                    .compositingGroup()
+                AvatarSettingsButtonLabel(userProfile: context.viewState.userProfile,
+                                          mediaProvider: context.mediaProvider)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel(L10n.commonSettings)
+            .accessibilityIdentifier(A11yIdentifiers.homeScreen.userAvatar)
         }
         
         ToolbarItem(placement: .principal) {

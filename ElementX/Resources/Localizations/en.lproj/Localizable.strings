@@ -12,6 +12,11 @@
 "a11y_edit_avatar" = "Edit avatar";
 "a11y_edit_room_address_hint" = "The full address will be %1$@";
 "a11y_expand_message_text_field" = "Expand message text field";
+"a11y_gallery_attachment" = "Gallery, attachment %1$d";
+"a11y_gallery_failed_scan" = "Gallery, failed scan %1$d";
+"a11y_gallery_image" = "Gallery, image %1$d";
+"a11y_gallery_scanning" = "Gallery, scanning %1$d";
+"a11y_gallery_video" = "Gallery, video %1$d";
 "a11y_hide_password" = "Hide password";
 "a11y_info" = "Info";
 "a11y_join_call" = "Join call";
@@ -415,7 +420,7 @@
 "confirm_recovery_key_banner_secondary_button_title" = "Forgot your recovery key?";
 "confirm_recovery_key_banner_title" = "Your key storage is out of sync";
 "content_scanner_not_found" = "Download not available.";
-"content_scanner_not_found_title" = "File not found";
+"content_scanner_not_found_title" = "Something went wrong";
 "content_scanner_scanning" = "Scanning…";
 "content_scanner_unsafe_message" = "Preview and download have been disabled.";
 "content_scanner_unsafe_title" = "The file is not safe";
@@ -519,6 +524,7 @@
 "notification_invitation_action_reject" = "Reject";
 "notification_invite_body" = "Invited you to chat";
 "notification_invite_body_with_sender" = "%1$@ invited you to chat";
+"notification_live_location_started_body" = "Started sharing their live location";
 "notification_mentioned_you_body" = "Mentioned you: %1$@";
 "notification_new_messages" = "New Messages";
 "notification_reaction_body" = "Reacted with %1$@";
@@ -950,6 +956,7 @@
 "screen_link_new_device_desktop_step3" = "Scan the QR code with this device";
 "screen_link_new_device_desktop_submit" = "Ready to scan";
 "screen_link_new_device_desktop_title" = "Open %1$@ on a desktop computer to get the QR code";
+"screen_link_new_device_desktop_warning" = "Only scan a QR code after following the steps above on your own device. Never scan a code sent by another person.";
 "screen_link_new_device_enter_number_error_numbers_do_not_match" = "The numbers don’t match";
 "screen_link_new_device_enter_number_notice" = "Enter 2-digit code";
 "screen_link_new_device_enter_number_subtitle" = "This will verify that the connection to your other device is secure.";
@@ -976,7 +983,7 @@
 "screen_live_location_sheet_nobody_sharing" = "Nobody is sharing their location";
 "screen_live_location_sheet_sharing_live_location" = "Sharing live location";
 "screen_live_location_sheet_title" = "On the map";
-"screen_local_network_opt_in_subtitle" = "Your homeserver is on your local network. To connect, Element needs permission to reach devices on this network.";
+"screen_local_network_opt_in_subtitle" = "Your homeserver is on your local network. To connect, %1$@ needs permission to reach devices on this network.";
 "screen_local_network_opt_in_title" = "Allow access to local network";
 "screen_login_error_deactivated_account" = "This account has been deleted.";
 "screen_login_error_invalid_credentials" = "Incorrect username and/or password";

@@ -3927,33 +3927,33 @@ nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
             return reportRoomForIdentifierReasonReturnValue
         }
     }
-    //MARK: - loadUserProfile
+    //MARK: - loadUserProfileIfNeeded
 
-    private let loadUserProfileCallsCountLock = NSLock()
-    private nonisolated(unsafe) var loadUserProfileUnderlyingCallsCount = 0
-    var loadUserProfileCallsCount: Int {
-        get { loadUserProfileCallsCountLock.withLock { loadUserProfileUnderlyingCallsCount } }
-        set { loadUserProfileCallsCountLock.withLock { loadUserProfileUnderlyingCallsCount = newValue } }
+    private let loadUserProfileIfNeededCallsCountLock = NSLock()
+    private nonisolated(unsafe) var loadUserProfileIfNeededUnderlyingCallsCount = 0
+    var loadUserProfileIfNeededCallsCount: Int {
+        get { loadUserProfileIfNeededCallsCountLock.withLock { loadUserProfileIfNeededUnderlyingCallsCount } }
+        set { loadUserProfileIfNeededCallsCountLock.withLock { loadUserProfileIfNeededUnderlyingCallsCount = newValue } }
     }
-    var loadUserProfileCalled: Bool {
-        return loadUserProfileCallsCount > 0
+    var loadUserProfileIfNeededCalled: Bool {
+        return loadUserProfileIfNeededCallsCount > 0
     }
 
-    private let loadUserProfileReturnValueLock = NSLock()
-    private nonisolated(unsafe) var loadUserProfileUnderlyingReturnValue: Result<Void, ClientProxyError>!
-    var loadUserProfileReturnValue: Result<Void, ClientProxyError>! {
-        get { loadUserProfileReturnValueLock.withLock { loadUserProfileUnderlyingReturnValue } }
-        set { loadUserProfileReturnValueLock.withLock { loadUserProfileUnderlyingReturnValue = newValue } }
+    private let loadUserProfileIfNeededReturnValueLock = NSLock()
+    private nonisolated(unsafe) var loadUserProfileIfNeededUnderlyingReturnValue: Result<Void, ClientProxyError>!
+    var loadUserProfileIfNeededReturnValue: Result<Void, ClientProxyError>! {
+        get { loadUserProfileIfNeededReturnValueLock.withLock { loadUserProfileIfNeededUnderlyingReturnValue } }
+        set { loadUserProfileIfNeededReturnValueLock.withLock { loadUserProfileIfNeededUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var loadUserProfileClosure: (() async -> Result<Void, ClientProxyError>)?
+    nonisolated(unsafe) var loadUserProfileIfNeededClosure: (() async -> Result<Void, ClientProxyError>)?
 
     @discardableResult
-    @concurrent func loadUserProfile() async -> Result<Void, ClientProxyError> {
-        loadUserProfileCallsCountLock.withLock { loadUserProfileUnderlyingCallsCount += 1 }
-        if let loadUserProfileClosure = loadUserProfileClosure {
-            return await loadUserProfileClosure()
+    @concurrent func loadUserProfileIfNeeded() async -> Result<Void, ClientProxyError> {
+        loadUserProfileIfNeededCallsCountLock.withLock { loadUserProfileIfNeededUnderlyingCallsCount += 1 }
+        if let loadUserProfileIfNeededClosure = loadUserProfileIfNeededClosure {
+            return await loadUserProfileIfNeededClosure()
         } else {
-            return loadUserProfileReturnValue
+            return loadUserProfileIfNeededReturnValue
         }
     }
     //MARK: - setUserDisplayName
@@ -4068,6 +4068,34 @@ nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
             return removeUserAvatarReturnValue
         }
     }
+    //MARK: - isUserStatusSupported
+
+    private let isUserStatusSupportedCallsCountLock = NSLock()
+    private nonisolated(unsafe) var isUserStatusSupportedUnderlyingCallsCount = 0
+    var isUserStatusSupportedCallsCount: Int {
+        get { isUserStatusSupportedCallsCountLock.withLock { isUserStatusSupportedUnderlyingCallsCount } }
+        set { isUserStatusSupportedCallsCountLock.withLock { isUserStatusSupportedUnderlyingCallsCount = newValue } }
+    }
+    var isUserStatusSupportedCalled: Bool {
+        return isUserStatusSupportedCallsCount > 0
+    }
+
+    private let isUserStatusSupportedReturnValueLock = NSLock()
+    private nonisolated(unsafe) var isUserStatusSupportedUnderlyingReturnValue: Result<Bool, ClientProxyError>!
+    var isUserStatusSupportedReturnValue: Result<Bool, ClientProxyError>! {
+        get { isUserStatusSupportedReturnValueLock.withLock { isUserStatusSupportedUnderlyingReturnValue } }
+        set { isUserStatusSupportedReturnValueLock.withLock { isUserStatusSupportedUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var isUserStatusSupportedClosure: (() async -> Result<Bool, ClientProxyError>)?
+
+    @concurrent func isUserStatusSupported() async -> Result<Bool, ClientProxyError> {
+        isUserStatusSupportedCallsCountLock.withLock { isUserStatusSupportedUnderlyingCallsCount += 1 }
+        if let isUserStatusSupportedClosure = isUserStatusSupportedClosure {
+            return await isUserStatusSupportedClosure()
+        } else {
+            return isUserStatusSupportedReturnValue
+        }
+    }
     //MARK: - setUserStatus
 
     private let setUserStatusCallsCountLock = NSLock()
@@ -4110,32 +4138,32 @@ nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
             return setUserStatusReturnValue
         }
     }
-    //MARK: - removeUserStatus
+    //MARK: - clearUserStatus
 
-    private let removeUserStatusCallsCountLock = NSLock()
-    private nonisolated(unsafe) var removeUserStatusUnderlyingCallsCount = 0
-    var removeUserStatusCallsCount: Int {
-        get { removeUserStatusCallsCountLock.withLock { removeUserStatusUnderlyingCallsCount } }
-        set { removeUserStatusCallsCountLock.withLock { removeUserStatusUnderlyingCallsCount = newValue } }
+    private let clearUserStatusCallsCountLock = NSLock()
+    private nonisolated(unsafe) var clearUserStatusUnderlyingCallsCount = 0
+    var clearUserStatusCallsCount: Int {
+        get { clearUserStatusCallsCountLock.withLock { clearUserStatusUnderlyingCallsCount } }
+        set { clearUserStatusCallsCountLock.withLock { clearUserStatusUnderlyingCallsCount = newValue } }
     }
-    var removeUserStatusCalled: Bool {
-        return removeUserStatusCallsCount > 0
+    var clearUserStatusCalled: Bool {
+        return clearUserStatusCallsCount > 0
     }
 
-    private let removeUserStatusReturnValueLock = NSLock()
-    private nonisolated(unsafe) var removeUserStatusUnderlyingReturnValue: Result<Void, ClientProxyError>!
-    var removeUserStatusReturnValue: Result<Void, ClientProxyError>! {
-        get { removeUserStatusReturnValueLock.withLock { removeUserStatusUnderlyingReturnValue } }
-        set { removeUserStatusReturnValueLock.withLock { removeUserStatusUnderlyingReturnValue = newValue } }
+    private let clearUserStatusReturnValueLock = NSLock()
+    private nonisolated(unsafe) var clearUserStatusUnderlyingReturnValue: Result<Void, ClientProxyError>!
+    var clearUserStatusReturnValue: Result<Void, ClientProxyError>! {
+        get { clearUserStatusReturnValueLock.withLock { clearUserStatusUnderlyingReturnValue } }
+        set { clearUserStatusReturnValueLock.withLock { clearUserStatusUnderlyingReturnValue = newValue } }
     }
-    nonisolated(unsafe) var removeUserStatusClosure: (() async -> Result<Void, ClientProxyError>)?
+    nonisolated(unsafe) var clearUserStatusClosure: (() async -> Result<Void, ClientProxyError>)?
 
-    @concurrent func removeUserStatus() async -> Result<Void, ClientProxyError> {
-        removeUserStatusCallsCountLock.withLock { removeUserStatusUnderlyingCallsCount += 1 }
-        if let removeUserStatusClosure = removeUserStatusClosure {
-            return await removeUserStatusClosure()
+    @concurrent func clearUserStatus() async -> Result<Void, ClientProxyError> {
+        clearUserStatusCallsCountLock.withLock { clearUserStatusUnderlyingCallsCount += 1 }
+        if let clearUserStatusClosure = clearUserStatusClosure {
+            return await clearUserStatusClosure()
         } else {
-            return removeUserStatusReturnValue
+            return clearUserStatusReturnValue
         }
     }
     //MARK: - linkNewDeviceService
@@ -5073,6 +5101,48 @@ nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
             return await setHideInviteAvatarsClosure(value)
         } else {
             return setHideInviteAvatarsReturnValue
+        }
+    }
+    //MARK: - configurePresence
+
+    private let configurePresenceSendImmediatelyCallsCountLock = NSLock()
+    private nonisolated(unsafe) var configurePresenceSendImmediatelyUnderlyingCallsCount = 0
+    var configurePresenceSendImmediatelyCallsCount: Int {
+        get { configurePresenceSendImmediatelyCallsCountLock.withLock { configurePresenceSendImmediatelyUnderlyingCallsCount } }
+        set { configurePresenceSendImmediatelyCallsCountLock.withLock { configurePresenceSendImmediatelyUnderlyingCallsCount = newValue } }
+    }
+    var configurePresenceSendImmediatelyCalled: Bool {
+        return configurePresenceSendImmediatelyCallsCount > 0
+    }
+    private let configurePresenceSendImmediatelyReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var configurePresenceSendImmediatelyUnderlyingReceivedArguments: (presence: ClientProxyPresence, sendImmediately: Bool)?
+    var configurePresenceSendImmediatelyReceivedArguments: (presence: ClientProxyPresence, sendImmediately: Bool)? {
+        get { configurePresenceSendImmediatelyReceivedArgumentsLock.withLock { configurePresenceSendImmediatelyUnderlyingReceivedArguments } }
+        set { configurePresenceSendImmediatelyReceivedArgumentsLock.withLock { configurePresenceSendImmediatelyUnderlyingReceivedArguments = newValue } }
+    }
+    private let configurePresenceSendImmediatelyReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var configurePresenceSendImmediatelyUnderlyingReceivedInvocations: [(presence: ClientProxyPresence, sendImmediately: Bool)] = []
+    var configurePresenceSendImmediatelyReceivedInvocations: [(presence: ClientProxyPresence, sendImmediately: Bool)] {
+        get { configurePresenceSendImmediatelyReceivedInvocationsLock.withLock { configurePresenceSendImmediatelyUnderlyingReceivedInvocations } }
+        set { configurePresenceSendImmediatelyReceivedInvocationsLock.withLock { configurePresenceSendImmediatelyUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let configurePresenceSendImmediatelyReturnValueLock = NSLock()
+    private nonisolated(unsafe) var configurePresenceSendImmediatelyUnderlyingReturnValue: Result<Void, ClientProxyError>!
+    var configurePresenceSendImmediatelyReturnValue: Result<Void, ClientProxyError>! {
+        get { configurePresenceSendImmediatelyReturnValueLock.withLock { configurePresenceSendImmediatelyUnderlyingReturnValue } }
+        set { configurePresenceSendImmediatelyReturnValueLock.withLock { configurePresenceSendImmediatelyUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var configurePresenceSendImmediatelyClosure: ((ClientProxyPresence, Bool) async -> Result<Void, ClientProxyError>)?
+
+    @concurrent func configurePresence(_ presence: ClientProxyPresence, sendImmediately: Bool) async -> Result<Void, ClientProxyError> {
+        configurePresenceSendImmediatelyCallsCountLock.withLock { configurePresenceSendImmediatelyUnderlyingCallsCount += 1 }
+        configurePresenceSendImmediatelyReceivedArguments = (presence: presence, sendImmediately: sendImmediately)
+        configurePresenceSendImmediatelyReceivedInvocationsLock.withLock { configurePresenceSendImmediatelyUnderlyingReceivedInvocations.append((presence: presence, sendImmediately: sendImmediately)) }
+        if let configurePresenceSendImmediatelyClosure = configurePresenceSendImmediatelyClosure {
+            return await configurePresenceSendImmediatelyClosure(presence, sendImmediately)
+        } else {
+            return configurePresenceSendImmediatelyReturnValue
         }
     }
 }
@@ -13388,6 +13458,7 @@ nonisolated class TimelineControllerMock: TimelineControllerProtocol, @unchecked
         set(value) { underlyingTimelineKind = value }
     }
     nonisolated(unsafe) var underlyingTimelineKind: TimelineKind!
+    nonisolated(unsafe) var allowedGalleryItemTypes: [TimelineAllowedGalleryItemType]?
     nonisolated(unsafe) var timelineItems: [RoomTimelineItemProtocol] = []
     var paginationState: TimelinePaginationState {
         get { return underlyingPaginationState }

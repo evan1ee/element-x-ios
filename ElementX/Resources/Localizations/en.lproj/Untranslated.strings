@@ -122,7 +122,6 @@
 "screen_search_no_results_message" = "There are no results for “%1$@.” Try a new search term.";
 "screen_search_tab_media" = "Media";
 "screen_search_tab_messages" = "Messages";
-"screen_search_tab_rooms" = "Rooms";
 "screen_search_view_download_progress" = "View download progress";
 "screen_sticker_discovery_add_to_my_stickers" = "Add to my stickers";
 "screen_sticker_discovery_empty" = "No stickers found";

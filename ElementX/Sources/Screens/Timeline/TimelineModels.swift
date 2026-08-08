@@ -12,7 +12,7 @@ import OrderedCollections
 import SwiftUI
 
 enum TimelineViewModelAction {
-    case displayEmojiPicker(itemID: TimelineItemIdentifier, selectedEmojis: Set<String>)
+    case displayEmojiPicker(selectedEmojis: Set<String>, continuation: EmojiPickerScreenContinuation)
     case displayReportContent(itemID: TimelineItemIdentifier, senderID: String)
     case displayCameraPicker
     case displayMediaPicker
@@ -34,6 +34,7 @@ enum TimelineViewModelAction {
     case viewInRoomTimeline(eventID: String, threadRootEventID: String?)
     case displayRoom(roomID: String, via: [String])
     case displayMediaDetails(item: EventBasedMessageTimelineItemProtocol)
+    case presentCallScreen(isVoiceCall: Bool)
 }
 
 enum TimelineViewPollAction {
@@ -53,6 +54,7 @@ enum TimelineViewAction {
     case itemDisappeared(itemID: TimelineItemIdentifier)
     
     case mediaTapped(itemID: TimelineItemIdentifier)
+    case galleryItemTapped(GalleryItemID)
     case itemSendInfoTapped(itemID: TimelineItemIdentifier)
     case toggleReaction(key: String, itemID: TimelineItemIdentifier)
     case sendReadReceiptIfNeeded(TimelineItemIdentifier)
@@ -90,6 +92,7 @@ enum TimelineViewAction {
     case hasScrolled(direction: ScrollDirection)
     
     case displayPredecessorRoom
+    case joinActiveCall(isVoiceCall: Bool)
 }
 
 enum TimelineComposerAction {
@@ -102,6 +105,8 @@ enum TimelineComposerAction {
 
 struct TimelineViewState: BindableState {
     let timelineKind: TimelineKind
+    /// The gallery attachments the timeline includes, or `nil` when it isn't filtered.
+    let allowedGalleryItemTypes: [TimelineAllowedGalleryItemType]?
     var roomID: String
     var members: [String: RoomMemberState] = [:]
     var typingMembers: [String] = []
@@ -166,7 +171,7 @@ struct TimelineViewState: BindableState {
     
     var linkMetadataProvider: LinkMetadataProviderProtocol?
     
-    var mapTilerSettings: MapTilerSettings
+    var mapTilerConfiguration: MapTilerConfiguration
     
     var stoppedLiveLocationIDs: Set<TimelineItemIdentifier> = []
     

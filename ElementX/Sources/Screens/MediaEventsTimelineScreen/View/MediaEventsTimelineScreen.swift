@@ -269,15 +269,15 @@ struct MediaEventsTimelineScreen_Previews: PreviewProvider, TestablePreview {
     static let emptyFilesViewModel = makeViewModel(empty: true, screenMode: .files)
     
     static var previews: some View {
-        ElementNavigationStack {
-            MediaEventsTimelineScreen(context: mediaViewModel.context)
-        }
-        .previewDisplayName("Media")
+        MediaEventsTimelineScreen(context: mediaViewModel.context)
+            .frame(height: 1800)
+            .previewLayout(.sizeThatFits)
+            .previewDisplayName("Media")
         
-        ElementNavigationStack {
-            MediaEventsTimelineScreen(context: filesViewModel.context)
-        }
-        .previewDisplayName("Files")
+        MediaEventsTimelineScreen(context: filesViewModel.context)
+            .frame(height: 1800)
+            .previewLayout(.sizeThatFits)
+            .previewDisplayName("Files")
         
         ElementNavigationStack {
             MediaEventsTimelineScreen(context: emptyMediaViewModel.context)
@@ -361,7 +361,15 @@ struct MediaEventsTimelineScreen_Previews: PreviewProvider, TestablePreview {
             timelineItems.append(contentsOf: [makeFileItem(url: .mockMXCScanning), makeFileItem(url: .mockMXCUnsafe)])
         }
         
-        return TimelineControllerMock(.init(timelineKind: .media(.mediaFilesScreen), timelineItems: timelineItems))
+        // Mirrors the message types that the flow coordinator filters each timeline to.
+        let allowedGalleryItemTypes: [TimelineAllowedGalleryItemType] = switch screenMode {
+        case .media: [.image, .video]
+        case .files: [.file, .audio]
+        }
+        
+        return TimelineControllerMock(.init(timelineKind: .media(.mediaFilesScreen),
+                                            timelineItems: timelineItems,
+                                            allowedGalleryItemTypes: allowedGalleryItemTypes))
     }
     
     private static func makeImageItem(url: URL) -> ImageRoomTimelineItem {

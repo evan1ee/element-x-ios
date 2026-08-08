@@ -97,6 +97,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
             true
         }
         super.init(initialViewState: TimelineViewState(timelineKind: timelineController.timelineKind,
+                                                       allowedGalleryItemTypes: timelineController.allowedGalleryItemTypes,
                                                        roomID: roomProxy.id,
                                                        isDM: roomProxy.infoPublisher.value.isDM,
                                                        isSavedMessagesRoom: userSession.savedMessagesService.isSavedMessagesRoom(roomProxy.id),
@@ -112,7 +113,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
                                                        pinnedEventIDs: roomProxy.infoPublisher.value.pinnedEventIDs,
                                                        emojiProvider: emojiProvider,
                                                        linkMetadataProvider: hideTimelineMedia ? nil : linkMetadataProvider,
-                                                       mapTilerSettings: appSettings.mapTilerSettings.publisher.value,
+                                                       mapTilerConfiguration: appSettings.mapTilerConfiguration.publisher.value,
                                                        bindings: .init(reactionsCollapsed: [:])),
                    mediaProvider: userSession.mediaProvider,
                    contentScannerService: userSession.contentScannerService)
@@ -166,6 +167,8 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
             Task { await timelineController.processItemDisappearance(id) }
         case .mediaTapped(let id):
             Task { await handleMediaTapped(with: id) }
+        case .galleryItemTapped(let galleryItemID):
+            Task { await handleMediaTapped(with: galleryItemID.timelineItemID, galleryIndex: galleryItemID.mediaIndex) }
         case .itemSendInfoTapped(let itemID):
             handleItemSendInfoTapped(itemID: itemID)
         case .toggleReaction(let emoji, let itemID):
@@ -237,6 +240,8 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
             }
             let serverNames = roomProxy.knownServerNames(maxCount: 50) // Limit to the same number used by ClientProxy.resolveRoomAlias(_:)
             actionsSubject.send(.displayRoom(roomID: predecessorID, via: Array(serverNames)))
+        case .joinActiveCall(let isVoiceCall):
+            actionsSubject.send(.presentCallScreen(isVoiceCall: isVoiceCall))
         }
     }
     
@@ -556,8 +561,8 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
                     displayAlert(.audioRecodingPermissionError)
                 case .displayErrorToast(let title):
                     displayErrorToast(title)
-                case .displayEmojiPicker(let itemID, let selectedEmojis):
-                    actionsSubject.send(.displayEmojiPicker(itemID: itemID, selectedEmojis: selectedEmojis))
+                case .displayEmojiPicker(let selectedEmojis, let continuation):
+                    actionsSubject.send(.displayEmojiPicker(selectedEmojis: selectedEmojis, continuation: continuation))
                 case .displayMessageForwarding(let itemID):
                     Task { await self.forwardMessage(itemID: itemID) }
                 case .displayEditPollForm(let eventID, let poll):
@@ -741,7 +746,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
         await timelineController.sendReadReceipt(for: lastVisibleItemID)
     }
     
-    private func handleMediaTapped(with itemID: TimelineItemIdentifier) async {
+    private func handleMediaTapped(with itemID: TimelineItemIdentifier, galleryIndex: Int? = nil) async {
         state.showLoading = true
         let action = await timelineInteractionHandler.processItemTap(itemID)
         
@@ -750,6 +755,13 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
             actionsSubject.send(.composer(action: .removeFocus)) // Hide the keyboard otherwise a big white space is sometimes shown when dismissing the preview.
             
             let mediaPreviewViewModel = makeMediaPreviewViewModel(item: item, timelineViewModelKind: timelineViewModelKind)
+            actionsSubject.send(.displayMediaPreview(mediaPreviewViewModel))
+        case .displayGalleryPreview(let galleryItem, let timelineViewModelKind):
+            actionsSubject.send(.composer(action: .removeFocus))
+            
+            let mediaPreviewViewModel = makeGalleryPreviewViewModel(galleryItem: galleryItem,
+                                                                    timelineViewModelKind: timelineViewModelKind,
+                                                                    initialIndex: galleryIndex ?? 0)
             actionsSubject.send(.displayMediaPreview(mediaPreviewViewModel))
         case .displayLocation(let location):
             actionsSubject.send(.displayLocation(location))
@@ -863,17 +875,31 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
     
     private func makeMediaPreviewViewModel(item: EventBasedMessageTimelineItemProtocol,
                                            timelineViewModelKind: TimelineControllerAction.TimelineViewModelKind) -> TimelineMediaPreviewViewModel {
-        let timelineViewModel = switch timelineViewModelKind {
+        TimelineMediaPreviewViewModel(initialItem: item,
+                                      timelineViewModel: timelineViewModel(for: timelineViewModelKind),
+                                      mediaProvider: userSession.mediaProvider,
+                                      photoLibraryManager: PhotoLibraryManager(),
+                                      userIndicatorController: userIndicatorController,
+                                      appMediator: appMediator)
+    }
+    
+    private func makeGalleryPreviewViewModel(galleryItem: GalleryRoomTimelineItem,
+                                             timelineViewModelKind: TimelineControllerAction.TimelineViewModelKind,
+                                             initialIndex: Int) -> TimelineMediaPreviewViewModel {
+        TimelineMediaPreviewViewModel(galleryItem: galleryItem,
+                                      initialIndex: initialIndex,
+                                      timelineViewModel: timelineViewModel(for: timelineViewModelKind),
+                                      mediaProvider: userSession.mediaProvider,
+                                      photoLibraryManager: PhotoLibraryManager(),
+                                      userIndicatorController: userIndicatorController,
+                                      appMediator: appMediator)
+    }
+    
+    private func timelineViewModel(for kind: TimelineControllerAction.TimelineViewModelKind) -> TimelineViewModel {
+        switch kind {
         case .active: self
         case .new(let newViewModel): newViewModel
         }
-        
-        return TimelineMediaPreviewViewModel(initialItem: item,
-                                             timelineViewModel: timelineViewModel,
-                                             mediaProvider: userSession.mediaProvider,
-                                             photoLibraryManager: PhotoLibraryManager(),
-                                             userIndicatorController: userIndicatorController,
-                                             appMediator: appMediator)
     }
     
     // MARK: - Timeline Item Building

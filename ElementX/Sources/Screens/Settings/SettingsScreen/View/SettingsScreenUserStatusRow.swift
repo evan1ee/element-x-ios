@@ -9,27 +9,26 @@ import Compound
 import SwiftUI
 
 struct SettingsScreenUserStatusRow: View {
-    enum Mode: Equatable { case pick, custom, show(UserStatus.Raw) }
+    enum Mode: Equatable { case pickStatusButton, customStatusInput(emoji: Character), showingStatus(UserStatus.Displayed) }
     let mode: Mode
     let action: (SettingsScreenViewAction.UserStatusAction) -> Void
     
-    @State private var customEmoji = "😄"
     @State private var customText = ""
     
     var body: some View {
         switch mode {
-        case .pick:
+        case .pickStatusButton:
             ListRow(label: .default(title: L10n.screenSettingsUserStatusPlaceholder, icon: \.reaction),
                     kind: .button { action(.pickStatus) })
-        case .custom:
+        case .customStatusInput(let emoji):
             ListRow(kind: .custom {
                 HStack(spacing: ListRowPadding.labelIconSpacing) {
                     Button { action(.pickCustomEmoji) } label: {
-                        Text(customEmoji)
+                        Text(String(emoji))
                             .font(.compound.headingSM)
                             .foregroundStyle(.compound.textPrimary)
                             .accessibilityLabel(L10n.a11yCustomEmoji)
-                            .accessibilityValue(customEmoji)
+                            .accessibilityValue(String(emoji))
                     }
                     .buttonStyle(EditEmojiButtonStyle())
                     
@@ -48,7 +47,7 @@ struct SettingsScreenUserStatusRow: View {
                 }
                 .listRowBackground(Color.clear)
             })
-        case .show(let status):
+        case .showingStatus(let status):
             ListRow(kind: .custom {
                 HStack(spacing: ListRowPadding.labelIconSpacing) {
                     Button { action(.pickStatus) } label: {
@@ -72,7 +71,7 @@ struct SettingsScreenUserStatusRow: View {
                     .accessibilityValue(Text(String(status.emoji)) + Text(status.text))
                     .buttonStyle(.plain)
                     
-                    Button(L10n.actionClear) { action(.set(nil)) }
+                    Button(L10n.actionClear) { action(.clear) }
                         .buttonStyle(.compound(.textLink))
                 }
                 .padding(ListRowPadding.insets)
@@ -81,7 +80,7 @@ struct SettingsScreenUserStatusRow: View {
     }
     
     private func saveCustomStatus() {
-        guard let emoji = customEmoji.first else { return }
+        guard case let .customStatusInput(emoji) = mode else { return }
         action(.set(.init(text: customText, emoji: emoji)))
     }
     
@@ -105,15 +104,19 @@ struct SettingsScreenUserStatusRow_Previews: PreviewProvider, TestablePreview {
     static var previews: some View {
         Form {
             Section {
-                SettingsScreenUserStatusRow(mode: .pick) { _ in }
+                SettingsScreenUserStatusRow(mode: .pickStatusButton) { _ in }
             }
             
             Section {
-                SettingsScreenUserStatusRow(mode: .custom) { _ in }
+                SettingsScreenUserStatusRow(mode: .customStatusInput(emoji: "😄")) { _ in }
             }
             
             Section {
-                SettingsScreenUserStatusRow(mode: .show(.init(text: "Away", emoji: "🌴"))) { _ in }
+                SettingsScreenUserStatusRow(mode: .showingStatus(.userSet(.init(text: "Away", emoji: "🌴")))) { _ in }
+            }
+            
+            Section {
+                SettingsScreenUserStatusRow(mode: .showingStatus(.inCall(.init(joinedDate: nil)))) { _ in }
             }
         }
         .compoundList()

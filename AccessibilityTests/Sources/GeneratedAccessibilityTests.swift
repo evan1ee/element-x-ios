@@ -7,6 +7,10 @@
 
 extension AccessibilityTests {
 
+    func testActiveCallTimelineItemView() async throws {
+        try await performAccessibilityAudit(named: "ActiveCallTimelineItemView_Previews")
+    }
+
     func testAdvancedSettingsScreen() async throws {
         try await performAccessibilityAudit(named: "AdvancedSettingsScreen_Previews")
     }
@@ -53,6 +57,10 @@ extension AccessibilityTests {
 
     func testAvatarHeaderView() async throws {
         try await performAccessibilityAudit(named: "AvatarHeaderView_Previews")
+    }
+
+    func testAvatarSettingsButtonLabel() async throws {
+        try await performAccessibilityAudit(named: "AvatarSettingsButtonLabel_Previews")
     }
 
     func testBackupScreen() async throws {
@@ -189,6 +197,10 @@ extension AccessibilityTests {
 
     func testFullscreenDialog() async throws {
         try await performAccessibilityAudit(named: "FullscreenDialog_Previews")
+    }
+
+    func testGalleryRoomTimelineView() async throws {
+        try await performAccessibilityAudit(named: "GalleryRoomTimelineView_Previews")
     }
 
     func testHighlightedTimelineItemModifier() async throws {

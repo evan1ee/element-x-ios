@@ -14,6 +14,7 @@ struct SearchScreenCoordinatorParameters {
     let mediaProvider: MediaProviderProtocol
     let searchIndexService: SearchIndexServiceProtocol
     let historyDownloadManager: HistoryDownloadManagerProtocol
+    let userIndicatorController: UserIndicatorControllerProtocol
 }
 
 enum SearchScreenCoordinatorAction {
@@ -36,7 +37,8 @@ final class SearchScreenCoordinator: CoordinatorProtocol {
                                           clientProxy: parameters.clientProxy,
                                           mediaProvider: parameters.mediaProvider,
                                           searchIndexService: parameters.searchIndexService,
-                                          historyDownloadManager: parameters.historyDownloadManager)
+                                          historyDownloadManager: parameters.historyDownloadManager,
+                                          userIndicatorController: parameters.userIndicatorController)
     }
     
     func start() {

@@ -12,6 +12,13 @@ extension PreviewTests {
     // MARK: - PreviewProvider
 
     @Test
+    func activeCallTimelineItemView() async throws {
+        for (index, preview) in ActiveCallTimelineItemView_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func advancedSettingsScreen() async throws {
         for (index, preview) in AdvancedSettingsScreen_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
@@ -91,6 +98,13 @@ extension PreviewTests {
     @Test
     func avatarHeaderView() async throws {
         for (index, preview) in AvatarHeaderView_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
+    func avatarSettingsButtonLabel() async throws {
+        for (index, preview) in AvatarSettingsButtonLabel_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
         }
     }
@@ -329,6 +343,13 @@ extension PreviewTests {
     @Test
     func fullscreenDialog() async throws {
         for (index, preview) in FullscreenDialog_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
+    func galleryRoomTimelineView() async throws {
+        for (index, preview) in GalleryRoomTimelineView_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
         }
     }

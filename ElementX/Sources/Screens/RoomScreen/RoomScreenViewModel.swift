@@ -124,9 +124,12 @@ class RoomScreenViewModel: RoomScreenViewModelType, RoomScreenViewModelProtocol 
     }
     
     func stop() {
-        // When navigating away from the room, we need to mark the room as fully read.
-        // This does not affect the read receipts only the notification count.
-        Task { await roomProxy.markAsRead(receiptType: .fullyRead) }
+        Task {
+            // When navigating away from the room, we need to mark the room as both read
+            // and fully read for Synapse to clear this room from the app's badge count.
+            _ = await roomProxy.markAsRead(receiptType: appSettings.sharePresence ? .read : .readPrivate)
+            _ = await roomProxy.markAsRead(receiptType: .fullyRead)
+        }
         // Work around QLPreviewController dismissal issues, see the InteractiveQuickLookModifier.
         state.bindings.mediaPreviewViewModel = nil
     }
@@ -335,6 +338,7 @@ class RoomScreenViewModel: RoomScreenViewModelType, RoomScreenViewModelProtocol 
     private func updateRoomInfo(_ roomInfo: RoomInfoProxyProtocol) {
         state.roomTitle = roomInfo.displayName ?? roomProxy.id
         state.roomAvatar = roomInfo.avatar
+        state.dmRecipientDetails.statusEmoji = roomInfo.statusEmoji
         state.hasOngoingCall = roomInfo.hasRoomCall
         state.activeRoomCallIntent = roomInfo.activeRoomCallIntent
         state.hasSuccessor = roomInfo.successor != nil

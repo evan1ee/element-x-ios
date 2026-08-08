@@ -18,10 +18,14 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     /// messages alone, so filenames and URLs would otherwise be unreachable.
     private let searchIndexService: SearchIndexServiceProtocol
     private let clientProxy: ClientProxyProtocol
+    private let userIndicatorController: UserIndicatorControllerProtocol
     private var localSearchTask: Task<Void, Never>?
     private var searchQueryObservationTask: Task<Void, Never>?
+    private var searchModeObservationTask: Task<Void, Never>?
     private var loadingObservationTask: Task<Void, Never>?
     private var setQueryTask: Task<Void, Never>?
+    /// The query each tab last searched, so switching tabs only re-searches when the query changed.
+    private var searchedQueries: [SearchScreenMode: String] = [:]
     
     private let actionsSubject: PassthroughSubject<SearchScreenViewModelAction, Never> = .init()
     var actionsPublisher: AnyPublisher<SearchScreenViewModelAction, Never> {
@@ -33,12 +37,14 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
          mediaProvider: MediaProviderProtocol,
          searchIndexService: SearchIndexServiceProtocol,
          historyDownloadManager: HistoryDownloadManagerProtocol,
+         userIndicatorController: UserIndicatorControllerProtocol,
          initialSearchQuery: String = "",
          initialSearchMode: SearchScreenMode = .messages) {
         self.roomSummaryProvider = roomSummaryProvider
         self.searchIndexService = searchIndexService
         self.clientProxy = clientProxy
         searchService = clientProxy.searchService
+        self.userIndicatorController = userIndicatorController
         
         super.init(initialViewState: SearchScreenViewState(bindings: .init(searchQuery: initialSearchQuery, searchMode: initialSearchMode)),
                    mediaProvider: mediaProvider)
@@ -87,20 +93,29 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             }
             .store(in: &cancellables)
         
-        let debouncedSearchQueryStream = context.observe(\.viewState.bindings.searchQuery).debounce(for: .milliseconds(250)).removeDuplicates()
+        // Room search is fast so it reacts to every keystroke; message search debounces inside updateFilter.
+        let searchQueryStream = context.observe(\.viewState.bindings.searchQuery).removeDuplicates()
         searchQueryObservationTask = Task { [weak self] in
-            for await searchQuery in debouncedSearchQueryStream {
+            for await searchQuery in searchQueryStream {
                 self?.updateFilter(for: searchQuery)
             }
         }
         
+        // Re-run the search when switching tabs so the newly active tab reflects the current query.
+        let searchModeStream = context.observe(\.viewState.bindings.searchMode).removeDuplicates()
+        searchModeObservationTask = Task { [weak self] in
+            for await _ in searchModeStream {
+                guard let self else { return }
+                updateFilter(for: state.bindings.searchQuery)
+            }
+        }
+        
         // Flip the loading indicator on the moment the user starts typing, ahead of the debounced
-        // query above, so the empty state doesn't flash while the first search is still pending.
-        let searchQueryStream = context.observe(\.viewState.bindings.searchQuery).removeDuplicates()
+        // message query above, so the empty state doesn't flash while the first search is still pending.
+        let loadingQueryStream = context.observe(\.viewState.bindings.searchQuery).removeDuplicates()
         loadingObservationTask = Task { [weak self] in
-            for await searchQuery in searchQueryStream {
-                self?.state.isLoadingRooms = !searchQuery.isEmpty
-                self?.state.isLoadingMessages = !searchQuery.isEmpty
+            for await searchQuery in loadingQueryStream {
+                self?.setActiveTabLoading(!searchQuery.isEmpty)
             }
         }
         
@@ -109,6 +124,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     
     isolated deinit {
         searchQueryObservationTask?.cancel()
+        searchModeObservationTask?.cancel()
         loadingObservationTask?.cancel()
         setQueryTask?.cancel()
     }
@@ -122,7 +138,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
         case .appeared:
             // The provider is shared, so other consumers may have changed its filter while we were off-screen.
             // Re-apply ours on every appearance to keep the displayed results in sync with the query.
-            updateFilter(for: state.bindings.searchQuery)
+            updateFilter(for: state.bindings.searchQuery, forced: true)
             loadMedia(reset: true)
         case .selectRoom(let roomID):
             actionsSubject.send(.presentRoom(roomID: roomID, eventID: nil))
@@ -237,23 +253,47 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             .sorted { $0.timestamp > $1.timestamp }
     }
     
-    private func updateFilter(for searchQuery: String) {
-        // Supersede any in-flight query so its results can't land after a newer one's.
-        setQueryTask?.cancel()
-        
-        if searchQuery.isEmpty {
+    private func updateFilter(for searchQuery: String, forced: Bool = false) {
+        guard !searchQuery.isEmpty else {
+            // Supersede any in-flight query so its results can't land after a newer one's.
+            setQueryTask?.cancel()
+            searchedQueries.removeAll()
             roomSummaryProvider.setFilter(.excludeAll)
             localSearchTask?.cancel()
             remoteMessages = []
             localMessages = []
             state.messages = []
-        } else {
-            roomSummaryProvider.setFilter(.search(query: searchQuery))
-            setQueryTask = Task { [weak self] in
-                // TODO: @stefanceriu Surface set query errors
-                _ = await self?.searchService.setQuery(searchQuery)
+            return
+        }
+        
+        // The media tab browses its own filters rather than the query, so only the messages
+        // tab has anything to re-run here.
+        let mode = state.bindings.searchMode
+        guard mode == .messages else { return }
+        // Skip a tab that already ran this query (e.g. switching back and forth) unless forced.
+        guard forced || searchedQueries[mode] != searchQuery else { return }
+        
+        setQueryTask?.cancel()
+        setActiveTabLoading(true)
+        roomSummaryProvider.setFilter(.search(query: searchQuery))
+        setQueryTask = Task { [weak self] in
+            // Debounce message queries; superseded keystrokes cancel this before it commits.
+            try? await Task.sleep(for: .milliseconds(250))
+            guard let self, !Task.isCancelled else { return }
+            searchedQueries[mode] = searchQuery
+            if case .failure = await searchService.setQuery(searchQuery), !Task.isCancelled {
+                userIndicatorController.submitIndicator(.init(title: L10n.errorUnknown))
             }
-            searchLocalIndex(for: searchQuery)
+        }
+        searchLocalIndex(for: searchQuery)
+    }
+    
+    private func setActiveTabLoading(_ isLoading: Bool) {
+        switch state.bindings.searchMode {
+        case .messages:
+            state.isLoadingMessages = isLoading
+        case .media:
+            break // The media tab loads from its filters, not the search query.
         }
     }
     

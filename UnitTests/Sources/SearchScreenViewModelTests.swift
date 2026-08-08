@@ -12,15 +12,30 @@ import Testing
 @MainActor
 struct SearchScreenViewModelTests {
     let viewModel: SearchScreenViewModelProtocol
+    let searchService: SearchServiceProxyMock
+    let userIndicatorController: UserIndicatorControllerMock
+    /// Fires with the query each time the (async, debounced) message search runs.
+    let setQuerySubject = PassthroughSubject<String, Never>()
+    /// Fires each time an indicator is submitted.
+    let submitIndicatorSubject = PassthroughSubject<Void, Never>()
+    
     var context: SearchScreenViewModelType.Context {
         viewModel.context
     }
     
     init() {
-        let searchService = SearchServiceProxyMock()
+        searchService = SearchServiceProxyMock()
         searchService.underlyingResultsPublisher = CurrentValueSubject<[SearchServiceResult], Never>([]).asCurrentValuePublisher()
         searchService.underlyingPaginationStatePublisher = CurrentValueSubject(.idle(endReached: true)).asCurrentValuePublisher()
-        searchService.setQueryReturnValue = .success(())
+        searchService.setQueryClosure = { [setQuerySubject] query in
+            setQuerySubject.send(query)
+            return .success(())
+        }
+        
+        userIndicatorController = UserIndicatorControllerMock()
+        userIndicatorController.submitIndicatorDelayClosure = { [submitIndicatorSubject] _, _ in
+            submitIndicatorSubject.send(())
+        }
         
         let clientProxy = ClientProxyMock(.init())
         clientProxy.searchService = searchService
@@ -38,7 +53,8 @@ struct SearchScreenViewModelTests {
                                           clientProxy: clientProxy,
                                           mediaProvider: MediaProviderMock(.init()),
                                           searchIndexService: searchIndexService,
-                                          historyDownloadManager: historyDownloadManager)
+                                          historyDownloadManager: historyDownloadManager,
+                                          userIndicatorController: userIndicatorController)
     }
     
     @Test
@@ -46,6 +62,28 @@ struct SearchScreenViewModelTests {
         let deferred = deferFulfillment(context.observe(\.viewState.rooms)) { $0.count == 1 }
         context.searchQuery = "Second"
         try await deferred.fulfill()
+    }
+    
+    @Test
+    func messageSearch() async throws {
+        let deferred = deferFulfillment(setQuerySubject) { $0 == "Foundation" }
+        context.searchMode = .messages
+        context.searchQuery = "Foundation"
+        try await deferred.fulfill()
+        
+        #expect(searchService.setQueryReceivedQuery == "Foundation")
+    }
+    
+    @Test
+    func messageSearchFailureShowsErrorIndicator() async throws {
+        searchService.setQueryClosure = { _ in .failure(.sdkError(SearchScreenViewModelTestsError.failed)) }
+        
+        let deferred = deferFulfillment(submitIndicatorSubject) { _ in true }
+        context.searchMode = .messages
+        context.searchQuery = "Foundation"
+        try await deferred.fulfill()
+        
+        #expect(userIndicatorController.submitIndicatorDelayCalled)
     }
     
     @Test
@@ -79,4 +117,8 @@ struct SearchScreenViewModelTests {
         
         try await deferred.fulfill()
     }
+}
+
+private enum SearchScreenViewModelTestsError: Error {
+    case failed
 }

@@ -272,8 +272,6 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchTabMedia: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_media") }
   /// Messages
   internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
-  /// Rooms
-  internal static var screenSearchTabRooms: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_rooms") }
   /// View download progress
   internal static var screenSearchViewDownloadProgress: String { return UntranslatedL10n.tr("Untranslated", "screen_search_view_download_progress") }
   /// Add to my stickers

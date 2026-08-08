@@ -18,6 +18,8 @@ extension View {
         modifier(TimelineItemSendInfoModifier(sendInfo: .init(timelineItem: timelineItem,
                                                               adjustedDeliveryStatus: adjustedDeliveryStatus,
                                                               hasContentScanningFailure: hasContentScanningFailure),
+                                              // A gallery announces this when entering it instead.
+                                              isAccessibilityHidden: timelineItem is GalleryRoomTimelineItem,
                                               context: context))
     }
 }
@@ -25,6 +27,7 @@ extension View {
 /// Adds the send info to a view with the correct layout.
 private struct TimelineItemSendInfoModifier: ViewModifier {
     let sendInfo: TimelineItemSendInfo
+    let isAccessibilityHidden: Bool
     let context: TimelineViewModel.Context
     
     var layout: AnyLayout {
@@ -43,6 +46,7 @@ private struct TimelineItemSendInfoModifier: ViewModifier {
             content
             
             TimelineItemSendInfoLabel(sendInfo: sendInfo)
+                .accessibilityHidden(isAccessibilityHidden)
                 .contentShape(.rect)
                 // Tap gesture to avoid the message being detected as a button by VoiceOver
                 // (and the action shows a description that is already read to the user).
@@ -180,6 +184,10 @@ private extension TimelineItemSendInfo {
                 switch message {
                 case is ImageRoomTimelineItem, is VideoRoomTimelineItem:
                     .overlay(capsuleStyle: !message.hasMediaCaption)
+                case is GalleryRoomTimelineItem:
+                    // Without a caption, append the send info below the grid rather than overlaying
+                    // a capsule on top of the media.
+                    message.hasMediaCaption ? .overlay(capsuleStyle: false) : .vertical()
                 case is AudioRoomTimelineItem, is FileRoomTimelineItem:
                     // swiftlint:disable:next void_function_in_ternary
                     message.hasMediaCaption ? .overlay(capsuleStyle: false) : .horizontal(spacing: 0) // No spacing as the content already contains it.

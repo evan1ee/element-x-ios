@@ -26,6 +26,7 @@ enum TimelineControllerAction {
     }
     
     case displayMediaPreview(item: EventBasedMessageTimelineItemProtocol, timelineViewModel: TimelineViewModelKind)
+    case displayGalleryPreview(galleryItem: GalleryRoomTimelineItem, timelineViewModel: TimelineViewModelKind)
     case displayLocation(StaticLocationData)
     case displayLiveLocation(sender: TimelineItemSender, initialLiveLocationShare: LiveLocationShare)
     case none
@@ -45,6 +46,9 @@ enum TimelineControllerError: Error {
 @MainActor
 protocol TimelineControllerProtocol: Sendable, StickerSending {
     var timelineKind: TimelineKind { get }
+    
+    /// The gallery attachments this timeline includes, or `nil` when it isn't filtered.
+    var allowedGalleryItemTypes: [TimelineAllowedGalleryItemType]? { get }
     
     /// The currently known items, use only for setting up the intial state.
     var timelineItems: [RoomTimelineItemProtocol] { get }

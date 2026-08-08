@@ -25,6 +25,7 @@ nonisolated protocol CommonSettingsProtocol: AnyObject, Sendable {
     var bugReportRageshakeURL: RemotePreference<RageshakeConfiguration> { get }
     var contentScannerURL: RemotePreference<URL?> { get }
     var forceDisableE2EE: RemotePreference<Bool> { get }
+    var mapTilerConfiguration: RemotePreference<MapTilerConfiguration> { get }
     
     var enableOnlySignedDeviceIsolationMode: Bool { get }
     var threadsEnabled: Bool { get }
@@ -80,6 +81,7 @@ final nonisolated class AppSettings: @unchecked Sendable {
                   hideBrandChrome: Bool,
                   pushGatewayBaseURL: URL,
                   oAuthRedirectURL: URL,
+                  oAuthClientURIPath: String?,
                   websiteURL: URL,
                   logoURL: URL,
                   copyrightURL: URL,
@@ -94,12 +96,13 @@ final nonisolated class AppSettings: @unchecked Sendable {
                   accountProvisioningHost: String,
                   bugReportApplicationID: String,
                   analyticsTermsURL: URL?,
-                  mapTilerConfiguration: MapTilerSettings.Configuration) {
+                  mapTilerConfiguration: MapTilerConfiguration) {
         self.accountProviders = accountProviders
         self.allowOtherAccountProviders = allowOtherAccountProviders
         self.hideBrandChrome = hideBrandChrome
         self.pushGatewayBaseURL = pushGatewayBaseURL
         self.oAuthRedirectURL = oAuthRedirectURL
+        self.oAuthClientURIPath = oAuthClientURIPath
         self.websiteURL = websiteURL
         self.logoURL = logoURL
         self.copyrightURL = copyrightURL
@@ -114,7 +117,7 @@ final nonisolated class AppSettings: @unchecked Sendable {
         self.accountProvisioningHost = accountProvisioningHost
         self.bugReportApplicationID = bugReportApplicationID
         self.analyticsTermsURL = analyticsTermsURL
-        mapTilerSettings = RemotePreference(.configuration(mapTilerConfiguration))
+        self.mapTilerConfiguration = RemotePreference(mapTilerConfiguration)
     }
     
     // MARK: - Application
@@ -198,11 +201,15 @@ final nonisolated class AppSettings: @unchecked Sendable {
     /// The redirect URL used for OAuth. For the normal case we don't actually need the bundle ID as the web authentication session handles the redirect internally.
     /// However in the case where MAS sends the user to an external app, we need to make sure that the system will open the correct variant of the app (e.g. Nightly).
     private(set) nonisolated(unsafe) var oAuthRedirectURL: URL! = URL(string: "https://element.io/oauth/ios/\(InfoPlistReader.main.bundleIdentifier)")
+    /// A path that is appended to `websiteURL` to form the OAuth `clientURI`. MAS uses `clientURI` as the identifier for a specific app, allowing us to
+    /// distinguish the various clients we have for Android, iOS and Web from each other.
+    /// Intentionally a distinct property so it can be easily overridden without having to manipulate the website URL.
+    private(set) var oAuthClientURIPath: String? // = "app/ios"
     
     var oAuthConfiguration: OAuthConfiguration {
         OAuthConfiguration(clientName: InfoPlistReader.main.bundleDisplayName,
                            redirectURI: oAuthRedirectURL,
-                           clientURI: websiteURL,
+                           clientURI: oAuthClientURIPath.map { websiteURL.appending(path: $0) } ?? websiteURL,
                            logoURI: logoURL,
                            tosURI: acceptableUseURL,
                            policyURI: privacyURL,
@@ -433,15 +440,13 @@ final nonisolated class AppSettings: @unchecked Sendable {
     // MARK: - Maps
     
     /// The locally-bundled MapTiler configuration.
-    static let bundledMapTilerConfiguration = MapTilerSettings.Configuration(baseURL: "https://api.maptiler.com/maps",
-                                                                             apiKey: Secrets.mapLibreAPIKey,
-                                                                             lightStyleID: "9bc819c8-e627-474a-a348-ec144fe3d810",
-                                                                             darkStyleID: "dea61faf-292b-4774-9660-58fcef89a7f3")
+    static let bundledMapTilerConfiguration = MapTilerConfiguration(baseURL: "https://api.maptiler.com/maps",
+                                                                    apiKey: Secrets.mapLibreAPIKey,
+                                                                    lightStyleID: "9bc819c8-e627-474a-a348-ec144fe3d810",
+                                                                    darkStyleID: "dea61faf-292b-4774-9660-58fcef89a7f3")
     
-    /// The resolved map tile settings. Defaults to ``MapTilerSettings.configuration(_:)`` with the
-    /// bundled configuration and is remotely overridden with ``MapTilerSettings.url(_:)`` when
-    /// the homeserver advertises a `style.json` URL via the matrix client well-known.
-    private(set) var mapTilerSettings = RemotePreference<MapTilerSettings>(.configuration(AppSettings.bundledMapTilerConfiguration))
+    /// The MapTiler configuration used to build map URLs, which defaults to the bundled one.
+    private(set) var mapTilerConfiguration = RemotePreference(AppSettings.bundledMapTilerConfiguration)
     
     // MARK: - Presence
     
@@ -490,7 +495,7 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: false)
     var automaticBackPaginationEnabled: Bool
     
-    @UserPreference(defaultValue: true, volatile: true)
+    @UserPreference(key: "clientPausingAndResumingEnabledV2", defaultValue: false, volatile: true)
     var clientPausingAndResumingEnabled: Bool
     
     @UserPreference(defaultValue: false)

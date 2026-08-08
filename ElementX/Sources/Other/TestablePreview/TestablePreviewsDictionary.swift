@@ -10,6 +10,7 @@ import SwiftUI
 enum TestablePreviewsDictionary {
     static let dictionary: [String: any PreviewProvider.Type] = {
         var dictionary: [String: any PreviewProvider.Type] = [
+            "ActiveCallTimelineItemView_Previews" : ActiveCallTimelineItemView_Previews.self,
             "AdvancedSettingsScreen_Previews" : AdvancedSettingsScreen_Previews.self,
             "AnalyticsPromptScreen_Previews" : AnalyticsPromptScreen_Previews.self,
             "AnalyticsSettingsScreen_Previews" : AnalyticsSettingsScreen_Previews.self,
@@ -22,6 +23,7 @@ enum TestablePreviewsDictionary {
             "AuthenticationClassicAppBackupInstructionsView_Previews" : AuthenticationClassicAppBackupInstructionsView_Previews.self,
             "AuthenticationStartScreen_Previews" : AuthenticationStartScreen_Previews.self,
             "AvatarHeaderView_Previews" : AvatarHeaderView_Previews.self,
+            "AvatarSettingsButtonLabel_Previews" : AvatarSettingsButtonLabel_Previews.self,
             "BackupScreen_Previews" : BackupScreen_Previews.self,
             "BadgeLabel_Previews" : BadgeLabel_Previews.self,
             "BlockedUsersScreen_Previews" : BlockedUsersScreen_Previews.self,
@@ -55,6 +57,7 @@ enum TestablePreviewsDictionary {
             "FormattedBodyText_Previews" : FormattedBodyText_Previews.self,
             "FormattingToolbar_Previews" : FormattingToolbar_Previews.self,
             "FullscreenDialog_Previews" : FullscreenDialog_Previews.self,
+            "GalleryRoomTimelineView_Previews" : GalleryRoomTimelineView_Previews.self,
             "HighlightedTimelineItemModifier_Previews" : HighlightedTimelineItemModifier_Previews.self,
             "HomeScreenEmptyStateView_Previews" : HomeScreenEmptyStateView_Previews.self,
             "HomeScreenInviteCell_Previews" : HomeScreenInviteCell_Previews.self,

@@ -46,6 +46,7 @@ enum ClientProxyMockError: Error {
 }
 
 extension ClientProxyMock {
+    // swiftlint:disable:next function_body_length
     convenience init(_ configuration: ClientProxyMockConfiguration) {
         self.init()
         
@@ -88,9 +89,11 @@ extension ClientProxyMock {
         }
         joinRoomAliasReturnValue = .success(())
         uploadMediaReturnValue = .failure(.sdkError(ClientProxyMockError.generic))
-        loadUserProfileReturnValue = .success(())
+        loadUserProfileIfNeededReturnValue = .success(())
         setUserDisplayNameReturnValue = .failure(.sdkError(ClientProxyMockError.generic))
         setUserAvatarMediaReturnValue = .success(())
+        isUserStatusSupportedReturnValue = .success(false)
+        setUserStatusReturnValue = .failure(.sdkError(ClientProxyMockError.generic))
         removeUserAvatarReturnValue = .success(())
         isAliasAvailableReturnValue = .success(true)
         searchUsersSearchTermLimitReturnValue = .success(.init(results: [], limited: false))
@@ -168,6 +171,8 @@ extension ClientProxyMock {
         underlyingMaxMediaUploadSize = .success(configuration.maxMediaUploadSize)
         
         storeSizesReturnValue = .success(.init(cryptoStore: 1, stateStore: 9, eventCacheStore: 8, mediaStore: 6))
+        
+        configurePresenceSendImmediatelyReturnValue = .success(())
     }
     
     /// Idle and empty. The search tab is built alongside the session from iOS 26 on, so every

@@ -22,6 +22,7 @@ enum SettingsScreenCoordinatorAction {
     case logout
     case secureBackup
     case userDetails
+    case userStatusEmojiPicker(EmojiPickerScreenContinuation)
     case analytics
     case appLock
     case bugReport
@@ -68,6 +69,8 @@ final class SettingsScreenCoordinator: CoordinatorProtocol {
                     actionsSubject.send(.dismiss)
                 case .userDetails:
                     actionsSubject.send(.userDetails)
+                case let .userStatusEmojiPicker(continuation):
+                    actionsSubject.send(.userStatusEmojiPicker(continuation))
                 case .linkNewDevice:
                     actionsSubject.send(.linkNewDevice)
                 case let .manageAccount(url):

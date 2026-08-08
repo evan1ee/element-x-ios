@@ -485,24 +485,28 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
                                                       clientProxy: makeClientProxy(),
                                                       mediaProvider: MediaProviderMock(.init()),
                                                       searchIndexService: makeSearchIndexService(),
-                                                      historyDownloadManager: makeHistoryDownloadManager())
+                                                      historyDownloadManager: makeHistoryDownloadManager(),
+                                                      userIndicatorController: UserIndicatorControllerMock())
     static let noResultsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                           clientProxy: makeClientProxy(),
                                                           mediaProvider: MediaProviderMock(.init()),
                                                           searchIndexService: makeSearchIndexService(),
                                                           historyDownloadManager: makeHistoryDownloadManager(),
+                                                          userIndicatorController: UserIndicatorControllerMock(),
                                                           initialSearchQuery: "John Doe")
     static let roomsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded(.mockRooms))),
                                                       clientProxy: makeClientProxy(),
                                                       mediaProvider: MediaProviderMock(.init()),
                                                       searchIndexService: makeSearchIndexService(),
                                                       historyDownloadManager: makeHistoryDownloadManager(),
+                                                      userIndicatorController: UserIndicatorControllerMock(),
                                                       initialSearchQuery: "Foundation")
     static let messagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
                                                          clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)),
                                                          mediaProvider: MediaProviderMock(.init()),
                                                          searchIndexService: makeSearchIndexService(),
                                                          historyDownloadManager: makeHistoryDownloadManager(),
+                                                         userIndicatorController: UserIndicatorControllerMock(),
                                                          initialSearchQuery: "Foundation",
                                                          initialSearchMode: .messages)
     static let loadingMessagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
@@ -510,6 +514,7 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
                                                                 mediaProvider: MediaProviderMock(.init()),
                                                                 searchIndexService: makeSearchIndexService(),
                                                                 historyDownloadManager: makeHistoryDownloadManager(),
+                                                                userIndicatorController: UserIndicatorControllerMock(),
                                                                 initialSearchQuery: "Foundation",
                                                                 initialSearchMode: .messages)
     
@@ -518,6 +523,7 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
                                                                    mediaProvider: MediaProviderMock(.init()),
                                                                    searchIndexService: makeSearchIndexService(),
                                                                    historyDownloadManager: makeHistoryDownloadManager(status: .downloading),
+                                                                   userIndicatorController: UserIndicatorControllerMock(),
                                                                    initialSearchQuery: "Foundation",
                                                                    initialSearchMode: .messages)
     

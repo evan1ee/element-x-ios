@@ -20,6 +20,10 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
     
     private var isOldestItemVisible = false
     
+    /// The gallery item that a listed item was built from, so that interactions can be forwarded
+    /// using the gallery's identifier rather than the listed item's.
+    private var galleryItemIDs = [TimelineItemIdentifier.UniqueID: GalleryItemID]()
+    
     private var activeTimelineViewModel: TimelineViewModelProtocol {
         switch state.screenMode {
         case .media:
@@ -75,7 +79,7 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
             case .displayEmojiPicker, .displayReportContent, .displayCameraPicker, .displayMediaPicker,
                  .displayDocumentPicker, .displayLocationPicker, .displayLiveLocation, .displayNewPollForm, .displayEditPollForm, .displayStickerPicker, .displayMediaUploadPreviewScreen,
                  .displaySenderDetails, .displayMessageForwarding, .displayLocation, .displayResolveSendFailure,
-                 .displayThread, .composer, .hasScrolled, .viewInRoomTimeline, .displayRoom:
+                 .displayThread, .composer, .hasScrolled, .viewInRoomTimeline, .displayRoom, .presentCallScreen:
                 break
             }
         }
@@ -100,7 +104,7 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
             case .displayEmojiPicker, .displayReportContent, .displayCameraPicker, .displayMediaPicker,
                  .displayDocumentPicker, .displayLocationPicker, .displayLiveLocation, .displayNewPollForm, .displayEditPollForm, .displayStickerPicker, .displayMediaUploadPreviewScreen,
                  .displaySenderDetails, .displayMessageForwarding, .displayLocation, .displayResolveSendFailure,
-                 .displayThread, .composer, .hasScrolled, .viewInRoomTimeline, .displayRoom:
+                 .displayThread, .composer, .hasScrolled, .viewInRoomTimeline, .displayRoom, .presentCallScreen:
                 break
             }
         }
@@ -123,9 +127,15 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
         case .oldestItemDidDisappear:
             isOldestItemVisible = false
         case .tappedItem(let item):
-            activeTimelineViewModel.context.send(viewAction: .mediaTapped(itemID: item.identifier))
+            if let galleryItemID = galleryItemIDs[item.id] {
+                activeTimelineViewModel.context.send(viewAction: .galleryItemTapped(galleryItemID))
+            } else {
+                activeTimelineViewModel.context.send(viewAction: .mediaTapped(itemID: item.identifier))
+            }
         case .longPressedItem(let item):
-            activeTimelineViewModel.context.send(viewAction: .displayTimelineItemMenu(itemID: item.identifier))
+            // The menu acts on the gallery as a whole, as its actions can't apply to a single item.
+            let itemID = galleryItemIDs[item.id]?.timelineItemID ?? item.identifier
+            activeTimelineViewModel.context.send(viewAction: .displayTimelineItemMenu(itemID: itemID))
         }
     }
     
@@ -177,17 +187,24 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
     private func updateWithTimelineViewState(_ timelineViewState: TimelineViewState) {
         var newGroups = [MediaEventsTimelineGroup]()
         var currentItems = [RoomTimelineItemViewState]()
+        var newGalleryItemIDs = [TimelineItemIdentifier.UniqueID: GalleryItemID]()
         
-        timelineViewState.timelineState.itemViewStates.filter { itemViewState in
+        timelineViewState.timelineState.itemViewStates.flatMap { itemViewState -> [RoomTimelineItemViewState] in
             switch itemViewState.type {
             case .image, .video:
-                state.screenMode == .media
+                return state.screenMode == .media ? [itemViewState] : []
             case .audio, .file, .voice:
-                state.screenMode == .files
+                return state.screenMode == .files ? [itemViewState] : []
             case .separator:
-                true
+                return [itemViewState]
+            case .gallery(let galleryItem):
+                let flattenedItems = galleryItem.itemsAsIndividualMessages(allowedTypes: timelineViewState.allowedGalleryItemTypes)
+                for (mediaIndex, item) in flattenedItems {
+                    newGalleryItemIDs[item.id.uniqueID] = .init(timelineItemID: galleryItem.id, mediaIndex: mediaIndex)
+                }
+                return flattenedItems.map { .init(item: $0.item, groupStyle: .single) }
             default:
-                false
+                return []
             }
         }.reversed().forEach { item in
             if case .separator(let item) = item.type {
@@ -212,6 +229,7 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
         }
         
         state.groups = newGroups
+        galleryItemIDs = newGalleryItemIDs
         
         state.isBackPaginating = timelineViewState.timelineState.paginationState.backward == .paginating
         state.shouldShowEmptyState = newGroups.isEmpty && timelineViewState.timelineState.paginationState.backward == .endReached
@@ -256,6 +274,40 @@ class MediaEventsTimelineScreenViewModel: MediaEventsTimelineScreenViewModelType
         // We need a small delay because we need to wait for the presented sheet to be fully dismissed.
         DispatchQueue.main.asyncAfter(deadline: .now() + TimelineMediaPreviewViewModel.displayMessageForwardingDelay) {
             self.actionsSubject.send(.displayMessageForwarding(forwardingItem))
+        }
+    }
+}
+
+private extension GalleryRoomTimelineItem {
+    /// Represents the gallery's attachments of the given types as though each had been sent as an
+    /// individual message, so that the screen can list them alongside the room's other media. Each one
+    /// keeps the gallery's event ID but is given its own unique ID so that they remain distinct.
+    func itemsAsIndividualMessages(allowedTypes: [TimelineAllowedGalleryItemType]?) -> [(mediaIndex: Int, item: EventBasedMessageTimelineItemProtocol)] {
+        guard let eventOrTransactionID = id.eventOrTransactionID else { return [] }
+        
+        return content.items(matching: allowedTypes).compactMap { mediaIndex, galleryItem in
+            let itemID = TimelineItemIdentifier.event(uniqueID: .init("\(id.uniqueID.value)-\(mediaIndex)"),
+                                                      eventOrTransactionID: eventOrTransactionID)
+            
+            let item: EventBasedMessageTimelineItemProtocol? = switch galleryItem {
+            case .image(_, let content):
+                ImageRoomTimelineItem(id: itemID, timestamp: timestamp, isOutgoing: isOutgoing, isEditable: isEditable,
+                                      canBeRepliedTo: canBeRepliedTo, sender: sender, content: content, properties: properties)
+            case .video(_, let content):
+                VideoRoomTimelineItem(id: itemID, timestamp: timestamp, isOutgoing: isOutgoing, isEditable: isEditable,
+                                      canBeRepliedTo: canBeRepliedTo, sender: sender, content: content, properties: properties)
+            case .audio(_, let content):
+                AudioRoomTimelineItem(id: itemID, timestamp: timestamp, isOutgoing: isOutgoing, isEditable: isEditable,
+                                      canBeRepliedTo: canBeRepliedTo, sender: sender, content: content, properties: properties)
+            case .file(_, let content):
+                FileRoomTimelineItem(id: itemID, timestamp: timestamp, isOutgoing: isOutgoing, isEditable: isEditable,
+                                     canBeRepliedTo: canBeRepliedTo, sender: sender, content: content, properties: properties)
+            case .other:
+                nil // Filtered out above, as there's nothing to show for it.
+            }
+            
+            guard let item else { return nil }
+            return (mediaIndex, item)
         }
     }
 }

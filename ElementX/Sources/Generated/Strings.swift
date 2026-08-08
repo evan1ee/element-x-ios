@@ -48,6 +48,30 @@ internal nonisolated enum L10n {
   }
   /// Expand message text field
   internal static var a11yExpandMessageTextField: String { return L10n.tr("Localizable", "a11y_expand_message_text_field") }
+  /// Gallery, attachment %1$d
+  internal static func a11yGalleryAttachment(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "a11y_gallery_attachment", p1)
+  }
+  /// Gallery, failed scan %1$d
+  internal static func a11yGalleryFailedScan(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "a11y_gallery_failed_scan", p1)
+  }
+  /// Gallery, image %1$d
+  internal static func a11yGalleryImage(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "a11y_gallery_image", p1)
+  }
+  /// Plural format key: "%#@COUNT@"
+  internal static func a11yGalleryMoreMedia(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "a11y_gallery_more_media", p1)
+  }
+  /// Gallery, scanning %1$d
+  internal static func a11yGalleryScanning(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "a11y_gallery_scanning", p1)
+  }
+  /// Gallery, video %1$d
+  internal static func a11yGalleryVideo(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "a11y_gallery_video", p1)
+  }
   /// Hide password
   internal static var a11yHidePassword: String { return L10n.tr("Localizable", "a11y_hide_password") }
   /// Info
@@ -922,7 +946,7 @@ internal nonisolated enum L10n {
   internal static var confirmRecoveryKeyBannerTitle: String { return L10n.tr("Localizable", "confirm_recovery_key_banner_title") }
   /// Download not available.
   internal static var contentScannerNotFound: String { return L10n.tr("Localizable", "content_scanner_not_found") }
-  /// File not found
+  /// Something went wrong
   internal static var contentScannerNotFoundTitle: String { return L10n.tr("Localizable", "content_scanner_not_found_title") }
   /// Scanning…
   internal static var contentScannerScanning: String { return L10n.tr("Localizable", "content_scanner_scanning") }
@@ -1172,6 +1196,10 @@ internal nonisolated enum L10n {
   internal static func notificationFallbackNContent(_ p1: Int) -> String {
     return L10n.tr("Localizable", "notification_fallback_n_content", p1)
   }
+  /// Plural format key: "%#@COUNT@"
+  internal static func notificationGalleryBody(_ p1: Int) -> String {
+    return L10n.tr("Localizable", "notification_gallery_body", p1)
+  }
   /// 📞 Incoming call
   internal static var notificationIncomingAudioCall: String { return L10n.tr("Localizable", "notification_incoming_audio_call") }
   /// 📹 Incoming call
@@ -1192,6 +1220,8 @@ internal nonisolated enum L10n {
   internal static func notificationInviteBodyWithSender(_ p1: Any) -> String {
     return L10n.tr("Localizable", "notification_invite_body_with_sender", String(describing: p1))
   }
+  /// Started sharing their live location
+  internal static var notificationLiveLocationStartedBody: String { return L10n.tr("Localizable", "notification_live_location_started_body") }
   /// Mentioned you: %1$@
   internal static func notificationMentionedYouBody(_ p1: Any) -> String {
     return L10n.tr("Localizable", "notification_mentioned_you_body", String(describing: p1))
@@ -2218,6 +2248,8 @@ internal nonisolated enum L10n {
   internal static func screenLinkNewDeviceDesktopTitle(_ p1: Any) -> String {
     return L10n.tr("Localizable", "screen_link_new_device_desktop_title", String(describing: p1))
   }
+  /// Only scan a QR code after following the steps above on your own device. Never scan a code sent by another person.
+  internal static var screenLinkNewDeviceDesktopWarning: String { return L10n.tr("Localizable", "screen_link_new_device_desktop_warning") }
   /// The numbers don’t match
   internal static var screenLinkNewDeviceEnterNumberErrorNumbersDoNotMatch: String { return L10n.tr("Localizable", "screen_link_new_device_enter_number_error_numbers_do_not_match") }
   /// Enter 2-digit code
@@ -2284,8 +2316,10 @@ internal nonisolated enum L10n {
   }
   /// On the map
   internal static var screenLiveLocationSheetTitle: String { return L10n.tr("Localizable", "screen_live_location_sheet_title") }
-  /// Your homeserver is on your local network. To connect, Element needs permission to reach devices on this network.
-  internal static var screenLocalNetworkOptInSubtitle: String { return L10n.tr("Localizable", "screen_local_network_opt_in_subtitle") }
+  /// Your homeserver is on your local network. To connect, %1$@ needs permission to reach devices on this network.
+  internal static func screenLocalNetworkOptInSubtitle(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "screen_local_network_opt_in_subtitle", String(describing: p1))
+  }
   /// Allow access to local network
   internal static var screenLocalNetworkOptInTitle: String { return L10n.tr("Localizable", "screen_local_network_opt_in_title") }
   /// This account has been deleted.

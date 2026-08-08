@@ -26,7 +26,7 @@ struct SettingsScreenViewModelTests {
         setupViewModel()
         #expect(!context.viewState.bindings.isPresentingStatusPicker)
         #expect(!context.viewState.bindings.isShowingCustomStatusField)
-        #expect(context.viewState.userStatusRowMode == .pick)
+        #expect(context.viewState.userStatusRowMode == .pickStatusButton)
         
         // When choosing to pick a status.
         context.send(viewAction: .userStatus(.pickStatus))
@@ -34,7 +34,7 @@ struct SettingsScreenViewModelTests {
         // Then the status picker should be presented.
         #expect(context.viewState.bindings.isPresentingStatusPicker)
         #expect(!context.viewState.bindings.isShowingCustomStatusField)
-        #expect(context.viewState.userStatusRowMode == .pick)
+        #expect(context.viewState.userStatusRowMode == .pickStatusButton)
         
         // When choosing to enter a custom status.
         context.send(viewAction: .userStatus(.customStatus))
@@ -42,7 +42,7 @@ struct SettingsScreenViewModelTests {
         // Then the picker should be dismissed and the custom status field shown.
         #expect(!context.viewState.bindings.isPresentingStatusPicker)
         #expect(context.viewState.bindings.isShowingCustomStatusField)
-        #expect(context.viewState.userStatusRowMode == .custom)
+        #expect(context.viewState.userStatusRowMode == .customStatusInput(emoji: "😄"))
         
         // When cancelling.
         context.send(viewAction: .userStatus(.cancel))
@@ -50,7 +50,7 @@ struct SettingsScreenViewModelTests {
         // Then all status editing should be dismissed.
         #expect(!context.viewState.bindings.isPresentingStatusPicker)
         #expect(!context.viewState.bindings.isShowingCustomStatusField)
-        #expect(context.viewState.userStatusRowMode == .pick)
+        #expect(context.viewState.userStatusRowMode == .pickStatusButton)
     }
     
     @Test
@@ -58,7 +58,7 @@ struct SettingsScreenViewModelTests {
         // Given a screen where no status has been set or removed yet.
         setupViewModel()
         #expect(clientProxy.setUserStatusCallsCount == 0)
-        #expect(clientProxy.removeUserStatusCallsCount == 0)
+        #expect(clientProxy.clearUserStatusCallsCount == 0)
         
         // When setting a status.
         let status = UserStatus.Raw(text: "Away", emoji: "🌴")
@@ -73,21 +73,44 @@ struct SettingsScreenViewModelTests {
         // Then only the set endpoint should be called, with the chosen status.
         #expect(try await statusSet.fulfill() == status)
         #expect(clientProxy.setUserStatusCallsCount == 1)
-        #expect(clientProxy.removeUserStatusCallsCount == 0)
+        #expect(clientProxy.clearUserStatusCallsCount == 0)
         
         // When clearing the status.
         let (removeStream, removeContinuation) = AsyncStream<Void>.makeStream()
-        clientProxy.removeUserStatusClosure = {
+        clientProxy.clearUserStatusClosure = {
             removeContinuation.yield()
             return .success(())
         }
         let statusRemoved = deferFulfillment(removeStream) { _ in true }
-        context.send(viewAction: .userStatus(.set(nil)))
+        context.send(viewAction: .userStatus(.clear))
         
-        // Then only the remove endpoint should be called, leaving the set call untouched.
+        // Then the clear user status endpoint should be called.
         try await statusRemoved.fulfill()
-        #expect(clientProxy.removeUserStatusCallsCount == 1)
+        #expect(clientProxy.clearUserStatusCallsCount == 1)
         #expect(clientProxy.setUserStatusCallsCount == 1)
+    }
+    
+    @Test
+    mutating func clearCallStatus() async throws {
+        // Given a screen where the user has a call status set.
+        let callStatus = UserStatus.mockCall
+        setupViewModel(status: callStatus)
+        #expect(!clientProxy.clearUserStatusCalled)
+        #expect(!clientProxy.setUserStatusCalled)
+        
+        // When clearing the status.
+        let (removeStream, removeContinuation) = AsyncStream<Void>.makeStream()
+        clientProxy.clearUserStatusClosure = {
+            removeContinuation.yield()
+            return .success(())
+        }
+        let statusRemoved = deferFulfillment(removeStream) { _ in true }
+        context.send(viewAction: .userStatus(.clear))
+        
+        // Then the clear user status endpoint should be called.
+        try await statusRemoved.fulfill()
+        #expect(clientProxy.clearUserStatusCallsCount == 1)
+        #expect(!clientProxy.setUserStatusCalled)
     }
     
     @Test
@@ -97,15 +120,36 @@ struct SettingsScreenViewModelTests {
         setupViewModel(status: status)
         
         // Then that status should be shown.
-        let rawStatus = try #require(status.raw)
-        #expect(context.viewState.userStatusRowMode == .show(rawStatus))
+        let displayedStatus = try #require(status.displayed)
+        #expect(context.viewState.userStatusRowMode == .showingStatus(displayedStatus))
+    }
+    
+    @Test
+    mutating func selectingCustomStatusEmoji() async throws {
+        // Given a custom status field showing the default emoji.
+        setupViewModel()
+        context.send(viewAction: .userStatus(.customStatus))
+        #expect(context.viewState.userStatusRowMode == .customStatusInput(emoji: "😄"))
+        
+        // When selecting an emoji from the picker.
+        try await selectCustomStatusEmoji("🎉")
+        
+        // Then the custom status field should show the selected emoji.
+        #expect(context.viewState.userStatusRowMode == .customStatusInput(emoji: "🎉"))
+        
+        // When cancelling and returning to the custom status field.
+        context.send(viewAction: .userStatus(.cancel))
+        context.send(viewAction: .userStatus(.customStatus))
+        
+        // Then the emoji should have been reset to the default.
+        #expect(context.viewState.userStatusRowMode == .customStatusInput(emoji: "😄"))
     }
     
     @Test
     mutating func reportBug() async throws {
         setupViewModel()
         
-        let deferred = deferFulfillment(viewModel.actions) { $0 == .reportBug }
+        let deferred = deferFulfillment(viewModel.actions) { $0.isReportBug }
         context.send(viewAction: .reportBug)
         try await deferred.fulfill()
     }
@@ -114,7 +158,7 @@ struct SettingsScreenViewModelTests {
     mutating func analytics() async throws {
         setupViewModel()
         
-        let deferred = deferFulfillment(viewModel.actions) { $0 == .analytics }
+        let deferred = deferFulfillment(viewModel.actions) { $0.isAnalytics }
         context.send(viewAction: .analytics)
         try await deferred.fulfill()
     }
@@ -123,7 +167,7 @@ struct SettingsScreenViewModelTests {
     mutating func logout() async throws {
         setupViewModel()
         
-        let deferred = deferFulfillment(viewModel.actions) { $0 == .logout }
+        let deferred = deferFulfillment(viewModel.actions) { $0.isLogout }
         context.send(viewAction: .logout)
         try await deferred.fulfill()
     }
@@ -137,5 +181,49 @@ struct SettingsScreenViewModelTests {
                                             isBugReportServiceEnabled: true,
                                             isInSecondaryWindow: false,
                                             userIndicatorController: UserIndicatorControllerMock())
+    }
+    
+    /// Shows the emoji picker and selects the provided emoji through its continuation.
+    private func selectCustomStatusEmoji(_ emoji: String) async throws {
+        let pickerPresented = deferFulfillment(viewModel.actions) { $0.isUserStatusEmojiPicker }
+        context.send(viewAction: .userStatus(.pickCustomEmoji))
+        guard case let .userStatusEmojiPicker(continuation) = try await pickerPresented.fulfill() else {
+            Issue.record("Expected the emoji picker to be presented.")
+            return
+        }
+        
+        let emojiUpdated = deferFulfillment(context.observe(\.viewState.bindings.customStatusEmoji)) { $0 == Character(emoji) }
+        continuation.yield(emoji)
+        try await emojiUpdated.fulfill()
+    }
+}
+
+private extension SettingsScreenViewModelAction {
+    var isUserStatusEmojiPicker: Bool {
+        switch self {
+        case .userStatusEmojiPicker: true
+        default: false
+        }
+    }
+    
+    var isReportBug: Bool {
+        switch self {
+        case .reportBug: true
+        default: false
+        }
+    }
+    
+    var isAnalytics: Bool {
+        switch self {
+        case .analytics: true
+        default: false
+        }
+    }
+    
+    var isLogout: Bool {
+        switch self {
+        case .logout: true
+        default: false
+        }
     }
 }

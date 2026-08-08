@@ -855,7 +855,6 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
             tearDownUserSession()
             
             appSettings.resetSessionSpecificSettings()
-            appSettings.mapTilerSettings.reset()
             appHooks.remoteSettingsHook.reset(appSettings)
             
             // Reset analytics
@@ -1297,6 +1296,10 @@ class AppCoordinator: AppCoordinatorProtocol, AuthenticationFlowCoordinatorDeleg
         guard let userSession else {
             return
         }
+        
+        // Configure the background-refresh sync to carry set_presence=offline so it doesn't mark the
+        // user online or idle. Note: If already online/idle then setting offline shouldn't override that.
+        _ = await userSession.clientProxy.configurePresence(.offline, sendImmediately: false)
         
         await resumeClientServices()
         

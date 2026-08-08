@@ -28,6 +28,8 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
     private var spacesSplitCoordinator: NavigationSplitCoordinator
     private let appLockService: AppLockServiceProtocol
     private let flowParameters: CommonFlowParameters
+    // periphery:ignore - retaining purpose
+    private let presenceService: PresenceService
     
     private var userSession: UserSessionProtocol {
         flowParameters.userSession
@@ -92,6 +94,8 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
         self.navigationRootCoordinator = navigationRootCoordinator
         self.appLockService = appLockService
         self.flowParameters = flowParameters
+        presenceService = PresenceService(clientProxy: flowParameters.userSession.clientProxy,
+                                          appSettings: flowParameters.appSettings)
         
         navigationTabCoordinator = NavigationTabCoordinator()
         navigationRootCoordinator.setRootCoordinator(navigationTabCoordinator)
@@ -121,7 +125,8 @@ class UserSessionFlowCoordinator: FlowCoordinatorProtocol {
                                                                               clientProxy: flowParameters.userSession.clientProxy,
                                                                               mediaProvider: flowParameters.userSession.mediaProvider,
                                                                               searchIndexService: flowParameters.userSession.searchIndexService,
-                                                                              historyDownloadManager: flowParameters.userSession.historyDownloadManager))
+                                                                              historyDownloadManager: flowParameters.userSession.historyDownloadManager,
+                                                                              userIndicatorController: flowParameters.userIndicatorController))
             let searchStackCoordinator = NavigationStackCoordinator()
             searchStackCoordinator.setRootCoordinator(searchCoordinator)
             

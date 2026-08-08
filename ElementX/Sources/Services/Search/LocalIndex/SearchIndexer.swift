@@ -143,7 +143,9 @@ nonisolated struct SearchIndexer: Sendable {
                        fileSize: content.fileSize,
                        duration: content.duration,
                        isVoiceMessage: true)
-        case .text, .notice, .emote, .location:
+        // A gallery carries several attachments under one event ID, which the index can't hold
+        // because it stores a single entry per event. Its caption is still indexed as text.
+        case .text, .notice, .emote, .location, .gallery:
             nil
         }
     }

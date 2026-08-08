@@ -8,9 +8,10 @@
 
 import SwiftUI
 
-enum SettingsScreenViewModelAction: Equatable {
+enum SettingsScreenViewModelAction {
     case close
     case userDetails
+    case userStatusEmojiPicker(EmojiPickerScreenContinuation)
     case linkNewDevice
     case manageAccount(url: URL)
     case analytics
@@ -39,7 +40,7 @@ enum SettingsScreenSecuritySectionMode {
 struct SettingsScreenViewState: BindableState {
     var deviceID: String?
     var userProfile: UserProfile
-    var showUserStatus: Bool
+    var showUserStatus = false
     var showLinkNewDeviceButton: Bool
     var accountProfileURL: URL?
     var showAccountDeactivation: Bool
@@ -59,18 +60,26 @@ struct SettingsScreenViewState: BindableState {
     
     var userStatusRowMode: SettingsScreenUserStatusRow.Mode {
         if bindings.isShowingCustomStatusField {
-            .custom
-        } else if let rawStatus = userProfile.status.raw {
-            .show(rawStatus)
+            .customStatusInput(emoji: bindings.customStatusEmoji)
+        } else if let displayedStatus = userProfile.status.displayed {
+            .showingStatus(displayedStatus)
         } else {
-            .pick
+            .pickStatusButton
         }
     }
 }
 
 struct SettingsScreenViewStateBindings {
     var isPresentingStatusPicker = false
-    var isShowingCustomStatusField = false
+    var customStatusEmoji: Character = "😄"
+    var isShowingCustomStatusField = false {
+        didSet {
+            if !isShowingCustomStatusField {
+                customStatusEmoji = "😄" // Reset the emoji.
+            }
+        }
+    }
+    
     var isPresentingAccountDeactivationConfirmation = false
 }
 
@@ -106,7 +115,9 @@ enum SettingsScreenViewAction {
         /// Show the emoji picker to select the emoji for the custom status.
         case pickCustomEmoji
         /// Set the user's status to the provided value.
-        case set(UserStatus.Raw?)
+        case set(UserStatus.Raw)
+        /// Clears the user's currently displayed status.
+        case clear
         /// Cancel user status picking/input.
         case cancel
     }

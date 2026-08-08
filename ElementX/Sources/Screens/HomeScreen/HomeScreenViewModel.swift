@@ -69,16 +69,13 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
                 
                 switch securityState.recoveryState {
                 case .disabled:
-                    state.requiresExtraAccountSetup = true
                     if !state.securityBannerMode.isDismissed {
                         state.securityBannerMode = .show(.setUpRecovery)
                     }
                 case .incomplete:
-                    state.requiresExtraAccountSetup = true
                     state.securityBannerMode = .show(.recoveryOutOfSync)
                 default:
                     state.securityBannerMode = .none
-                    state.requiresExtraAccountSetup = false
                 }
             }
             .store(in: &cancellables)
@@ -368,7 +365,7 @@ class HomeScreenViewModel: HomeScreenViewModelType, HomeScreenViewModelProtocol 
         // Delay user profile detail loading until after the initial room list loads
         if roomListMode == .rooms {
             Task {
-                await self.userSession.clientProxy.loadUserProfile()
+                await self.userSession.clientProxy.loadUserProfileIfNeeded()
             }
         }
     }

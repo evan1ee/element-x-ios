@@ -33,6 +33,9 @@ class ClientProxy: ClientProxyProtocol {
     private var syncServiceStateUpdateTaskHandle: TaskHandle?
     
     // periphery:ignore - required for instance retention in the rust codebase
+    private var userProfileListenerTaskHandle: TaskHandle?
+    
+    // periphery:ignore - required for instance retention in the rust codebase
     private var ignoredUsersListenerTaskHandle: TaskHandle?
     
     // periphery:ignore - required for instance retention in the rust codebase
@@ -278,9 +281,17 @@ class ClientProxy: ClientProxyProtocol {
         
         try await client.setUtdDelegate(utdDelegate: ClientDecryptionErrorDelegate(actionsSubject: actionsSubject))
         
-        loadUserAvatarURLFromCache()
+        let canSubscribeToUserProfile = if appSettings.userStatusEnabled, case .success(true) = await isUserStatusSupported() {
+            true
+        } else {
+            false
+        }
         
-        await setupSubscriptions()
+        if !canSubscribeToUserProfile {
+            loadUserAvatarURLFromCache()
+        }
+        
+        await setupSubscriptions(canSubscribeToUserProfile: canSubscribeToUserProfile)
         
         Task {
             do {
@@ -297,6 +308,13 @@ class ClientProxy: ClientProxyProtocol {
         
         Task {
             mediaPreviewConfigListenerTaskHandle = await createMediaPreviewConfigObserver()
+        }
+        
+        if appSettings.userStatusEnabled {
+            Task {
+                guard case .success(true) = await isUserStatusSupported() else { return }
+                client.enableAutomaticCallStatus(enabled: true)
+            }
         }
         
         liveLocationOwnInfoUpdatesListenerTaskHandle = createLiveLocationOwnInfoUpdatesObserver()
@@ -351,7 +369,7 @@ class ClientProxy: ClientProxyProtocol {
     var isLiveKitRTCSupported: Bool {
         get async {
             do {
-                return try await client.isLivekitRtcSupported()
+                return try await client.isLivekitRtcSupported(fallbackToWellKnown: true)
             } catch {
                 MXLog.error("Failed checking LiveKit RTC support with error: \(error)")
                 return false
@@ -705,14 +723,18 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
     
-    func loadUserProfile() async -> Result<Void, ClientProxyError> {
+    func loadUserProfileIfNeeded() async -> Result<Void, ClientProxyError> {
+        // There's no need to load the profile if we're subscribed to it via /sync
+        guard userProfileListenerTaskHandle == nil else { return .success(()) }
+        
         do {
             async let displayName = client.displayName()
             async let avatarURLString = client.avatarUrl()
             
             let profile = try await UserProfile(userID: userID,
                                                 displayName: displayName,
-                                                avatarURL: avatarURLString.flatMap(URL.init))
+                                                avatarURL: avatarURLString.flatMap(URL.init),
+                                                status: userProfileSubject.value.status)
             loadCachedAvatarURLTask?.cancel()
             userProfileSubject.send(profile)
             return .success(())
@@ -725,7 +747,7 @@ class ClientProxy: ClientProxyProtocol {
     func setUserDisplayName(_ name: String) async -> Result<Void, ClientProxyError> {
         do {
             try await client.setDisplayName(name: name)
-            Task { await self.loadUserProfile() }
+            Task { await self.loadUserProfileIfNeeded() }
             return .success(())
         } catch {
             MXLog.error("Failed setting user display name with error: \(error)")
@@ -742,7 +764,7 @@ class ClientProxy: ClientProxyProtocol {
         do {
             let data = try Data(contentsOf: imageURL)
             try await client.uploadAvatar(mimeType: mimeType, data: data)
-            Task { await self.loadUserProfile() }
+            Task { await self.loadUserProfileIfNeeded() }
             return .success(())
         } catch {
             MXLog.error("Failed setting user avatar with error: \(error)")
@@ -753,7 +775,7 @@ class ClientProxy: ClientProxyProtocol {
     func removeUserAvatar() async -> Result<Void, ClientProxyError> {
         do {
             try await client.removeAvatar()
-            Task { await self.loadUserProfile() }
+            Task { await self.loadUserProfileIfNeeded() }
             return .success(())
         } catch {
             MXLog.error("Failed removing user avatar with error: \(error)")
@@ -761,11 +783,19 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
     
-    // periphery:ignore - might be useful to have
+    func isUserStatusSupported() async -> Result<Bool, ClientProxyError> {
+        do {
+            return try await .success(client.isUserStatusSupported())
+        } catch {
+            MXLog.error("Failed detecting user status support with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+    
     func setUserStatus(_ status: UserStatus.Raw) async -> Result<Void, ClientProxyError> {
         do {
             try await client.setUserStatus(status: status.rustValue)
-            Task { await self.loadUserProfile() }
+            // No need to refresh the profile, we only support user status with the profiles /sync extension.
             return .success(())
         } catch {
             MXLog.error("Failed setting user status with error: \(error)")
@@ -773,11 +803,10 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
     
-    // periphery:ignore - might be useful to have
-    func removeUserStatus() async -> Result<Void, ClientProxyError> {
+    func clearUserStatus() async -> Result<Void, ClientProxyError> {
         do {
             try await client.clearUserStatus()
-            Task { await self.loadUserProfile() }
+            // No need to refresh the profile, we only support user status with the profiles /sync extension.
             return .success(())
         } catch {
             MXLog.error("Failed removing user status with error: \(error)")
@@ -1034,9 +1063,21 @@ class ClientProxy: ClientProxyProtocol {
         }
     }
     
+    // MARK: Presence
+    
+    func configurePresence(_ presence: ClientProxyPresence, sendImmediately: Bool) async -> Result<Void, ClientProxyError> {
+        do {
+            try await client.setPresence(presence: presence.rustValue, immediate: sendImmediately)
+            return .success(())
+        } catch {
+            MXLog.error("Failed setting presence with error: \(error)")
+            return .failure(.sdkError(error))
+        }
+    }
+    
     // MARK: - Private
     
-    private func setupSubscriptions() async {
+    private func setupSubscriptions(canSubscribeToUserProfile: Bool) async {
         networkMonitor.reachabilityPublisher
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
@@ -1048,6 +1089,12 @@ class ClientProxy: ClientProxyProtocol {
                 }
             }
             .store(in: &cancellables)
+        
+        if canSubscribeToUserProfile {
+            userProfileListenerTaskHandle = try? client.subscribeToOwnProfile(listener: SDKListener.onMainActor { [weak self] profile in
+                self?.userProfileSubject.send(.init(rustUserProfile: profile))
+            })
+        }
         
         ignoredUsersListenerTaskHandle = client.subscribeToIgnoredUsers(listener: SDKListener.onMainActor { [weak self] ignoredUsers in
             self?.ignoredUsersSubject.send(ignoredUsers)
@@ -1220,7 +1267,8 @@ class ClientProxy: ClientProxyProtocol {
                 let profile = self.userProfileSubject.value
                 self.userProfileSubject.value = UserProfile(userID: profile.id,
                                                             displayName: profile.displayName,
-                                                            avatarURL: urlString.flatMap(URL.init))
+                                                            avatarURL: urlString.flatMap(URL.init),
+                                                            status: profile.status)
             } catch {
                 MXLog.error("Failed to look for the avatar url in the cache: \(error)")
             }
@@ -1500,11 +1548,14 @@ private struct ClientProxyServices {
     init(client: ClientProtocol,
          notificationSettings: NotificationSettingsProxyProtocol,
          appSettings: AppSettings) async throws {
-        let syncService = try await client
+        var syncServiceBuilder = client
             .syncService()
             .withOfflineMode()
             .withSharePos(enable: true)
-            .finish()
+        if appSettings.userStatusEnabled {
+            syncServiceBuilder = syncServiceBuilder.withProfilesExtension()
+        }
+        let syncService = try await syncServiceBuilder.finish()
         
         let roomListService = syncService.roomListService()
         
@@ -1579,6 +1630,19 @@ private extension TimelineMediaVisibility {
             .off
         case .privateOnly:
             .private
+        }
+    }
+}
+
+private extension ClientProxyPresence {
+    var rustValue: PresenceState {
+        switch self {
+        case .online:
+            .online
+        case .unavailable:
+            .unavailable
+        case .offline:
+            .offline
         }
     }
 }

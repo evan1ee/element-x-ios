@@ -91,6 +91,8 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
                     startEncryptionSettingsFlow()
                 case .userDetails:
                     presentUserDetailsEditScreen()
+                case let .userStatusEmojiPicker(continuation):
+                    presentEmojiPicker(emojiPickerContinuation: continuation)
                 case .linkNewDevice:
                     startLinkNewDeviceFlow()
                 case let .manageAccount(url):
@@ -165,6 +167,22 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
         
         encryptionSettingsFlowCoordinator = coordinator
         coordinator.start()
+    }
+    
+    private func presentEmojiPicker(emojiPickerContinuation: EmojiPickerScreenContinuation) {
+        let coordinator = EmojiPickerScreenCoordinator(parameters: .init(selectedEmojis: [],
+                                                                         emojiProvider: flowParameters.emojiProvider,
+                                                                         continuation: emojiPickerContinuation))
+        coordinator.actions
+            .sink { [weak self] action in
+                switch action {
+                case .dismiss:
+                    self?.navigationStackCoordinator.setSheetCoordinator(nil)
+                }
+            }
+            .store(in: &cancellables)
+        
+        navigationStackCoordinator.setSheetCoordinator(coordinator)
     }
     
     private func presentUserDetailsEditScreen() {
