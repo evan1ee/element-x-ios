@@ -156,7 +156,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
         case .cancel:
             actionsSubject.send(.cancel)
         case .selectAsset(let asset):
-            actionsSubject.send(.presentRoom(roomID: asset.roomID, eventID: asset.id))
+            actionsSubject.send(.presentRoom(roomID: asset.roomID, eventID: asset.eventID))
         case .reachedMediaBottom:
             loadMedia(reset: false)
         case .mediaFiltersChanged:

@@ -38,7 +38,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
     /// throwing it away costs only the re-indexing.
     /// Internal rather than private so a backup can record which schema its copy of
     /// the index was written with, and refuse to restore a newer one.
-    nonisolated static let schemaVersion = 5
+    nonisolated static let schemaVersion = 6
     
     init(databaseURL: URL) {
         self.databaseURL = databaseURL
@@ -64,13 +64,13 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             // update trigger so the FTS side stays in step.
             let sql = """
             INSERT INTO events
-                (event_id, room_id, sender_id, sender_display_name, timestamp, kind,
+                (event_id, media_index, room_id, sender_id, sender_display_name, timestamp, kind,
                  message_body, filename, mime_type, url, thread_root_id,
                  file_size, width, height, duration, is_voice_message,
                  media_source, thumbnail_source,
                  message_body_segmented, filename_segmented, sender_display_name_segmented)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(event_id) DO UPDATE SET
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(event_id, media_index) DO UPDATE SET
                 sender_display_name = excluded.sender_display_name,
                 timestamp = excluded.timestamp,
                 kind = excluded.kind,
@@ -97,28 +97,29 @@ actor SearchIndexService: SearchIndexServiceProtocol {
                 sqlite3_reset(statement)
                 sqlite3_clear_bindings(statement)
                 bind(entry.eventID, to: statement, at: 1)
-                bind(entry.roomID, to: statement, at: 2)
-                bind(entry.senderID, to: statement, at: 3)
-                bind(entry.senderDisplayName, to: statement, at: 4)
-                sqlite3_bind_int64(statement, 5, Int64(entry.timestamp.timeIntervalSince1970 * 1000))
-                bind(entry.kind.rawValue, to: statement, at: 6)
-                bind(entry.body, to: statement, at: 7)
-                bind(entry.filename, to: statement, at: 8)
-                bind(entry.mimeType, to: statement, at: 9)
-                bind(entry.url, to: statement, at: 10)
-                bind(entry.threadRootID, to: statement, at: 11)
-                bind(entry.fileSize.map(Int64.init), to: statement, at: 12)
-                bind(entry.width.map(Int64.init), to: statement, at: 13)
-                bind(entry.height.map(Int64.init), to: statement, at: 14)
-                bind(entry.duration.map { Int64($0 * 1000) }, to: statement, at: 15)
-                sqlite3_bind_int64(statement, 16, entry.isVoiceMessage ? 1 : 0)
-                bind(entry.mediaSource, to: statement, at: 17)
-                bind(entry.thumbnailSource, to: statement, at: 18)
+                sqlite3_bind_int64(statement, 2, Int64(entry.mediaIndex))
+                bind(entry.roomID, to: statement, at: 3)
+                bind(entry.senderID, to: statement, at: 4)
+                bind(entry.senderDisplayName, to: statement, at: 5)
+                sqlite3_bind_int64(statement, 6, Int64(entry.timestamp.timeIntervalSince1970 * 1000))
+                bind(entry.kind.rawValue, to: statement, at: 7)
+                bind(entry.body, to: statement, at: 8)
+                bind(entry.filename, to: statement, at: 9)
+                bind(entry.mimeType, to: statement, at: 10)
+                bind(entry.url, to: statement, at: 11)
+                bind(entry.threadRootID, to: statement, at: 12)
+                bind(entry.fileSize.map(Int64.init), to: statement, at: 13)
+                bind(entry.width.map(Int64.init), to: statement, at: 14)
+                bind(entry.height.map(Int64.init), to: statement, at: 15)
+                bind(entry.duration.map { Int64($0 * 1000) }, to: statement, at: 16)
+                sqlite3_bind_int64(statement, 17, entry.isVoiceMessage ? 1 : 0)
+                bind(entry.mediaSource, to: statement, at: 18)
+                bind(entry.thumbnailSource, to: statement, at: 19)
                 // The searchable copies. Segmenting on write means the query only has
                 // to segment itself the same way to line up.
-                bind(entry.body.map(Self.segmented), to: statement, at: 19)
-                bind(entry.filename.map(Self.segmented), to: statement, at: 20)
-                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 21)
+                bind(entry.body.map(Self.segmented), to: statement, at: 20)
+                bind(entry.filename.map(Self.segmented), to: statement, at: 21)
+                bind(entry.senderDisplayName.map(Self.segmented), to: statement, at: 22)
                 
                 guard sqlite3_step(statement) == SQLITE_DONE else {
                     throw SearchIndexError.query(lastErrorMessage(database))
@@ -171,7 +172,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         var sql = """
         SELECT e.event_id, e.room_id, e.sender_id, e.sender_display_name, e.timestamp, e.kind,
                e.message_body, e.filename, e.mime_type, e.url, e.thread_root_id,
-               bm25(events_fts) AS rank
+               bm25(events_fts) AS rank, e.media_index
         FROM events_fts
         JOIN events e ON e.rowid = events_fts.rowid
         WHERE events_fts MATCH ?
@@ -214,6 +215,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             
             let body = string(from: statement, at: 6)
             let entry = SearchIndexEntry(eventID: eventID,
+                                         mediaIndex: Int(sqlite3_column_int64(statement, 12)),
                                          roomID: roomID,
                                          senderID: senderID,
                                          senderDisplayName: string(from: statement, at: 3),
@@ -267,7 +269,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         SELECT event_id, room_id, sender_id, sender_display_name, timestamp, kind,
                message_body, filename, mime_type, url, thread_root_id,
                file_size, width, height, duration, is_voice_message,
-               media_source, thumbnail_source
+               media_source, thumbnail_source, media_index
         FROM events
         WHERE kind != 'message'
         """
@@ -291,7 +293,9 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         if query.before != nil {
             sql += " AND timestamp < ?"
         }
-        sql += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
+        // A gallery's attachments all share one timestamp, so ties need a stable tiebreak:
+        // without one, OFFSET paging could hand back the same row twice and skip another.
+        sql += " ORDER BY timestamp DESC, event_id DESC, media_index ASC LIMIT ? OFFSET ?"
         
         let statement = try prepare(sql, on: database)
         defer { sqlite3_finalize(statement) }
@@ -378,6 +382,7 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         }
         
         return SearchIndexEntry(eventID: eventID,
+                                mediaIndex: Int(sqlite3_column_int64(statement, 18)),
                                 roomID: roomID,
                                 senderID: senderID,
                                 senderDisplayName: string(from: statement, at: 3),
@@ -603,7 +608,10 @@ actor SearchIndexService: SearchIndexServiceProtocol {
         try execute("""
         CREATE TABLE IF NOT EXISTS events (
             rowid INTEGER PRIMARY KEY,
-            event_id TEXT NOT NULL UNIQUE,
+            event_id TEXT NOT NULL,
+            -- A gallery carries several attachments under one event ID, so rows are keyed by
+            -- the pair. Everything else sits at zero, keeping one row per event as before.
+            media_index INTEGER NOT NULL DEFAULT 0,
             room_id TEXT NOT NULL,
             sender_id TEXT NOT NULL,
             sender_display_name TEXT,
@@ -626,7 +634,8 @@ actor SearchIndexService: SearchIndexServiceProtocol {
             -- above so what's searched and what's shown can differ.
             message_body_segmented TEXT,
             filename_segmented TEXT,
-            sender_display_name_segmented TEXT
+            sender_display_name_segmented TEXT,
+            UNIQUE(event_id, media_index)
         )
         """, on: database)
         

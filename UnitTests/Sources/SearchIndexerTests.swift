@@ -29,7 +29,7 @@ struct SearchIndexerTests {
                                                        thumbnailSource: nil,
                                                        contentType: .spreadsheet))
         
-        let entry = try #require(SearchIndexer.entry(from: item, roomID: roomID))
+        let entry = try #require(SearchIndexer.entries(from: item, roomID: roomID).first)
         
         #expect(entry.kind == .file)
         #expect(entry.filename == "budget.xlsx")
@@ -50,7 +50,39 @@ struct SearchIndexerTests {
                                                          thumbnailInfo: nil,
                                                          contentType: .jpeg))
         
-        #expect(SearchIndexer.entry(from: image, roomID: roomID)?.kind == .media)
+        #expect(SearchIndexer.entries(from: image, roomID: roomID).first?.kind == .media)
+    }
+    
+    // MARK: - Galleries
+    
+    @Test
+    func galleriesAreIndexedOneEntryPerAttachment() {
+        let item = makeGallery(caption: "the weekend",
+                               items: [.mockImage(index: 0, filename: "one.jpg"),
+                                       .mockVideo(index: 1, filename: "two.mp4"),
+                                       .mockFile(index: 2, filename: "three.pdf")])
+        
+        let entries = SearchIndexer.entries(from: item, roomID: roomID)
+        
+        #expect(entries.count == 3)
+        #expect(entries.map(\.mediaIndex) == [0, 1, 2])
+        #expect(entries.map(\.filename) == ["one.jpg", "two.mp4", "three.pdf"])
+        #expect(entries.map(\.kind) == [.media, .media, .file])
+        // One event, so every row shares its ID and the caption that makes it findable.
+        #expect(Set(entries.map(\.eventID)).count == 1)
+        #expect(entries.allSatisfy { $0.body == "the weekend" })
+    }
+    
+    @Test
+    func galleryItemsOfUnknownTypeFallBackToIndexingTheCaption() throws {
+        let item = makeGallery(caption: "no previewable items",
+                               items: [.other(id: .mock(0), filename: "mystery.bin")])
+        
+        let entry = try #require(SearchIndexer.entries(from: item, roomID: roomID).first)
+        
+        #expect(entry.kind == .message)
+        #expect(entry.mediaIndex == 0)
+        #expect(entry.body == "no previewable items")
     }
     
     // MARK: - Links
@@ -59,7 +91,7 @@ struct SearchIndexerTests {
     func textCarryingALinkIsIndexedAsALink() throws {
         let item = makeText("have a look at https://github.com/element-hq/element-x-ios")
         
-        let entry = try #require(SearchIndexer.entry(from: item, roomID: roomID))
+        let entry = try #require(SearchIndexer.entries(from: item, roomID: roomID).first)
         
         #expect(entry.kind == .link)
         #expect(entry.url?.contains("github.com") == true)
@@ -68,7 +100,7 @@ struct SearchIndexerTests {
     
     @Test
     func plainTextIsIndexedSoBodiesAreSearchable() throws {
-        let entry = try #require(SearchIndexer.entry(from: makeText("just a normal message"), roomID: roomID))
+        let entry = try #require(SearchIndexer.entries(from: makeText("just a normal message"), roomID: roomID).first)
         
         #expect(entry.kind == .message)
         #expect(entry.body == "just a normal message")
@@ -77,7 +109,7 @@ struct SearchIndexerTests {
     @Test
     func textWithNoBodyAndNoAttachmentIsSkipped() {
         // Nothing to match against, so the row would only take up space.
-        #expect(SearchIndexer.entry(from: makeText(""), roomID: roomID) == nil)
+        #expect(SearchIndexer.entries(from: makeText(""), roomID: roomID).isEmpty)
     }
     
     @Test
@@ -107,7 +139,7 @@ struct SearchIndexerTests {
                                                        thumbnailSource: nil,
                                                        contentType: .pdf))
         
-        #expect(SearchIndexer.entry(from: item, roomID: roomID) == nil)
+        #expect(SearchIndexer.entries(from: item, roomID: roomID).isEmpty)
     }
     
     @Test
@@ -135,6 +167,16 @@ struct SearchIndexerTests {
     }
     
     // MARK: - Helpers
+    
+    private func makeGallery(caption: String, items: [GalleryItem]) -> GalleryRoomTimelineItem {
+        GalleryRoomTimelineItem(id: .randomEvent,
+                                timestamp: .mock,
+                                isOutgoing: false,
+                                isEditable: false,
+                                canBeRepliedTo: true,
+                                sender: .init(id: "@john:example.com", displayName: "John"),
+                                content: .init(body: caption, caption: caption, items: items))
+    }
     
     private func makeText(_ body: String) -> TextRoomTimelineItem {
         TextRoomTimelineItem(id: .randomEvent,

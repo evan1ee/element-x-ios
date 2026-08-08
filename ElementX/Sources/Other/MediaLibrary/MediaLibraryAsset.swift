@@ -10,7 +10,11 @@ import MatrixRustSDK
 
 /// One row or grid cell in the media library.
 struct MediaLibraryAsset: Identifiable, Equatable {
+    /// Unique per tile rather than per event: a gallery contributes one tile per attachment,
+    /// all of which share ``eventID``.
     let id: String
+    /// The event to open when the tile is tapped.
+    let eventID: String
     let roomID: String
     let roomName: String
     let category: MediaCategory
@@ -35,7 +39,8 @@ struct MediaLibraryAsset: Identifiable, Equatable {
             return nil
         }
         
-        id = entry.eventID
+        id = "\(entry.eventID)-\(entry.mediaIndex)"
+        eventID = entry.eventID
         roomID = entry.roomID
         roomName = roomSummary?.name ?? entry.roomID
         self.category = category

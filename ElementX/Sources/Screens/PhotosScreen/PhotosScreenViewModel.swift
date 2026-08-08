@@ -64,7 +64,7 @@ class PhotosScreenViewModel: PhotosScreenViewModelType, PhotosScreenViewModelPro
             // Closed first: it's a full screen cover, so it would otherwise stay sitting on
             // top of the room we've just navigated to.
             state.bindings.previewedAsset = nil
-            actionsSubject.send(.presentRoom(roomID: asset.roomID, eventID: asset.id))
+            actionsSubject.send(.presentRoom(roomID: asset.roomID, eventID: asset.eventID))
         case .selectRoom(let roomID):
             guard roomID != state.roomID else { return }
             state.roomID = roomID

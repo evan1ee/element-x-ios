@@ -27,6 +27,9 @@ enum SearchIndexEventKind: String, Codable, CaseIterable, Sendable {
 /// `MatrixRustSDK` type so the index doesn't depend on the SDK's shape.
 struct SearchIndexEntry: Equatable, Sendable {
     let eventID: String
+    /// Which attachment of the event this row describes. A gallery sends several under one
+    /// event ID, so the index keys on this alongside it; everything else stays at zero.
+    var mediaIndex = 0
     let roomID: String
     let senderID: String
     let senderDisplayName: String?

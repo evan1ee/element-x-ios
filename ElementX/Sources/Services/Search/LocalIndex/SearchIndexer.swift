@@ -46,28 +46,53 @@ nonisolated struct SearchIndexer: Sendable {
     // MARK: - Mapping
     
     static func entries(from items: [RoomTimelineItemProtocol], roomID: String) -> [SearchIndexEntry] {
-        items.compactMap { entry(from: $0, roomID: roomID) }
+        items.flatMap { entries(from: $0, roomID: roomID) }
     }
     
-    static func entry(from item: RoomTimelineItemProtocol, roomID: String) -> SearchIndexEntry? {
+    /// Usually one entry, but a gallery yields one per attachment so each stays separately
+    /// findable and gets its own tile in the library.
+    static func entries(from item: RoomTimelineItemProtocol, roomID: String) -> [SearchIndexEntry] {
         // Local echoes have no event ID yet; they'll be indexed once the timeline
         // replaces them with the remote item.
         guard let eventID = item.id.eventID,
               let item = item as? EventBasedMessageTimelineItemProtocol else {
-            return nil
+            return []
+        }
+        
+        let links = Self.links(in: item.body)
+        
+        if case .gallery(let content) = item.contentType {
+            // The caption rides along on every row so searching it finds the gallery
+            // whichever attachment ranks first.
+            let entries = content.items.enumerated().compactMap { mediaIndex, galleryItem in
+                Self.contentType(of: galleryItem)
+                    .flatMap(Self.attachment(in:))
+                    .map { entry(eventID: eventID, mediaIndex: mediaIndex, attachment: $0, links: links, item: item, roomID: roomID) }
+            }
+            // A gallery of nothing but unknown types still has its caption worth indexing.
+            guard entries.isEmpty else { return entries }
         }
         
         let attachment = Self.attachment(in: item.contentType)
-        let links = Self.links(in: item.body)
         
         // Nothing to match against: no filename, no text.
-        guard attachment != nil || !item.body.isEmpty else { return nil }
+        guard attachment != nil || !item.body.isEmpty else { return [] }
         
+        return [entry(eventID: eventID, mediaIndex: 0, attachment: attachment, links: links, item: item, roomID: roomID)]
+    }
+    
+    private static func entry(eventID: String,
+                              mediaIndex: Int,
+                              attachment: Attachment?,
+                              links: [String],
+                              item: EventBasedMessageTimelineItemProtocol,
+                              roomID: String) -> SearchIndexEntry {
         // A message carrying a link files under links so the filter can find it;
         // the body is still indexed either way.
         let kind: SearchIndexEventKind = attachment?.kind ?? (links.isEmpty ? .message : .link)
         
         return SearchIndexEntry(eventID: eventID,
+                                mediaIndex: mediaIndex,
                                 roomID: roomID,
                                 senderID: item.sender.id,
                                 senderDisplayName: item.sender.displayName,
@@ -88,6 +113,18 @@ nonisolated struct SearchIndexer: Sendable {
                                 isVoiceMessage: attachment?.isVoiceMessage ?? false,
                                 mediaSource: attachment?.mediaSource,
                                 thumbnailSource: attachment?.thumbnailSource)
+    }
+    
+    /// A gallery's attachments reuse the standalone message content types, so they map
+    /// straight back onto them and share the attachment mapping below.
+    private static func contentType(of item: GalleryItem) -> EventBasedMessageTimelineItemContentType? {
+        switch item {
+        case .image(_, let content): .image(content)
+        case .video(_, let content): .video(content)
+        case .audio(_, let content): .audio(content)
+        case .file(_, let content): .file(content)
+        case .other: nil
+        }
     }
     
     private struct Attachment {
@@ -143,8 +180,7 @@ nonisolated struct SearchIndexer: Sendable {
                        fileSize: content.fileSize,
                        duration: content.duration,
                        isVoiceMessage: true)
-        // A gallery carries several attachments under one event ID, which the index can't hold
-        // because it stores a single entry per event. Its caption is still indexed as text.
+        // A gallery is unpacked into one entry per attachment before reaching here.
         case .text, .notice, .emote, .location, .gallery:
             nil
         }
