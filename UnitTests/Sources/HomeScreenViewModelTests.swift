@@ -422,9 +422,63 @@ final class HomeScreenViewModelTests {
     
     enum InviteType { case rooms, spaces }
     
+    @Test
+    func roomListModeIsSetSynchronouslyOnAWarmLaunch() {
+        setupViewModel()
+        
+        // No awaiting, the mode must not need the subscription's async delivery.
+        #expect(context.viewState.roomListMode == .rooms)
+    }
+    
+    @Test
+    func roomListModeWaitsForTheRoomsToPublish() async throws {
+        let (roomListSubject, stateSubject) = setupViewModelWithManualProvider()
+        
+        #expect(context.viewState.roomListMode == .skeletons)
+        
+        // The provider reports loaded before the first summaries have been published.
+        let failure = deferFailure(context.$viewState, timeout: .seconds(1)) { $0.roomListMode != .skeletons }
+        stateSubject.send(.loaded(totalNumberOfRooms: 8))
+        try await failure.fulfill()
+        
+        let deferred = deferFulfillment(context.$viewState) { $0.roomListMode == .rooms }
+        roomListSubject.send(.mockRooms)
+        try await deferred.fulfill()
+    }
+    
+    @Test
+    func roomListModeDoesntReturnToSkeletonsWhenTheRoomsAreFilteredOut() async throws {
+        let (roomListSubject, stateSubject) = setupViewModelWithManualProvider()
+        
+        stateSubject.send(.loaded(totalNumberOfRooms: 8))
+        let deferred = deferFulfillment(context.$viewState) { $0.roomListMode == .rooms }
+        roomListSubject.send(.mockRooms)
+        try await deferred.fulfill()
+        
+        // A filter or a search without matches empties the list, the mode must not regress.
+        let failure = deferFailure(context.$viewState, timeout: .seconds(1)) { $0.roomListMode != .rooms }
+        roomListSubject.send([])
+        stateSubject.send(.loaded(totalNumberOfRooms: 9))
+        try await failure.fulfill()
+    }
+    
+    private func setupViewModelWithManualProvider() -> (CurrentValueSubject<[RoomSummary], Never>, CurrentValueSubject<RoomSummaryProviderState, Never>) {
+        let roomListSubject = CurrentValueSubject<[RoomSummary], Never>([])
+        let stateSubject = CurrentValueSubject<RoomSummaryProviderState, Never>(.notLoaded)
+        
+        let provider = RoomSummaryProviderMock()
+        provider.roomListPublisher = roomListSubject.asCurrentValuePublisher()
+        provider.statePublisher = stateSubject.asCurrentValuePublisher()
+        
+        setupViewModel(roomSummaryProvider: provider)
+        
+        return (roomListSubject, stateSubject)
+    }
+    
     private func setupViewModel(securityStatePublisher: CurrentValuePublisher<SessionSecurityState, Never>? = nil,
                                 invites: InviteType? = nil,
-                                savedMessagesRoomID: String? = nil) {
+                                savedMessagesRoomID: String? = nil,
+                                roomSummaryProvider: RoomSummaryProviderMock? = nil) {
         cancellables.removeAll()
         
         var rooms: [RoomSummary] = .mockRooms
@@ -438,10 +492,10 @@ final class HomeScreenViewModelTests {
             break
         }
         
-        roomSummaryProvider = RoomSummaryProviderMock(.init(state: .loaded(rooms)))
+        self.roomSummaryProvider = roomSummaryProvider ?? RoomSummaryProviderMock(.init(state: .loaded(rooms)))
         
         clientProxy = ClientProxyMock(.init(userID: "@mock:client.com",
-                                            roomSummaryProvider: roomSummaryProvider))
+                                            roomSummaryProvider: self.roomSummaryProvider))
         
         clientProxy.joinRoomViaReturnValue = .success(())
         clientProxy.joinRoomAliasReturnValue = .success(())
@@ -479,6 +533,7 @@ final class HomeScreenViewModelTests {
                                         selectedRoomPublisher: CurrentValueSubject<String?, Never>(nil).asCurrentValuePublisher(),
                                         appSettings: appSettings,
                                         analyticsService: AnalyticsServiceMock(.init()),
+                                        bugReportService: BugReportServiceMock(.init()),
                                         notificationManager: notificationManager,
                                         userIndicatorController: UserIndicatorControllerMock())
     }

@@ -114,13 +114,17 @@ nonisolated extension URL {
         return url
     }
     
-    var globalProxy: String? {
-        let span = MXLog.createSpan("Global proxy")
-        span.enter()
-        defer {
-            span.exit()
+    /// The directory holding the sounds that iOS uses for its own interface.
+    static let systemSoundsDirectory: URL = {
+        let systemRoot = if let simulatorRoot = ProcessInfo.processInfo.environment["SIMULATOR_ROOT"] {
+            URL(filePath: simulatorRoot)
+        } else {
+            URL(filePath: "/")
         }
-        
+        return systemRoot.appending(components: "System", "Library", "Audio", "UISounds", directoryHint: .isDirectory)
+    }()
+    
+    var globalProxy: String? {
         guard let proxySettings = CFNetworkCopySystemProxySettings()?.takeRetainedValue() else {
             MXLog.error("Failed retrieving proxy settings")
             return nil

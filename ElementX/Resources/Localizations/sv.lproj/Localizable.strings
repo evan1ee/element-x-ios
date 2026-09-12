@@ -12,6 +12,11 @@
 "a11y_edit_avatar" = "Redigera avatar";
 "a11y_edit_room_address_hint" = "Den fullständiga adressen kommer att vara %1$@";
 "a11y_expand_message_text_field" = "Expandera meddelandetextfältet";
+"a11y_gallery_attachment" = "Gallery, attachment %1$d";
+"a11y_gallery_failed_scan" = "Gallery, failed scan %1$d";
+"a11y_gallery_image" = "Gallery, image %1$d";
+"a11y_gallery_scanning" = "Gallery, scanning %1$d";
+"a11y_gallery_video" = "Gallery, video %1$d";
 "a11y_hide_password" = "Dölj lösenord";
 "a11y_info" = "Info";
 "a11y_join_call" = "Anslut till samtal";
@@ -169,6 +174,7 @@
 "action_retry_decryption" = "Försök att avkryptera igen";
 "action_save" = "Spara";
 "action_search" = "Sök";
+"action_select" = "Select";
 "action_select_all" = "Select all";
 "action_send" = "Skicka";
 "action_send_edited_message" = "Skicka redigerat message";
@@ -490,6 +496,11 @@
 "error_no_compatible_app_found" = "Ingen kompatibel app hittades för att hantera den här åtgärden.";
 "error_room_address_already_exists" = "Den här rumsadressen finns redan. Försök att redigera adressfältet för rummet eller ändra rummets namn";
 "error_room_address_invalid_symbols" = "Vissa tecken är inte tillåtna. Endast bokstäver, siffror och följande symboler stöds ! $ & ‘ ( ) * + / ; = ? @ [ ] - . _";
+"error_sending_failure_invalid_mime_type" = "Invalid mime type: %@";
+"error_sending_failure_missing_media_content" = "Missing media content";
+"error_sending_failure_other" = "Error details: %@";
+"error_sending_failure_sending_from_unverified_device" = "Sending from unverified device";
+"error_sending_failure_unknown" = "Unknown error";
 "error_some_messages_have_not_been_sent" = "Vissa meddelanden har inte skickats";
 "error_unknown" = "Tyvärr, ett fel uppstod";
 "error.account_already_logged_in" = "Du är redan inloggad på den här enheten som %1$@.";
@@ -519,6 +530,7 @@
 "notification_invitation_action_reject" = "Avvisa";
 "notification_invite_body" = "Bjöd in dig att chatta";
 "notification_invite_body_with_sender" = "%1$@ bjöd in dig att chatta";
+"notification_knock_request_body" = "Requested to join";
 "notification_live_location_started_body" = "Started sharing their live location";
 "notification_mentioned_you_body" = "Nämnde dig: %1$@";
 "notification_new_messages" = "Nya meddelanden";
@@ -710,8 +722,16 @@
 "screen_change_server_error_unauthorized_homeserver_title" = "Kontoleverantör %1$@ är inte tillåten.";
 "screen_change_server_form_header" = "Hemserverns URL";
 "screen_change_server_form_notice" = "Ange en domänadress.";
+"screen_change_server_navigation_title_login" = "Sign in";
+"screen_change_server_navigation_title_register" = "Create account";
 "screen_change_server_subtitle" = "Vad är adressen till din server?";
+"screen_change_server_textfield_footer_login" = "If your account is provided by your company or a community, then change the account provider (example: companyname.com).";
+"screen_change_server_textfield_footer_register" = "Create an account on matrix.org for free. If you want to create an account with a different provider, then change it accordingly (example: communityname.org).";
+"screen_change_server_textfield_header" = "Account provider";
+"screen_change_server_textfield_placeholder" = "example.com";
 "screen_change_server_title" = "Välj din server";
+"screen_change_server_title_login" = "Enter your account provider";
+"screen_change_server_title_register" = "Choose an account provider";
 "screen_chat_backup_key_backup_action_disable" = "Stäng av säkerhetskopiering";
 "screen_chat_backup_key_backup_action_enable" = "Slå på säkerhetskopiering";
 "screen_chat_backup_key_backup_description" = "Lagra din kryptografiska identitet och dina meddelandenycklar säkert på servern. Detta gör att du kan se din meddelandehistorik på alla nya enheter. %1$@.";
@@ -758,7 +778,7 @@
 "screen_create_room_private_option_description" = "Endast inbjudna personer kan gå med.";
 "screen_create_room_private_option_title" = "Private";
 "screen_create_room_public_option_description" = "Vem som helst kan hitta det här rummet.\nDu kan ändra detta när som helst i rumsinställningarna.";
-"screen_create_room_public_option_short_description" = "Anyone can join.";
+"screen_create_room_public_option_short_description" = "Anyone can join, including people outside your organisation.";
 "screen_create_room_public_option_title" = "Public";
 "screen_create_room_room_access_section_knocking_option_description" = "Vem som helst kan be om att gå med men en administratör eller en moderator måste acceptera begäran";
 "screen_create_room_room_access_section_knocking_option_title" = "Tillåt att be om att gå med";
@@ -931,6 +951,10 @@
 "screen_knock_requests_list_empty_state_title" = "Ingen väntande begäran om att gå med";
 "screen_knock_requests_list_initial_loading_title" = "Laddar förfrågningar om att gå med …";
 "screen_knock_requests_list_title" = "Begäran om att gå med";
+"screen_labs_enable_gallery" = "Gallery messages";
+"screen_labs_enable_gallery_description" = "Send multiple images or videos in one go. Stable on mobile, but not yet supported by web.";
+"screen_labs_enable_knocking" = "Ask to join";
+"screen_labs_enable_knocking_description" = "Users can request access to a room that is not open for anyone to join. Stable on mobile, web implementation exists but is experimental.";
 "screen_labs_enable_threads" = "Enable thread replies";
 "screen_labs_enable_threads_description" = "The app will restart to apply this change.";
 "screen_labs_header_description" = "Try out our latest ideas in development. These features are not finalised; they may be unstable, may change.";
@@ -939,11 +963,11 @@
 "screen_leave_space_choose_owners_action" = "Välj ägare";
 "screen_leave_space_last_admin_info" = "%1$@ (Admin)";
 "screen_leave_space_subtitle" = "Välj de rum du vill lämna och som du inte är ensam administratör för:";
-"screen_leave_space_subtitle_last_admin" = "You need to assign another admin for this space before you can leave.";
+"screen_leave_space_subtitle_last_admin" = "You need to assign another administrator for this space before you can leave.";
 "screen_leave_space_subtitle_last_owner" = "You are the only owner of %1$@. You need to transfer ownership to someone else before you leave.";
 "screen_leave_space_subtitle_only_last_admin" = "You will not be removed from the following room(s) because you're the only administrator:";
 "screen_leave_space_title" = "Lämna %1$@?";
-"screen_leave_space_title_last_admin" = "You are the only admin for %1$@";
+"screen_leave_space_title_last_admin" = "You are the only administrator for %1$@";
 "screen_leave_space_title_last_owner" = "Transfer ownership";
 "screen_link_new_device_authentication_reason_ios" = "Confirm it's you before linking a new device.";
 "screen_link_new_device_desktop_scanning_title" = "Skanna QR-koden";
@@ -980,7 +1004,7 @@
 "screen_live_location_sheet_title" = "On the map";
 "screen_local_network_opt_in_subtitle" = "Your homeserver is on your local network. To connect, %1$@ needs permission to reach devices on this network.";
 "screen_local_network_opt_in_title" = "Allow access to local network";
-"screen_login_error_deactivated_account" = "Detta konto har avaktiverats.";
+"screen_login_error_deactivated_account" = "Detta konto har raderats.";
 "screen_login_error_invalid_credentials" = "Felaktigt användarnamn och/eller lösenord";
 "screen_login_error_invalid_user_id" = "Detta är inte en giltig användaridentifierare. Förväntat format: '@användare:hemserver.org'";
 "screen_login_error_refresh_tokens" = "Den här servern är konfigurerad för att använda uppdateringstokens. Dessa stöds inte när du använder lösenordsbaserad inloggning.";
@@ -1030,7 +1054,7 @@
 "screen_missing_key_backup_open_element_classic" = "Open Element Classic";
 "screen_missing_key_backup_step_1" = "Open Element Classic on your device";
 "screen_missing_key_backup_step_2_ios" = "Go to User settings > Security";
-"screen_missing_key_backup_step_3_ios" = "Scroll down to Secure Backup and tap on Set up";
+"screen_missing_key_backup_step_3_ios" = "Scroll down to Chat Backup and tap on Set up";
 "screen_missing_key_backup_step_4" = "Follow the instructions to enable your key storage";
 "screen_missing_key_backup_step_5" = "Come back to %1$@";
 "screen_missing_key_backup_title" = "Enable your key storage before proceeding to %1$@";
@@ -1266,6 +1290,10 @@
 "screen_room_change_role_section_users" = "Medlemmar";
 "screen_room_change_role_unsaved_changes_description" = "Du har osparade ändringar.";
 "screen_room_change_role_unsaved_changes_title" = "Spara ändringar?";
+"screen_room_confirm_removal_message" = "Are you sure you wish to remove this message?";
+"screen_room_confirm_removal_reason_label" = "Reason (optional)";
+"screen_room_confirm_removal_reason_placeholder" = "Enter…";
+"screen_room_confirm_removal_title" = "Confirm removal";
 "screen_room_details_add_topic_title" = "Lägg till ämne";
 "screen_room_details_badge_encrypted" = "Krypterat";
 "screen_room_details_badge_not_encrypted" = "Inte krypterat";
@@ -1311,6 +1339,7 @@
 "screen_room_invite_again_alert_message" = "Vill du bjuda tillbaka dem?";
 "screen_room_invite_again_alert_title" = "Du är ensam i den här chatten";
 "screen_room_live_location_banner" = "Sharing live location";
+"screen_room_maximum_messages_selected" = "Maximum messages selected";
 "screen_room_member_details_block_alert_action" = "Blockera";
 "screen_room_member_details_block_alert_description" = "Blockerade användare kommer inte att kunna skicka meddelanden till dig och alla deras meddelanden kommer att döljas. Du kan avblockera dem när som helst.";
 "screen_room_member_details_block_user" = "Blockera användare";
@@ -1351,7 +1380,8 @@
 "screen_room_notification_settings_error_setting_mode" = "Misslyckades att ställa in läget, vänligen pröva igen.";
 "screen_room_notification_settings_mentions_only_disclaimer" = "Din hemserver stöder inte det här alternativet i krypterade rum, du blir inte aviserad i det här rummet.";
 "screen_room_notification_settings_mode_all_messages" = "Alla meddelanden";
-"screen_room_notification_settings_mode_mentions_and_keywords" = "Endast omnämnanden och nyckelord";
+"screen_room_notification_settings_mode_mentions_and_keywords" = "Mentions and replies only";
+"screen_room_notification_settings_mode_mute" = "Mute";
 "screen_room_notification_settings_room_custom_settings_title" = "I det här rummet, meddela mig för";
 "screen_room_pinned_banner_indicator" = "%1$@ av %2$@";
 "screen_room_pinned_banner_indicator_description" = "%1$@ Fästa meddelanden";
@@ -1412,6 +1442,8 @@
 "screen_roomlist_filter_invites_empty_state_title" = "Du har inga väntande inbjudningar.";
 "screen_roomlist_filter_low_priority" = "Låg prioritet";
 "screen_roomlist_filter_low_priority_empty_state_title" = "Du har inga lågprioriterade chattar ännu";
+"screen_roomlist_filter_mention" = "Mention";
+"screen_roomlist_filter_mention_empty_state_title" = "You don’t have any unread mentions";
 "screen_roomlist_filter_mixed_empty_state_subtitle" = "Du kan avmarkera filter för att se dina andra chattar";
 "screen_roomlist_filter_mixed_empty_state_title" = "Du har inga chattar för det här valet";
 "screen_roomlist_filter_people" = "Personer";
@@ -1498,6 +1530,8 @@
 "screen_session_verification_request_title" = "Verifiering begärd";
 "screen_session_verification_they_dont_match" = "De matchar inte";
 "screen_session_verification_they_match" = "De matchar";
+"screen_session_verification_unavailable_subtitle" = "Please use another device or recovery key.";
+"screen_session_verification_unavailable_title" = "Verification with this device is currently unavailable";
 "screen_session_verification_use_another_device_subtitle" = "Se till att du har appen öppen på den andra enheten innan du startar verifieringen härifrån.";
 "screen_session_verification_use_another_device_title" = "Öppna appen på en annan verifierad enhet";
 "screen_session_verification_user_initiator_subtitle" = "För extra säkerhet, verifiera den här användaren genom att jämföra en uppsättning emojier på dina enheter. Gör detta med hjälp av ett betrott kommunikationssätt.";
@@ -1526,7 +1560,7 @@
 "screen_share_open_apple_maps" = "Öppna i Apple Maps";
 "screen_share_open_google_maps" = "Öppna i Google Maps";
 "screen_share_open_osm_maps" = "Öppna i OpenStreetMap";
-"screen_share_this_location_action" = "Dela fäst plats";
+"screen_share_this_location_action" = "Dela vald plats";
 "screen_sharing_location_option_sheet_title" = "Sharing options";
 "screen_signed_out_reason_1" = "Du har ändrat ditt lösenord på en annan session";
 "screen_signed_out_reason_2" = "Du har raderat sessionen från en annan session";
@@ -1557,7 +1591,7 @@
 "screen_space_list_parent_space" = "%1$@ space";
 "screen_space_list_title" = "Utrymmen";
 "screen_space_menu_action_members" = "View members";
-"screen_space_remove_rooms_confirmation_content" = "Removing a room will not affect the room access. To change the access go to Room info > Privacy & security.";
+"screen_space_remove_rooms_confirmation_content" = "Removing a room will not affect the room access. To change the access go to Room info > Security & privacy.";
 "screen_space_remove_rooms_confirmation_title_ios" = "Remove rooms from %1$@?";
 "screen_space_settings_leave_space" = "Lämna utrymmet";
 "screen_space_settings_roles_and_permissions" = "Roller och behörigheter";
@@ -1708,6 +1742,7 @@
 "troubleshoot_notifications_test_push_loop_back_failure_2" = "Fel: %1$@.";
 "troubleshoot_notifications_test_push_loop_back_failure_3" = "Fel, kan inte testa push.";
 "troubleshoot_notifications_test_push_loop_back_failure_4" = "Fel, tidsgräns överskriden vid väntan på push.";
+"troubleshoot_notifications_test_push_loop_back_failure_rate_limit" = "Error: the push gateway is rate limiting this device, so notifications won't be reliable. Please set up a different push gateway.";
 "troubleshoot_notifications_test_push_loop_back_success" = "Returnering av push tog %1$d ms.";
 "troubleshoot_notifications_test_push_loop_back_title" = "Testa returnering av push";
 "troubleshoot_notifications_test_unified_push_description" = "Se till att UnifiedPush-distributörer är tillgängliga.";

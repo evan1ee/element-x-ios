@@ -12,6 +12,11 @@
 "a11y_edit_avatar" = "Editatu abatarra";
 "a11y_edit_room_address_hint" = "The full address will be %1$@";
 "a11y_expand_message_text_field" = "Expand message text field";
+"a11y_gallery_attachment" = "Gallery, attachment %1$d";
+"a11y_gallery_failed_scan" = "Gallery, failed scan %1$d";
+"a11y_gallery_image" = "Gallery, image %1$d";
+"a11y_gallery_scanning" = "Gallery, scanning %1$d";
+"a11y_gallery_video" = "Gallery, video %1$d";
 "a11y_hide_password" = "Ezkutatu pasahitza";
 "a11y_info" = "Info";
 "a11y_join_call" = "Batu deira";
@@ -169,6 +174,7 @@
 "action_retry_decryption" = "Saiatu berriro deszifratzen";
 "action_save" = "Gorde";
 "action_search" = "Bilatu";
+"action_select" = "Select";
 "action_select_all" = "Select all";
 "action_send" = "Bidali";
 "action_send_edited_message" = "Bidali editatutako mezua";
@@ -478,7 +484,7 @@
 "emoji_picker_category_recent" = "Recent emojis";
 "emoji_picker_category_symbols" = "Ikurrak";
 "emoji_picker_search_placeholder" = "Search emojis";
-"error_account_creation_not_possible" = "Your homeserver needs to be upgraded to support Matrix Authentication Service and account creation.";
+"error_account_creation_not_possible" = "Your account provider needs to be upgraded to support Matrix Authentication Service and account creation.";
 "error_failed_creating_the_permalink" = "Huts egin du esteka iraunkorra sortzeak";
 "error_failed_loading_map" = "%1$@ ezin izan da mapa kargatu. Saiatu berriro geroago.";
 "error_failed_loading_messages" = "Huts egin du mezuak kargatzeak";
@@ -490,6 +496,11 @@
 "error_no_compatible_app_found" = "Ez da ekintza hau kudeatzeko aplikazio bateragarririk aurkitu.";
 "error_room_address_already_exists" = "Gela badago lehendik ere. Saiatu gelaren helbidearen eremua editatzen edo aldatu gelaren izena";
 "error_room_address_invalid_symbols" = "Karaktere batzuk ez daude baimenduta. Hizkiak, zifrak, eta ondorengo ikurrak onartzen dira bakarrik: ! $ & ‘ ( ) * + / ; = ? @ [ ] - . _";
+"error_sending_failure_invalid_mime_type" = "Invalid mime type: %@";
+"error_sending_failure_missing_media_content" = "Missing media content";
+"error_sending_failure_other" = "Error details: %@";
+"error_sending_failure_sending_from_unverified_device" = "Sending from unverified device";
+"error_sending_failure_unknown" = "Unknown error";
 "error_some_messages_have_not_been_sent" = "Mezu batzuk ez dira bidali";
 "error_unknown" = "Barka, errore bat gertatu da";
 "error.account_already_logged_in" = "You're already logged in on this device as %1$@.";
@@ -519,6 +530,7 @@
 "notification_invitation_action_reject" = "Baztertu";
 "notification_invite_body" = "Txatetzera gonbidatu zaitu";
 "notification_invite_body_with_sender" = "%1$@(e)k txatera gonbidatu zaitu";
+"notification_knock_request_body" = "Requested to join";
 "notification_live_location_started_body" = "Started sharing their live location";
 "notification_mentioned_you_body" = "Aipatu zaitu: %1$@";
 "notification_new_messages" = "Mezu berriak";
@@ -702,7 +714,7 @@
 "screen_change_server_error_element_pro_required_action_ios" = "App Store";
 "screen_change_server_error_element_pro_required_message" = "The Element Pro app is required on %1$@. Please download it from the store.";
 "screen_change_server_error_element_pro_required_title" = "Element Pro behar da";
-"screen_change_server_error_invalid_homeserver" = "We couldn't reach this homeserver. Please check that you have entered the homeserver URL correctly. If the URL is correct, contact your homeserver administrator for further help.";
+"screen_change_server_error_invalid_homeserver" = "We couldn't reach this account provider. Please check that you have entered the account provider URL correctly. If the URL is correct, contact your account provider administrator for further help.";
 "screen_change_server_error_invalid_well_known" = "Server isn't available due to an issue in the .well-known file:\n%1$@";
 "screen_change_server_error_no_sliding_sync_message" = "Hautatutako kontu-hornitzailea ez da bateragarria Sliding Sync-ekin. Beharrezkoa da zerbitzaria bertsio-berritzea %1$@ erabiltzeko.";
 "screen_change_server_error_unauthorized_homeserver" = "%1$@ is not allowed to connect to %2$@.";
@@ -710,8 +722,16 @@
 "screen_change_server_error_unauthorized_homeserver_title" = "Ez da %1$@ kontu-hornitzailea onartzen.";
 "screen_change_server_form_header" = "Zerbitzariaren URLa";
 "screen_change_server_form_notice" = "Sartu domeinu-helbide bat.";
+"screen_change_server_navigation_title_login" = "Sign in";
+"screen_change_server_navigation_title_register" = "Create account";
 "screen_change_server_subtitle" = "Zein da zure zerbitzariaren helbidea?";
+"screen_change_server_textfield_footer_login" = "If your account is provided by your company or a community, then change the account provider (example: companyname.com).";
+"screen_change_server_textfield_footer_register" = "Create an account on matrix.org for free. If you want to create an account with a different provider, then change it accordingly (example: communityname.org).";
+"screen_change_server_textfield_header" = "Account provider";
+"screen_change_server_textfield_placeholder" = "example.com";
 "screen_change_server_title" = "Hautatu zure zerbitzaria";
+"screen_change_server_title_login" = "Enter your account provider";
+"screen_change_server_title_register" = "Choose an account provider";
 "screen_chat_backup_key_backup_action_disable" = "Ezabatu gakoen biltegia";
 "screen_chat_backup_key_backup_action_enable" = "Aktibatu babeskopia";
 "screen_chat_backup_key_backup_description" = "Gorde zure identitate-kriptografikoa eta mezuen gakoak modu seguruan zerbitzarian. Horrek zure mezuen historia edozein gailu berritan ikusteko aukera emango dizu. %1$@.";
@@ -758,7 +778,7 @@
 "screen_create_room_private_option_description" = "Gonbidatutako jendea soilik sar daiteke gelara. Mezu guztiak daude ertzetik ertzera zifratuta.";
 "screen_create_room_private_option_title" = "Private";
 "screen_create_room_public_option_description" = "Edonork aurki dezake gela hau.\nGelaren ezarpenetan aldatu dezakezu hobespena.";
-"screen_create_room_public_option_short_description" = "Anyone can join.";
+"screen_create_room_public_option_short_description" = "Anyone can join, including people outside your organisation.";
 "screen_create_room_public_option_title" = "Public";
 "screen_create_room_room_access_section_knocking_option_description" = "Anyone can ask to join but an administrator or a moderator must accept the request.";
 "screen_create_room_room_access_section_knocking_option_title" = "Allow ask to join";
@@ -931,6 +951,10 @@
 "screen_knock_requests_list_empty_state_title" = "No pending request to join";
 "screen_knock_requests_list_initial_loading_title" = "Loading requests to join…";
 "screen_knock_requests_list_title" = "Sartzeko eskaerak";
+"screen_labs_enable_gallery" = "Gallery messages";
+"screen_labs_enable_gallery_description" = "Send multiple images or videos in one go. Stable on mobile, but not yet supported by web.";
+"screen_labs_enable_knocking" = "Ask to join";
+"screen_labs_enable_knocking_description" = "Users can request access to a room that is not open for anyone to join. Stable on mobile, web implementation exists but is experimental.";
 "screen_labs_enable_threads" = "Enable thread replies";
 "screen_labs_enable_threads_description" = "The app will restart to apply this change.";
 "screen_labs_header_description" = "Try out our latest ideas in development. These features are not finalised; they may be unstable, may change.";
@@ -939,11 +963,11 @@
 "screen_leave_space_choose_owners_action" = "Aukeratu jabeak";
 "screen_leave_space_last_admin_info" = "%1$@ (Admin)";
 "screen_leave_space_subtitle" = "Select the rooms you’d like to leave which you're not the only administrator for:";
-"screen_leave_space_subtitle_last_admin" = "You need to assign another admin for this space before you can leave.";
+"screen_leave_space_subtitle_last_admin" = "You need to assign another administrator for this space before you can leave.";
 "screen_leave_space_subtitle_last_owner" = "You are the only owner of %1$@. You need to transfer ownership to someone else before you leave.";
 "screen_leave_space_subtitle_only_last_admin" = "You will not be removed from the following room(s) because you're the only administrator:";
 "screen_leave_space_title" = "Leave %1$@?";
-"screen_leave_space_title_last_admin" = "You are the only admin for %1$@";
+"screen_leave_space_title_last_admin" = "You are the only administrator for %1$@";
 "screen_leave_space_title_last_owner" = "Transfer ownership";
 "screen_link_new_device_authentication_reason_ios" = "Confirm it's you before linking a new device.";
 "screen_link_new_device_desktop_scanning_title" = "Eskaneatu QR kodea";
@@ -1030,7 +1054,7 @@
 "screen_missing_key_backup_open_element_classic" = "Open Element Classic";
 "screen_missing_key_backup_step_1" = "Open Element Classic on your device";
 "screen_missing_key_backup_step_2_ios" = "Go to User settings > Security";
-"screen_missing_key_backup_step_3_ios" = "Scroll down to Secure Backup and tap on Set up";
+"screen_missing_key_backup_step_3_ios" = "Scroll down to Chat Backup and tap on Set up";
 "screen_missing_key_backup_step_4" = "Follow the instructions to enable your key storage";
 "screen_missing_key_backup_step_5" = "Come back to %1$@";
 "screen_missing_key_backup_title" = "Enable your key storage before proceeding to %1$@";
@@ -1199,7 +1223,7 @@
 "screen_report_content_hint" = "Edukia salatzeko arrazoia";
 "screen_report_room_leave_failed_alert_message" = "Your report was submitted successfully, but we encountered an issue while trying to leave the room. Please try again.";
 "screen_report_room_leave_failed_alert_title" = "Unable to Leave Room";
-"screen_report_room_reason_footer" = "Report this room to your admin. If the messages are encrypted, your admin will not be able to read them.";
+"screen_report_room_reason_footer" = "Report this chat to your account provider. If the messages are encrypted, your account provider will not be able to read them.";
 "screen_report_room_reason_placeholder" = "Describe the reason to report…";
 "screen_report_room_title" = "Salatu gela";
 "screen_reset_encryption_confirmation_alert_action" = "Bai, berrezarri orain";
@@ -1266,6 +1290,10 @@
 "screen_room_change_role_section_users" = "Kideak";
 "screen_room_change_role_unsaved_changes_description" = "Gorde gabeko aldaketak dituzu.";
 "screen_room_change_role_unsaved_changes_title" = "Aldaketak gorde?";
+"screen_room_confirm_removal_message" = "Are you sure you wish to remove this message?";
+"screen_room_confirm_removal_reason_label" = "Reason (optional)";
+"screen_room_confirm_removal_reason_placeholder" = "Enter…";
+"screen_room_confirm_removal_title" = "Confirm removal";
 "screen_room_details_add_topic_title" = "Gehitu hizketagaia";
 "screen_room_details_badge_encrypted" = "Zifratuta";
 "screen_room_details_badge_not_encrypted" = "Zifratu gabe";
@@ -1311,6 +1339,7 @@
 "screen_room_invite_again_alert_message" = "Berriro gonbidatu nahi al dituzu?";
 "screen_room_invite_again_alert_title" = "Bakarrik zaude txat honetan";
 "screen_room_live_location_banner" = "Sharing live location";
+"screen_room_maximum_messages_selected" = "Maximum messages selected";
 "screen_room_member_details_block_alert_action" = "Blokeatu";
 "screen_room_member_details_block_alert_description" = "Blokeatutako erabiltzaileek ezingo dizute mezurik bidali eta beren mezuak ezkutatuko dira. Edozein unetan desblokeatu ditzakezu.";
 "screen_room_member_details_block_user" = "Blokeatu erabiltzailea";
@@ -1351,7 +1380,8 @@
 "screen_room_notification_settings_error_setting_mode" = "Failed setting the mode, please try again.";
 "screen_room_notification_settings_mentions_only_disclaimer" = "Zure zerbitzaria ez da bateragarria enkriptatutako gelen aukerarekin; litekeena da gela batzuetako jakinarazpenak ez jasotzea.";
 "screen_room_notification_settings_mode_all_messages" = "Mezu guztiak";
-"screen_room_notification_settings_mode_mentions_and_keywords" = "Aipamenak eta hitz gakoak soilik";
+"screen_room_notification_settings_mode_mentions_and_keywords" = "Mentions and replies only";
+"screen_room_notification_settings_mode_mute" = "Mute";
 "screen_room_notification_settings_room_custom_settings_title" = "Gela honetan, jakinarazi";
 "screen_room_pinned_banner_indicator" = "%2$@(e)tik %1$@";
 "screen_room_pinned_banner_indicator_description" = "%1$@ Pinned messages";
@@ -1412,6 +1442,8 @@
 "screen_roomlist_filter_invites_empty_state_title" = "Ez duzu gonbidapenik zain.";
 "screen_roomlist_filter_low_priority" = "Lehentasun baxua";
 "screen_roomlist_filter_low_priority_empty_state_title" = "You don’t have any low priority chats yet";
+"screen_roomlist_filter_mention" = "Mention";
+"screen_roomlist_filter_mention_empty_state_title" = "You don’t have any unread mentions";
 "screen_roomlist_filter_mixed_empty_state_subtitle" = "Iragazkiak desautatu ditzakezu gainerako txatak ikusteko";
 "screen_roomlist_filter_mixed_empty_state_title" = "Ez duzu hautaketa betetzen duen txatik";
 "screen_roomlist_filter_people" = "Jendea";
@@ -1498,6 +1530,8 @@
 "screen_session_verification_request_title" = "Egiaztapena eskatu da";
 "screen_session_verification_they_dont_match" = "Ez datoz bat";
 "screen_session_verification_they_match" = "Bat datoz";
+"screen_session_verification_unavailable_subtitle" = "Please use another device or recovery key.";
+"screen_session_verification_unavailable_title" = "Verification with this device is currently unavailable";
 "screen_session_verification_use_another_device_subtitle" = "Ziurtatu aplikazioa irekita duzula beste gailuan hemendik egiaztatzea hasi aurretik.";
 "screen_session_verification_use_another_device_title" = "Ireki aplikazioa egiaztatutako beste gailu batean";
 "screen_session_verification_user_initiator_subtitle" = "Segurtasun handiagorako, egiaztatu erabiltzailea emoji multzo bat alderatuz. Egin hau komunikatzeko modu fidagarri bat erabiliz.";
@@ -1557,7 +1591,7 @@
 "screen_space_list_parent_space" = "%1$@ space";
 "screen_space_list_title" = "Spaces";
 "screen_space_menu_action_members" = "View members";
-"screen_space_remove_rooms_confirmation_content" = "Removing a room will not affect the room access. To change the access go to Room info > Privacy & security.";
+"screen_space_remove_rooms_confirmation_content" = "Removing a room will not affect the room access. To change the access go to Room info > Security & privacy.";
 "screen_space_remove_rooms_confirmation_title_ios" = "Remove rooms from %1$@?";
 "screen_space_settings_leave_space" = "Leave space";
 "screen_space_settings_roles_and_permissions" = "Rolak eta baimenak";
@@ -1708,6 +1742,7 @@
 "troubleshoot_notifications_test_push_loop_back_failure_2" = "Errorea: %1$@.";
 "troubleshoot_notifications_test_push_loop_back_failure_3" = "Errorea, ezin da push-a probatu.";
 "troubleshoot_notifications_test_push_loop_back_failure_4" = "Errorea, denbora agortu da push-aren zain.";
+"troubleshoot_notifications_test_push_loop_back_failure_rate_limit" = "Error: the push gateway is rate limiting this device, so notifications won't be reliable. Please set up a different push gateway.";
 "troubleshoot_notifications_test_push_loop_back_success" = "Push loop back took %1$d ms.";
 "troubleshoot_notifications_test_push_loop_back_title" = "Test Push loop back";
 "troubleshoot_notifications_test_unified_push_description" = "Ensure that UnifiedPush distributors are available.";

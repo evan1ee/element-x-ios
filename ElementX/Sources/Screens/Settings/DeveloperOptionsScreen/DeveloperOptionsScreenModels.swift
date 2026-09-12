@@ -59,22 +59,19 @@ protocol DeveloperOptionsProtocol: AnyObject {
     var automaticBackPaginationEnabled: Bool { get set }
     
     var roomListActivityVisibility: RoomListActivityVisibility { get set }
+    var roomListNotificationCountEnabled: Bool { get set }
     var elementCallBaseURLOverride: URL? { get set }
     
     var fuzzyRoomListSearchEnabled: Bool { get set }
     var lowPriorityFilterEnabled: Bool { get set }
-    var knockingEnabled: Bool { get set }
+    var mentionsFilterEnabled: Bool { get set }
     
     var linkPreviewsEnabled: Bool { get set }
     
-    var galleryEnabled: Bool { get set }
-    
     var jumpToReadMarkerEnabled: Bool { get set }
+    var messageMultiSelectEnabled: Bool { get set }
     
     var linkNewDeviceEnabled: Bool { get set }
-    var userStatusEnabled: Bool { get set }
-    
-    var roomThreadListEnabled: Bool { get set }
 }
 
 extension AppSettings: DeveloperOptionsProtocol { }

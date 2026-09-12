@@ -880,6 +880,13 @@ extension PreviewTests {
     }
 
     @Test
+    func redactConfirmationView() async throws {
+        for (index, preview) in RedactConfirmationView_Previews._allPreviews.enumerated() {
+            try await assertSnapshots(matching: preview, step: index)
+        }
+    }
+
+    @Test
     func redactedRoomTimelineView() async throws {
         for (index, preview) in RedactedRoomTimelineView_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
@@ -1183,13 +1190,6 @@ extension PreviewTests {
     @Test
     func separatorRoomTimelineView() async throws {
         for (index, preview) in SeparatorRoomTimelineView_Previews._allPreviews.enumerated() {
-            try await assertSnapshots(matching: preview, step: index)
-        }
-    }
-
-    @Test
-    func serverConfirmationScreen() async throws {
-        for (index, preview) in ServerConfirmationScreen_Previews._allPreviews.enumerated() {
             try await assertSnapshots(matching: preview, step: index)
         }
     }

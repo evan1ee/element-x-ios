@@ -99,12 +99,6 @@ class TimelineItemProvider: TimelineItemProviderProtocol {
     private static func processDiffs(_ diffs: [TimelineDiff],
                                      on currentItems: [TimelineItemProxy],
                                      spanName: String) async -> (itemProxies: [TimelineItemProxy], hasMembershipChange: Bool) {
-        let span = MXLog.createSpan(spanName)
-        span.enter()
-        defer {
-            span.exit()
-        }
-        
         var hasMembershipChange = false
         
         let itemProxies = diffs.reduce(currentItems) { currentItems, diff in
@@ -181,8 +175,10 @@ class TimelineItemProvider: TimelineItemProviderProtocol {
             let itemProxy = TimelineItemProxy(item: item)
             changes.append(.remove(offset: Int(index), element: itemProxy, associatedWith: nil))
             changes.append(.insert(offset: Int(index), element: itemProxy, associatedWith: nil))
-        case .truncate:
-            break
+        case .truncate(let length):
+            for (index, itemProxy) in itemProxies.enumerated() where index >= Int(length) {
+                changes.append(.remove(offset: index, element: itemProxy, associatedWith: nil))
+            }
         }
         
         return CollectionDifference(changes)

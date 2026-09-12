@@ -1662,101 +1662,6 @@ nonisolated class AudioSessionMock: AudioSessionProtocol, @unchecked Sendable {
         try setActiveOptionsClosure?(active, options)
     }
 }
-nonisolated class AuthenticationClientFactoryMock: AuthenticationClientFactoryProtocol, @unchecked Sendable {
-
-    //MARK: - makeClient
-
-    nonisolated(unsafe) var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksThrowableError: Error?
-    private let makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock = NSLock()
-    private nonisolated(unsafe) var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = 0
-    var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCount: Int {
-        get { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount } }
-        set { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = newValue } }
-    }
-    var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCalled: Bool {
-        return makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCount > 0
-    }
-    private let makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments: (homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)?
-    var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArguments: (homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)? {
-        get { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments } }
-        set { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments = newValue } }
-    }
-    private let makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations: [(homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] = []
-    var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocations: [(homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] {
-        get { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations } }
-        set { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations = newValue } }
-    }
-
-    private let makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValueLock = NSLock()
-    private nonisolated(unsafe) var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue: ClientProtocol!
-    var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValue: ClientProtocol! {
-        get { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue } }
-        set { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue = newValue } }
-    }
-    nonisolated(unsafe) var makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure: ((String, SessionDirectories, String, ClientSessionDelegate, AppSettings, AppHooks) async throws -> ClientProtocol)?
-
-    @concurrent func makeClient(homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks) async throws -> ClientProtocol {
-        if let error = makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksThrowableError {
-            throw error
-        }
-        makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount += 1 }
-        makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArguments = (homeserverAddress: homeserverAddress, sessionDirectories: sessionDirectories, passphrase: passphrase, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)
-        makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations.append((homeserverAddress: homeserverAddress, sessionDirectories: sessionDirectories, passphrase: passphrase, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)) }
-        if let makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure = makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure {
-            return try await makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure(homeserverAddress, sessionDirectories, passphrase, clientSessionDelegate, appSettings, appHooks)
-        } else {
-            return makeClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValue
-        }
-    }
-    //MARK: - makeInMemoryClient
-
-    nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksThrowableError: Error?
-    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock = NSLock()
-    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = 0
-    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCount: Int {
-        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount } }
-        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = newValue } }
-    }
-    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCalled: Bool {
-        return makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCount > 0
-    }
-    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock = NSLock()
-    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments: (homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)?
-    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArguments: (homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)? {
-        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments } }
-        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments = newValue } }
-    }
-    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations: [(homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] = []
-    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocations: [(homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] {
-        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations } }
-        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations = newValue } }
-    }
-
-    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValueLock = NSLock()
-    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue: ClientProtocol!
-    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValue: ClientProtocol! {
-        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue } }
-        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue = newValue } }
-    }
-    nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure: ((String, ClientSessionDelegate, AppSettings, AppHooks) async throws -> ClientProtocol)?
-
-    @concurrent func makeInMemoryClient(homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks) async throws -> ClientProtocol {
-        if let error = makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksThrowableError {
-            throw error
-        }
-        makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount += 1 }
-        makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArguments = (homeserverAddress: homeserverAddress, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)
-        makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations.append((homeserverAddress: homeserverAddress, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)) }
-        if let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure = makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure {
-            return try await makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure(homeserverAddress, clientSessionDelegate, appSettings, appHooks)
-        } else {
-            return makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValue
-        }
-    }
-}
 nonisolated class BackupDataSourceMock: BackupDataSourceProtocol, @unchecked Sendable {
     var databaseSchemaVersion: Int {
         get { return underlyingDatabaseSchemaVersion }
@@ -2558,12 +2463,11 @@ nonisolated class BugReportServiceMock: BugReportServiceProtocol, @unchecked Sen
         set(value) { underlyingIsEnabled = value }
     }
     nonisolated(unsafe) var underlyingIsEnabled: Bool!
-    var crashedLastRun: Bool {
-        get { return underlyingCrashedLastRun }
-        set(value) { underlyingCrashedLastRun = value }
+    var lastCrashEventIDSubject: CurrentValueSubject<String?, Never> {
+        get { return underlyingLastCrashEventIDSubject }
+        set(value) { underlyingLastCrashEventIDSubject = value }
     }
-    nonisolated(unsafe) var underlyingCrashedLastRun: Bool!
-    nonisolated(unsafe) var lastCrashEventID: String?
+    nonisolated(unsafe) var underlyingLastCrashEventIDSubject: CurrentValueSubject<String?, Never>!
 
     //MARK: - submitBugReport
 
@@ -2921,6 +2825,193 @@ nonisolated class ClassicAppManagerMock: ClassicAppManagerProtocol, @unchecked S
         }
     }
 }
+nonisolated class ClientFactoryMock: ClientFactoryProtocol, @unchecked Sendable {
+
+    //MARK: - makeAuthenticationClient
+
+    nonisolated(unsafe) var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksThrowableError: Error?
+    private let makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock = NSLock()
+    private nonisolated(unsafe) var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = 0
+    var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCount: Int {
+        get { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount } }
+        set { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = newValue } }
+    }
+    var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCalled: Bool {
+        return makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCount > 0
+    }
+    private let makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments: (homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)?
+    var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArguments: (homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)? {
+        get { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments } }
+        set { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments = newValue } }
+    }
+    private let makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations: [(homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] = []
+    var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocations: [(homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] {
+        get { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations } }
+        set { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValueLock = NSLock()
+    private nonisolated(unsafe) var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue: ClientProtocol!
+    var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValue: ClientProtocol! {
+        get { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue } }
+        set { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure: ((String, SessionDirectories, String, ClientSessionDelegate, AppSettings, AppHooks) async throws -> ClientProtocol)?
+
+    @concurrent func makeAuthenticationClient(homeserverAddress: String, sessionDirectories: SessionDirectories, passphrase: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks) async throws -> ClientProtocol {
+        if let error = makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksThrowableError {
+            throw error
+        }
+        makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount += 1 }
+        makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedArguments = (homeserverAddress: homeserverAddress, sessionDirectories: sessionDirectories, passphrase: passphrase, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)
+        makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations.append((homeserverAddress: homeserverAddress, sessionDirectories: sessionDirectories, passphrase: passphrase, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)) }
+        if let makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure = makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure {
+            return try await makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksClosure(homeserverAddress, sessionDirectories, passphrase, clientSessionDelegate, appSettings, appHooks)
+        } else {
+            return makeAuthenticationClientHomeserverAddressSessionDirectoriesPassphraseClientSessionDelegateAppSettingsAppHooksReturnValue
+        }
+    }
+    //MARK: - makeInMemoryClient
+
+    nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksThrowableError: Error?
+    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock = NSLock()
+    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = 0
+    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCount: Int {
+        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount } }
+        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = newValue } }
+    }
+    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCalled: Bool {
+        return makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCount > 0
+    }
+    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments: (homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)?
+    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArguments: (homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)? {
+        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments } }
+        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments = newValue } }
+    }
+    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations: [(homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] = []
+    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocations: [(homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] {
+        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations } }
+        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValueLock = NSLock()
+    private nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue: ClientProtocol!
+    var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValue: ClientProtocol! {
+        get { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue } }
+        set { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure: ((String, ClientSessionDelegate, AppSettings, AppHooks) async throws -> ClientProtocol)?
+
+    @concurrent func makeInMemoryClient(homeserverAddress: String, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks) async throws -> ClientProtocol {
+        if let error = makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksThrowableError {
+            throw error
+        }
+        makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount += 1 }
+        makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedArguments = (homeserverAddress: homeserverAddress, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)
+        makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations.append((homeserverAddress: homeserverAddress, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)) }
+        if let makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure = makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure {
+            return try await makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksClosure(homeserverAddress, clientSessionDelegate, appSettings, appHooks)
+        } else {
+            return makeInMemoryClientHomeserverAddressClientSessionDelegateAppSettingsAppHooksReturnValue
+        }
+    }
+    //MARK: - makeAppClient
+
+    nonisolated(unsafe) var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksThrowableError: Error?
+    private let makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCallsCountLock = NSLock()
+    private nonisolated(unsafe) var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = 0
+    var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCallsCount: Int {
+        get { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount } }
+        set { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = newValue } }
+    }
+    var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCalled: Bool {
+        return makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCallsCount > 0
+    }
+    private let makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments: (credentials: KeychainCredentials, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)?
+    var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedArguments: (credentials: KeychainCredentials, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)? {
+        get { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments } }
+        set { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments = newValue } }
+    }
+    private let makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations: [(credentials: KeychainCredentials, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] = []
+    var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedInvocations: [(credentials: KeychainCredentials, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks)] {
+        get { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations } }
+        set { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReturnValueLock = NSLock()
+    private nonisolated(unsafe) var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue: ClientProtocol!
+    var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReturnValue: ClientProtocol! {
+        get { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue } }
+        set { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksClosure: ((KeychainCredentials, ClientSessionDelegate, AppSettings, AppHooks) async throws -> ClientProtocol)?
+
+    @concurrent func makeAppClient(credentials: KeychainCredentials, clientSessionDelegate: ClientSessionDelegate, appSettings: AppSettings, appHooks: AppHooks) async throws -> ClientProtocol {
+        if let error = makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksThrowableError {
+            throw error
+        }
+        makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount += 1 }
+        makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedArguments = (credentials: credentials, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)
+        makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations.append((credentials: credentials, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)) }
+        if let makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksClosure = makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksClosure {
+            return try await makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksClosure(credentials, clientSessionDelegate, appSettings, appHooks)
+        } else {
+            return makeAppClientCredentialsClientSessionDelegateAppSettingsAppHooksReturnValue
+        }
+    }
+    //MARK: - makeNSEClient
+
+    nonisolated(unsafe) var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksThrowableError: Error?
+    private let makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCallsCountLock = NSLock()
+    private nonisolated(unsafe) var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = 0
+    var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCallsCount: Int {
+        get { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount } }
+        set { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount = newValue } }
+    }
+    var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCalled: Bool {
+        return makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCallsCount > 0
+    }
+    private let makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments: (credentials: KeychainCredentials, roomID: String, clientSessionDelegate: ClientSessionDelegate, appSettings: CommonSettingsProtocol, appHooks: AppHooks)?
+    var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedArguments: (credentials: KeychainCredentials, roomID: String, clientSessionDelegate: ClientSessionDelegate, appSettings: CommonSettingsProtocol, appHooks: AppHooks)? {
+        get { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments } }
+        set { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedArgumentsLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedArguments = newValue } }
+    }
+    private let makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations: [(credentials: KeychainCredentials, roomID: String, clientSessionDelegate: ClientSessionDelegate, appSettings: CommonSettingsProtocol, appHooks: AppHooks)] = []
+    var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedInvocations: [(credentials: KeychainCredentials, roomID: String, clientSessionDelegate: ClientSessionDelegate, appSettings: CommonSettingsProtocol, appHooks: AppHooks)] {
+        get { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations } }
+        set { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReturnValueLock = NSLock()
+    private nonisolated(unsafe) var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue: ClientProtocol!
+    var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReturnValue: ClientProtocol! {
+        get { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue } }
+        set { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReturnValueLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReturnValue = newValue } }
+    }
+    nonisolated(unsafe) var makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksClosure: ((KeychainCredentials, String, ClientSessionDelegate, CommonSettingsProtocol, AppHooks) async throws -> ClientProtocol)?
+
+    @concurrent func makeNSEClient(credentials: KeychainCredentials, roomID: String, clientSessionDelegate: ClientSessionDelegate, appSettings: CommonSettingsProtocol, appHooks: AppHooks) async throws -> ClientProtocol {
+        if let error = makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksThrowableError {
+            throw error
+        }
+        makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksCallsCountLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingCallsCount += 1 }
+        makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedArguments = (credentials: credentials, roomID: roomID, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)
+        makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReceivedInvocationsLock.withLock { makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksUnderlyingReceivedInvocations.append((credentials: credentials, roomID: roomID, clientSessionDelegate: clientSessionDelegate, appSettings: appSettings, appHooks: appHooks)) }
+        if let makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksClosure = makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksClosure {
+            return try await makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksClosure(credentials, roomID, clientSessionDelegate, appSettings, appHooks)
+        } else {
+            return makeNSEClientCredentialsRoomIDClientSessionDelegateAppSettingsAppHooksReturnValue
+        }
+    }
+}
 nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
     var actionsPublisher: AnyPublisher<ClientProxyAction, Never> {
         get { return underlyingActionsPublisher }
@@ -2980,6 +3071,11 @@ nonisolated class ClientProxyMock: ClientProxyProtocol, @unchecked Sendable {
     }
     nonisolated(unsafe) var underlyingHideInviteAvatarsPublisher: CurrentValuePublisher<Bool, Never>!
     nonisolated(unsafe) var pusherNotificationClientIdentifier: String?
+    var totalUnreadNotifications: UInt64 {
+        get { return underlyingTotalUnreadNotifications }
+        set(value) { underlyingTotalUnreadNotifications = value }
+    }
+    nonisolated(unsafe) var underlyingTotalUnreadNotifications: UInt64!
     var mediaLoader: MediaLoaderProtocol {
         get { return underlyingMediaLoader }
         set(value) { underlyingMediaLoader = value }
@@ -9053,6 +9149,37 @@ nonisolated class MediaPlayerProviderMock: MediaPlayerProviderProtocol, @uncheck
         detachAllStatesExceptReceivedInvocationsLock.withLock { detachAllStatesExceptUnderlyingReceivedInvocations.append(exception) }
         await detachAllStatesExceptClosure?(exception)
     }
+    //MARK: - play
+
+    private let playSoundEffectCallsCountLock = NSLock()
+    private nonisolated(unsafe) var playSoundEffectUnderlyingCallsCount = 0
+    var playSoundEffectCallsCount: Int {
+        get { playSoundEffectCallsCountLock.withLock { playSoundEffectUnderlyingCallsCount } }
+        set { playSoundEffectCallsCountLock.withLock { playSoundEffectUnderlyingCallsCount = newValue } }
+    }
+    var playSoundEffectCalled: Bool {
+        return playSoundEffectCallsCount > 0
+    }
+    private let playSoundEffectReceivedSoundEffectLock = NSLock()
+    private nonisolated(unsafe) var playSoundEffectUnderlyingReceivedSoundEffect: SoundEffect?
+    var playSoundEffectReceivedSoundEffect: SoundEffect? {
+        get { playSoundEffectReceivedSoundEffectLock.withLock { playSoundEffectUnderlyingReceivedSoundEffect } }
+        set { playSoundEffectReceivedSoundEffectLock.withLock { playSoundEffectUnderlyingReceivedSoundEffect = newValue } }
+    }
+    private let playSoundEffectReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var playSoundEffectUnderlyingReceivedInvocations: [SoundEffect] = []
+    var playSoundEffectReceivedInvocations: [SoundEffect] {
+        get { playSoundEffectReceivedInvocationsLock.withLock { playSoundEffectUnderlyingReceivedInvocations } }
+        set { playSoundEffectReceivedInvocationsLock.withLock { playSoundEffectUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var playSoundEffectClosure: ((SoundEffect) -> Void)?
+
+    func play(soundEffect: SoundEffect) {
+        playSoundEffectCallsCountLock.withLock { playSoundEffectUnderlyingCallsCount += 1 }
+        playSoundEffectReceivedSoundEffect = soundEffect
+        playSoundEffectReceivedInvocationsLock.withLock { playSoundEffectUnderlyingReceivedInvocations.append(soundEffect) }
+        playSoundEffectClosure?(soundEffect)
+    }
 }
 nonisolated class MediaProviderMock: MediaProviderProtocol, @unchecked Sendable {
 
@@ -9603,6 +9730,23 @@ nonisolated class NotificationManagerMock: NotificationManagerProtocol, @uncheck
         removeDeliveredNotificationsForFullyReadRoomsReceivedRooms = rooms
         removeDeliveredNotificationsForFullyReadRoomsReceivedInvocationsLock.withLock { removeDeliveredNotificationsForFullyReadRoomsUnderlyingReceivedInvocations.append(rooms) }
         await removeDeliveredNotificationsForFullyReadRoomsClosure?(rooms)
+    }
+    //MARK: - updateAppBadgeCount
+
+    private let updateAppBadgeCountCallsCountLock = NSLock()
+    private nonisolated(unsafe) var updateAppBadgeCountUnderlyingCallsCount = 0
+    var updateAppBadgeCountCallsCount: Int {
+        get { updateAppBadgeCountCallsCountLock.withLock { updateAppBadgeCountUnderlyingCallsCount } }
+        set { updateAppBadgeCountCallsCountLock.withLock { updateAppBadgeCountUnderlyingCallsCount = newValue } }
+    }
+    var updateAppBadgeCountCalled: Bool {
+        return updateAppBadgeCountCallsCount > 0
+    }
+    nonisolated(unsafe) var updateAppBadgeCountClosure: (() async -> Void)?
+
+    @concurrent func updateAppBadgeCount() async {
+        updateAppBadgeCountCallsCountLock.withLock { updateAppBadgeCountUnderlyingCallsCount += 1 }
+        await updateAppBadgeCountClosure?()
     }
 }
 nonisolated class NotificationSettingsProxyMock: NotificationSettingsProxyProtocol, @unchecked Sendable {
@@ -13833,34 +13977,34 @@ nonisolated class TimelineControllerMock: TimelineControllerProtocol, @unchecked
     }
     //MARK: - redact
 
-    private let redactCallsCountLock = NSLock()
-    private nonisolated(unsafe) var redactUnderlyingCallsCount = 0
-    var redactCallsCount: Int {
-        get { redactCallsCountLock.withLock { redactUnderlyingCallsCount } }
-        set { redactCallsCountLock.withLock { redactUnderlyingCallsCount = newValue } }
+    private let redactReasonCallsCountLock = NSLock()
+    private nonisolated(unsafe) var redactReasonUnderlyingCallsCount = 0
+    var redactReasonCallsCount: Int {
+        get { redactReasonCallsCountLock.withLock { redactReasonUnderlyingCallsCount } }
+        set { redactReasonCallsCountLock.withLock { redactReasonUnderlyingCallsCount = newValue } }
     }
-    var redactCalled: Bool {
-        return redactCallsCount > 0
+    var redactReasonCalled: Bool {
+        return redactReasonCallsCount > 0
     }
-    private let redactReceivedEventOrTransactionIDLock = NSLock()
-    private nonisolated(unsafe) var redactUnderlyingReceivedEventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID?
-    var redactReceivedEventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID? {
-        get { redactReceivedEventOrTransactionIDLock.withLock { redactUnderlyingReceivedEventOrTransactionID } }
-        set { redactReceivedEventOrTransactionIDLock.withLock { redactUnderlyingReceivedEventOrTransactionID = newValue } }
+    private let redactReasonReceivedArgumentsLock = NSLock()
+    private nonisolated(unsafe) var redactReasonUnderlyingReceivedArguments: (eventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID, reason: String?)?
+    var redactReasonReceivedArguments: (eventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID, reason: String?)? {
+        get { redactReasonReceivedArgumentsLock.withLock { redactReasonUnderlyingReceivedArguments } }
+        set { redactReasonReceivedArgumentsLock.withLock { redactReasonUnderlyingReceivedArguments = newValue } }
     }
-    private let redactReceivedInvocationsLock = NSLock()
-    private nonisolated(unsafe) var redactUnderlyingReceivedInvocations: [TimelineItemIdentifier.EventOrTransactionID] = []
-    var redactReceivedInvocations: [TimelineItemIdentifier.EventOrTransactionID] {
-        get { redactReceivedInvocationsLock.withLock { redactUnderlyingReceivedInvocations } }
-        set { redactReceivedInvocationsLock.withLock { redactUnderlyingReceivedInvocations = newValue } }
+    private let redactReasonReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var redactReasonUnderlyingReceivedInvocations: [(eventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID, reason: String?)] = []
+    var redactReasonReceivedInvocations: [(eventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID, reason: String?)] {
+        get { redactReasonReceivedInvocationsLock.withLock { redactReasonUnderlyingReceivedInvocations } }
+        set { redactReasonReceivedInvocationsLock.withLock { redactReasonUnderlyingReceivedInvocations = newValue } }
     }
-    nonisolated(unsafe) var redactClosure: ((TimelineItemIdentifier.EventOrTransactionID) async -> Void)?
+    nonisolated(unsafe) var redactReasonClosure: ((TimelineItemIdentifier.EventOrTransactionID, String?) async -> Void)?
 
-    @concurrent func redact(_ eventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID) async {
-        redactCallsCountLock.withLock { redactUnderlyingCallsCount += 1 }
-        redactReceivedEventOrTransactionID = eventOrTransactionID
-        redactReceivedInvocationsLock.withLock { redactUnderlyingReceivedInvocations.append(eventOrTransactionID) }
-        await redactClosure?(eventOrTransactionID)
+    @concurrent func redact(_ eventOrTransactionID: TimelineItemIdentifier.EventOrTransactionID, reason: String?) async {
+        redactReasonCallsCountLock.withLock { redactReasonUnderlyingCallsCount += 1 }
+        redactReasonReceivedArguments = (eventOrTransactionID: eventOrTransactionID, reason: reason)
+        redactReasonReceivedInvocationsLock.withLock { redactReasonUnderlyingReceivedInvocations.append((eventOrTransactionID: eventOrTransactionID, reason: reason)) }
+        await redactReasonClosure?(eventOrTransactionID, reason)
     }
     //MARK: - pin
 
@@ -16031,6 +16175,41 @@ nonisolated class UserNotificationCenterMock: UserNotificationCenterProtocol, @u
         removeDeliveredNotificationsWithIdentifiersReceivedIdentifiers = identifiers
         removeDeliveredNotificationsWithIdentifiersReceivedInvocationsLock.withLock { removeDeliveredNotificationsWithIdentifiersUnderlyingReceivedInvocations.append(identifiers) }
         removeDeliveredNotificationsWithIdentifiersClosure?(identifiers)
+    }
+    //MARK: - setBadgeCount
+
+    nonisolated(unsafe) var setBadgeCountThrowableError: Error?
+    private let setBadgeCountCallsCountLock = NSLock()
+    private nonisolated(unsafe) var setBadgeCountUnderlyingCallsCount = 0
+    var setBadgeCountCallsCount: Int {
+        get { setBadgeCountCallsCountLock.withLock { setBadgeCountUnderlyingCallsCount } }
+        set { setBadgeCountCallsCountLock.withLock { setBadgeCountUnderlyingCallsCount = newValue } }
+    }
+    var setBadgeCountCalled: Bool {
+        return setBadgeCountCallsCount > 0
+    }
+    private let setBadgeCountReceivedNewBadgeCountLock = NSLock()
+    private nonisolated(unsafe) var setBadgeCountUnderlyingReceivedNewBadgeCount: Int?
+    var setBadgeCountReceivedNewBadgeCount: Int? {
+        get { setBadgeCountReceivedNewBadgeCountLock.withLock { setBadgeCountUnderlyingReceivedNewBadgeCount } }
+        set { setBadgeCountReceivedNewBadgeCountLock.withLock { setBadgeCountUnderlyingReceivedNewBadgeCount = newValue } }
+    }
+    private let setBadgeCountReceivedInvocationsLock = NSLock()
+    private nonisolated(unsafe) var setBadgeCountUnderlyingReceivedInvocations: [Int] = []
+    var setBadgeCountReceivedInvocations: [Int] {
+        get { setBadgeCountReceivedInvocationsLock.withLock { setBadgeCountUnderlyingReceivedInvocations } }
+        set { setBadgeCountReceivedInvocationsLock.withLock { setBadgeCountUnderlyingReceivedInvocations = newValue } }
+    }
+    nonisolated(unsafe) var setBadgeCountClosure: ((Int) async throws -> Void)?
+
+    @concurrent func setBadgeCount(_ newBadgeCount: Int) async throws {
+        if let error = setBadgeCountThrowableError {
+            throw error
+        }
+        setBadgeCountCallsCountLock.withLock { setBadgeCountUnderlyingCallsCount += 1 }
+        setBadgeCountReceivedNewBadgeCount = newBadgeCount
+        setBadgeCountReceivedInvocationsLock.withLock { setBadgeCountUnderlyingReceivedInvocations.append(newBadgeCount) }
+        try await setBadgeCountClosure?(newBadgeCount)
     }
     //MARK: - setNotificationCategories
 
