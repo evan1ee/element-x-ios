@@ -16318,6 +16318,53 @@ open class SpaceServiceSDKMock: MatrixRustSDK.SpaceService, @unchecked Sendable 
         }
     }
 
+    //MARK: - joinedParentIdsOfChild
+
+    open var joinedParentIdsOfChildChildIdThrowableError: Error?
+    private let joinedParentIdsOfChildChildIdCallsCountLock = NSLock()
+    private var joinedParentIdsOfChildChildIdUnderlyingCallsCount = 0
+    open var joinedParentIdsOfChildChildIdCallsCount: Int {
+        get { joinedParentIdsOfChildChildIdCallsCountLock.withLock { joinedParentIdsOfChildChildIdUnderlyingCallsCount } }
+        set { joinedParentIdsOfChildChildIdCallsCountLock.withLock { joinedParentIdsOfChildChildIdUnderlyingCallsCount = newValue } }
+    }
+    open var joinedParentIdsOfChildChildIdCalled: Bool {
+        return joinedParentIdsOfChildChildIdCallsCount > 0
+    }
+    private let joinedParentIdsOfChildChildIdReceivedChildIdLock = NSLock()
+    private var joinedParentIdsOfChildChildIdUnderlyingReceivedChildId: String?
+    open var joinedParentIdsOfChildChildIdReceivedChildId: String? {
+        get { joinedParentIdsOfChildChildIdReceivedChildIdLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReceivedChildId } }
+        set { joinedParentIdsOfChildChildIdReceivedChildIdLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReceivedChildId = newValue } }
+    }
+    private let joinedParentIdsOfChildChildIdReceivedInvocationsLock = NSLock()
+    private var joinedParentIdsOfChildChildIdUnderlyingReceivedInvocations: [String] = []
+    open var joinedParentIdsOfChildChildIdReceivedInvocations: [String] {
+        get { joinedParentIdsOfChildChildIdReceivedInvocationsLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReceivedInvocations } }
+        set { joinedParentIdsOfChildChildIdReceivedInvocationsLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let joinedParentIdsOfChildChildIdReturnValueLock = NSLock()
+    open var joinedParentIdsOfChildChildIdUnderlyingReturnValue: [String]!
+    open var joinedParentIdsOfChildChildIdReturnValue: [String]! {
+        get { joinedParentIdsOfChildChildIdReturnValueLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReturnValue } }
+        set { joinedParentIdsOfChildChildIdReturnValueLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReturnValue = newValue } }
+    }
+    open var joinedParentIdsOfChildChildIdClosure: ((String) async throws -> [String])?
+
+    open override func joinedParentIdsOfChild(childId: String) async throws -> [String] {
+        if let error = joinedParentIdsOfChildChildIdThrowableError {
+            throw error
+        }
+        joinedParentIdsOfChildChildIdCallsCountLock.withLock { joinedParentIdsOfChildChildIdUnderlyingCallsCount += 1 }
+        joinedParentIdsOfChildChildIdReceivedChildId = childId
+        joinedParentIdsOfChildChildIdReceivedInvocationsLock.withLock { joinedParentIdsOfChildChildIdUnderlyingReceivedInvocations.append(childId) }
+        if let joinedParentIdsOfChildChildIdClosure = joinedParentIdsOfChildChildIdClosure {
+            return try await joinedParentIdsOfChildChildIdClosure(childId)
+        } else {
+            return joinedParentIdsOfChildChildIdReturnValue
+        }
+    }
+
     //MARK: - joinedParentsOfChild
 
     open var joinedParentsOfChildChildIdThrowableError: Error?
@@ -16607,6 +16654,53 @@ open class SpaceServiceSDKMock: MatrixRustSDK.SpaceService, @unchecked Sendable 
             return await subscribeToTopLevelJoinedSpacesListenerClosure(listener)
         } else {
             return subscribeToTopLevelJoinedSpacesListenerReturnValue
+        }
+    }
+
+    //MARK: - topLevelAncestorsOf
+
+    open var topLevelAncestorsOfChildIdThrowableError: Error?
+    private let topLevelAncestorsOfChildIdCallsCountLock = NSLock()
+    private var topLevelAncestorsOfChildIdUnderlyingCallsCount = 0
+    open var topLevelAncestorsOfChildIdCallsCount: Int {
+        get { topLevelAncestorsOfChildIdCallsCountLock.withLock { topLevelAncestorsOfChildIdUnderlyingCallsCount } }
+        set { topLevelAncestorsOfChildIdCallsCountLock.withLock { topLevelAncestorsOfChildIdUnderlyingCallsCount = newValue } }
+    }
+    open var topLevelAncestorsOfChildIdCalled: Bool {
+        return topLevelAncestorsOfChildIdCallsCount > 0
+    }
+    private let topLevelAncestorsOfChildIdReceivedChildIdLock = NSLock()
+    private var topLevelAncestorsOfChildIdUnderlyingReceivedChildId: String?
+    open var topLevelAncestorsOfChildIdReceivedChildId: String? {
+        get { topLevelAncestorsOfChildIdReceivedChildIdLock.withLock { topLevelAncestorsOfChildIdUnderlyingReceivedChildId } }
+        set { topLevelAncestorsOfChildIdReceivedChildIdLock.withLock { topLevelAncestorsOfChildIdUnderlyingReceivedChildId = newValue } }
+    }
+    private let topLevelAncestorsOfChildIdReceivedInvocationsLock = NSLock()
+    private var topLevelAncestorsOfChildIdUnderlyingReceivedInvocations: [String] = []
+    open var topLevelAncestorsOfChildIdReceivedInvocations: [String] {
+        get { topLevelAncestorsOfChildIdReceivedInvocationsLock.withLock { topLevelAncestorsOfChildIdUnderlyingReceivedInvocations } }
+        set { topLevelAncestorsOfChildIdReceivedInvocationsLock.withLock { topLevelAncestorsOfChildIdUnderlyingReceivedInvocations = newValue } }
+    }
+
+    private let topLevelAncestorsOfChildIdReturnValueLock = NSLock()
+    open var topLevelAncestorsOfChildIdUnderlyingReturnValue: [String]!
+    open var topLevelAncestorsOfChildIdReturnValue: [String]! {
+        get { topLevelAncestorsOfChildIdReturnValueLock.withLock { topLevelAncestorsOfChildIdUnderlyingReturnValue } }
+        set { topLevelAncestorsOfChildIdReturnValueLock.withLock { topLevelAncestorsOfChildIdUnderlyingReturnValue = newValue } }
+    }
+    open var topLevelAncestorsOfChildIdClosure: ((String) async throws -> [String])?
+
+    open override func topLevelAncestorsOf(childId: String) async throws -> [String] {
+        if let error = topLevelAncestorsOfChildIdThrowableError {
+            throw error
+        }
+        topLevelAncestorsOfChildIdCallsCountLock.withLock { topLevelAncestorsOfChildIdUnderlyingCallsCount += 1 }
+        topLevelAncestorsOfChildIdReceivedChildId = childId
+        topLevelAncestorsOfChildIdReceivedInvocationsLock.withLock { topLevelAncestorsOfChildIdUnderlyingReceivedInvocations.append(childId) }
+        if let topLevelAncestorsOfChildIdClosure = topLevelAncestorsOfChildIdClosure {
+            return try await topLevelAncestorsOfChildIdClosure(childId)
+        } else {
+            return topLevelAncestorsOfChildIdReturnValue
         }
     }
 
@@ -19922,14 +20016,14 @@ open class WidgetDriverHandleSDKMock: MatrixRustSDK.WidgetDriverHandle, @uncheck
         get { sendMsgReturnValueLock.withLock { sendMsgUnderlyingReturnValue } }
         set { sendMsgReturnValueLock.withLock { sendMsgUnderlyingReturnValue = newValue } }
     }
-    open var sendMsgClosure: ((String) async -> Bool)?
+    open var sendMsgClosure: ((String) -> Bool)?
 
-    open override func send(msg: String) async -> Bool {
+    open override func send(msg: String) -> Bool {
         sendMsgCallsCountLock.withLock { sendMsgUnderlyingCallsCount += 1 }
         sendMsgReceivedMsg = msg
         sendMsgReceivedInvocationsLock.withLock { sendMsgUnderlyingReceivedInvocations.append(msg) }
         if let sendMsgClosure = sendMsgClosure {
-            return await sendMsgClosure(msg)
+            return sendMsgClosure(msg)
         } else {
             return sendMsgReturnValue
         }
