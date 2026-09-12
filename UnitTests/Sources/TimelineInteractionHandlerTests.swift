@@ -223,7 +223,8 @@ struct TimelineInteractionHandlerTests {
                                           analyticsService: AnalyticsServiceMock(.init()),
                                           emojiProvider: EmojiProvider(appSettings: appSettings),
                                           linkMetadataProvider: LinkMetadataProvider(),
-                                          timelineControllerFactory: TimelineControllerFactoryMock(.init()))
+                                          timelineControllerFactory: TimelineControllerFactoryMock(.init()),
+                                          stickerService: StickerServiceMock())
     }
     
     private static func makeVoiceMessage(id: String, sourceURL: URL) -> VoiceMessageRoomTimelineItem {
