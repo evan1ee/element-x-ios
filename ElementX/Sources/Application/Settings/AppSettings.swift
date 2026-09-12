@@ -394,14 +394,14 @@ final nonisolated class AppSettings: @unchecked Sendable {
     /// The default Klipy API key used for sticker discovery. Users can override it in the sticker settings.
     /// Empty unless a key was baked into `Secrets.swift`; without one the user has to supply their own.
     static var defaultKlipyAPIKey: String {
-        Secrets.klipyAPIKey ?? ""
+        BakedSecrets.klipyAPIKey
     }
     
     /// The Klipy API key used to search and download stickers in the discovery screen.
     ///
-    /// The default repeats `defaultKlipyAPIKey`'s expression rather than referring to it, as
-    /// pointing the macro at another `AppSettings` member makes its expansion recurse.
-    @UserPreference(defaultValue: Secrets.klipyAPIKey ?? "")
+    /// The default goes through `BakedSecrets` rather than `defaultKlipyAPIKey`, as pointing the
+    /// macro at another `AppSettings` member makes its expansion recurse.
+    @UserPreference(defaultValue: BakedSecrets.klipyAPIKey)
     var klipyAPIKey: String
     
     // MARK: - Offline history
@@ -531,3 +531,18 @@ final nonisolated class AppSettings: @unchecked Sendable {
 }
 
 nonisolated extension AppSettings: CommonSettingsProtocol { }
+
+/// Secrets that only count once they've been filled in.
+///
+/// A clone that hasn't generated its own `Secrets.swift` carries the template's placeholders,
+/// which are strings like any other. Reading them as absent lets the code that wants a key say
+/// so, rather than sending the placeholder to the service and reporting whatever it rejects it with.
+private nonisolated enum BakedSecrets {
+    /// The value the checked-in `Secrets.swift` template carries for an unset key.
+    private static let templatePlaceholder = "your_key"
+    
+    static var klipyAPIKey: String {
+        guard let key = Secrets.klipyAPIKey, key != templatePlaceholder else { return "" }
+        return key
+    }
+}
