@@ -31,9 +31,9 @@ private final class WeakSessionVerificationControllerProxy: SessionVerificationC
     func didReceiveVerificationData(data: MatrixRustSDK.SessionVerificationData) {
         switch data {
         // We can handle only emojis for now
-        case .emojis(let emojis, _):
+        case .emojis(let emojis, let indices):
             Task { @MainActor in
-                self.proxy?.didReceiveData(emojis)
+                self.proxy?.didReceiveData(emojis, indices: indices)
             }
         default:
             break
@@ -200,10 +200,10 @@ class SessionVerificationControllerProxy: SessionVerificationControllerProxyProt
     }
     
     fileprivate func didAcceptVerificationRequest() {
-        // Noop because the rust side state machine changes states before sending
-        // the actual request, leading to race conditions with the SAS verification
-        // startup. The `acceptedVerificationRequest` is now called from the `startSasVerification`
-        // method above.
+        // Only called when the other device accepted our request. Accepting an incoming one is
+        // reported from the `acceptVerificationRequest` method above.
+        MXLog.info("Verification request accepted by the other device")
+        actions.send(.acceptedVerificationRequest)
     }
     
     fileprivate func didStartSasVerification() {
@@ -212,11 +212,11 @@ class SessionVerificationControllerProxy: SessionVerificationControllerProxyProt
         actions.send(.startedSasVerification)
     }
     
-    fileprivate func didReceiveData(_ data: [MatrixRustSDK.SessionVerificationEmoji]) {
+    fileprivate func didReceiveData(_ data: [MatrixRustSDK.SessionVerificationEmoji], indices: Data) {
         MXLog.info("Received verification data")
         
-        actions.send(.receivedVerificationData(data.map { emoji in
-            SessionVerificationEmoji(symbol: emoji.symbol(), description: emoji.description())
+        actions.send(.receivedVerificationData(zip(data, indices).map { emoji, index in
+            SessionVerificationEmoji(index: Int(index), symbol: emoji.symbol(), description: emoji.description())
         }))
     }
     

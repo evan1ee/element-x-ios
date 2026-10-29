@@ -15,6 +15,7 @@ typealias CreateRoomScreenViewModelType = StateStoreViewModel<CreateRoomScreenVi
 class CreateRoomScreenViewModel: CreateRoomScreenViewModelType, CreateRoomScreenViewModelProtocol {
     private let userSession: UserSessionProtocol
     private let mediaUploadingPreprocessor: MediaUploadingPreprocessor
+    private let appMediator: AppMediatorProtocol
     private let analytics: AnalyticsServiceProtocol
     private let userIndicatorController: UserIndicatorControllerProtocol
     
@@ -31,13 +32,14 @@ class CreateRoomScreenViewModel: CreateRoomScreenViewModelType, CreateRoomScreen
          spaceSelectionMode: CreateRoomScreenSpaceSelectionMode,
          shouldShowCancelButton: Bool,
          userSession: UserSessionProtocol,
+         appMediator: AppMediatorProtocol,
          analytics: AnalyticsServiceProtocol,
-         userIndicatorController: UserIndicatorControllerProtocol,
-         appSettings: AppSettings) {
+         userIndicatorController: UserIndicatorControllerProtocol) {
         self.userSession = userSession
-        mediaUploadingPreprocessor = MediaUploadingPreprocessor(appSettings: appSettings)
+        mediaUploadingPreprocessor = MediaUploadingPreprocessor(userSettings: userSession.userSettings)
         self.analytics = analytics
         self.userIndicatorController = userIndicatorController
+        self.appMediator = appMediator
         
         var selectedSpace: SpaceServiceRoom?
         let canSelectSpace: Bool
@@ -59,14 +61,16 @@ class CreateRoomScreenViewModel: CreateRoomScreenViewModelType, CreateRoomScreen
                                                          selectedAccessType: selectedAccessType,
                                                          selectedSpace: selectedSpace)
         
-        super.init(initialViewState: CreateRoomScreenViewState(isSpace: isSpace,
-                                                               shouldShowCancelButton: shouldShowCancelButton,
-                                                               roomName: "",
-                                                               serverName: userSession.clientProxy.userIDServerName ?? "",
-                                                               isKnockingFeatureEnabled: appSettings.knockingEnabled,
-                                                               canSelectSpace: canSelectSpace,
-                                                               aliasLocalPart: roomAliasNameFromRoomDisplayName(roomName: ""),
-                                                               bindings: bindings),
+        let viewState = CreateRoomScreenViewState(isSpace: isSpace,
+                                                  shouldShowCancelButton: shouldShowCancelButton,
+                                                  roomName: "",
+                                                  serverName: userSession.clientProxy.userIDServerName ?? "",
+                                                  isKnockingFeatureEnabled: userSession.userSettings.app.knockingEnabled,
+                                                  canSelectSpace: canSelectSpace,
+                                                  aliasLocalPart: roomAliasNameFromRoomDisplayName(roomName: ""),
+                                                  bindings: bindings)
+        
+        super.init(initialViewState: userSession.userHooks.createRoomScreenHook.update(viewState),
                    mediaProvider: userSession.mediaProvider)
         
         setupBindings()
@@ -87,6 +91,11 @@ class CreateRoomScreenViewModel: CreateRoomScreenViewModelType, CreateRoomScreen
         case .createRoom:
             Task { await createRoom() }
         case .displayCameraPicker:
+            guard appMediator.isCameraAvailable else {
+                MXLog.info("Camera unavailable, not presenting the picker.")
+                userIndicatorController.submitIndicator(UserIndicator(title: L10n.errorCameraUnavailable))
+                return
+            }
             actionsSubject.send(.displayCameraPicker)
         case .displayMediaPicker:
             actionsSubject.send(.displayMediaPicker)
@@ -262,13 +271,25 @@ class CreateRoomScreenViewModel: CreateRoomScreenViewModelType, CreateRoomScreen
             avatarURL = nil
         }
         
-        switch await userSession.clientProxy.createRoom(name: state.roomName,
-                                                        topic: state.bindings.roomTopic.isBlank ? nil : state.bindings.roomTopic,
-                                                        accessType: state.roomAccessType,
-                                                        isSpace: state.isSpace,
-                                                        userIDs: [], // The invite users screen is shown next so we don't need to invite anyone right now.
-                                                        avatarURL: avatarURL,
-                                                        aliasLocalPart: state.roomAccessType.isVisibilityPrivate ? nil : state.aliasLocalPart) {
+        let topic = state.bindings.roomTopic.isBlank ? nil : state.bindings.roomTopic
+        let aliasLocalPart = state.roomAccessType.isVisibilityPrivate ? nil : state.aliasLocalPart
+        
+        // The invite users screen is shown next so we don't need to invite anyone right now.
+        let parameters: CreateRoomParameters = if state.isSpace {
+            .space(name: state.roomName,
+                   topic: topic,
+                   accessType: state.roomAccessType,
+                   avatarURL: avatarURL,
+                   aliasLocalPart: aliasLocalPart)
+        } else {
+            .room(name: state.roomName,
+                  topic: topic,
+                  accessType: state.roomAccessType,
+                  avatarURL: avatarURL,
+                  aliasLocalPart: aliasLocalPart)
+        }
+        
+        switch await userSession.clientProxy.createRoom(userSession.userHooks.createRoomScreenHook.update(parameters)) {
         case .success(let roomID):
             guard case let .joined(roomProxy) = await userSession.clientProxy.roomForIdentifier(roomID) else {
                 state.bindings.alertInfo = AlertInfo(id: .failedCreatingRoom,

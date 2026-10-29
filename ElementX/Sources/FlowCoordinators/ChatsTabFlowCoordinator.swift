@@ -337,12 +337,6 @@ class ChatsTabFlowCoordinator: FlowCoordinatorProtocol {
                 switch action {
                 case .receivedDecryptionError(let info):
                     processDecryptionError(info)
-                case .receivedSyncUpdate:
-                    Task {
-                        let roomSummaries = self.userSession.clientProxy.staticRoomSummaryProvider.roomListPublisher.value
-                        await self.flowParameters.notificationManager.removeDeliveredNotificationsForFullyReadRooms(roomSummaries)
-                        await self.flowParameters.notificationManager.updateAppBadgeCount()
-                    }
                 default:
                     break
                 }
@@ -381,11 +375,10 @@ class ChatsTabFlowCoordinator: FlowCoordinatorProtocol {
     
     private func presentHomeScreen() {
         let parameters = HomeScreenCoordinatorParameters(userSession: userSession,
+                                                         availableSessionsPublisher: flowParameters.availableSessionsPublisher,
                                                          bugReportService: flowParameters.bugReportService,
                                                          selectedRoomPublisher: selectedRoomSubject.asCurrentValuePublisher(),
-                                                         appSettings: flowParameters.appSettings,
                                                          analyticsService: flowParameters.analytics,
-                                                         notificationManager: flowParameters.notificationManager,
                                                          userIndicatorController: flowParameters.userIndicatorController)
         let coordinator = HomeScreenCoordinator(parameters: parameters)
         
@@ -571,7 +564,7 @@ class ChatsTabFlowCoordinator: FlowCoordinatorProtocol {
         Task {
             let _ = await userSession.clientProxy.trackRecentlyVisitedRoom(roomID)
             
-            await flowParameters.notificationManager.removeDeliveredMessageNotifications(for: roomID)
+            userSession.notificationService.removeDeliveredMessageNotifications(for: roomID)
         }
     }
     
@@ -665,8 +658,7 @@ class ChatsTabFlowCoordinator: FlowCoordinatorProtocol {
                                                                             userIndicatorController: flowParameters.userIndicatorController,
                                                                             isModallyPresented: true)
         
-        let coordinator = flowParameters.appHooks.recoveryKeyScreenHook.makeCoordinator(parameters: parameters,
-                                                                                        homeserver: userSession.clientProxy.homeserver)
+        let coordinator = userSession.userHooks.recoveryKeyScreenHook.makeCoordinator(parameters: parameters)
         coordinator.actions.sink { [weak self] action in
             guard let self else { return }
             switch action {
@@ -687,8 +679,6 @@ class ChatsTabFlowCoordinator: FlowCoordinatorProtocol {
         let sheetNavigationStackCoordinator = NavigationStackCoordinator()
         let parameters = EncryptionResetFlowCoordinatorParameters(userSession: userSession,
                                                                   appMediator: flowParameters.appMediator,
-                                                                  appSettings: flowParameters.appSettings,
-                                                                  appHooks: flowParameters.appHooks,
                                                                   userIndicatorController: flowParameters.userIndicatorController,
                                                                   navigationStackCoordinator: sheetNavigationStackCoordinator,
                                                                   windowManger: flowParameters.windowManager)
@@ -751,7 +741,6 @@ class ChatsTabFlowCoordinator: FlowCoordinatorProtocol {
         let parameters = UserProfileScreenCoordinatorParameters(userID: userID,
                                                                 isPresentedModally: true,
                                                                 userSession: userSession,
-                                                                appHooks: flowParameters.appHooks,
                                                                 analytics: flowParameters.analytics,
                                                                 userIndicatorController: flowParameters.userIndicatorController)
         let coordinator = UserProfileScreenCoordinator(parameters: parameters)

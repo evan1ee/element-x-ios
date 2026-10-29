@@ -21,9 +21,14 @@ struct SearchScreen: View {
     /// The selection is only meaningful with a hardware keyboard, so don't highlight anything otherwise.
     @State private var isHardwareKeyboardConnected = false
     
-    /// The ids of the results in the active tab, in display order.
+    /// The ids of the rows the user can select, in display order. These are the breadcrumbs
+    /// until a query is entered, after which they're the active tab's results.
     private var selectableIDs: [String] {
-        switch context.viewState.bindings.searchMode {
+        guard context.viewState.isSearching else {
+            return context.viewState.breadcrumbs.map(\.id)
+        }
+        
+        return switch context.viewState.bindings.searchMode {
         case .messages: context.viewState.messages.map(\.id)
         case .media: context.viewState.media.map(\.id)
         }
@@ -57,6 +62,7 @@ struct SearchScreen: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             
+            // Always shown, as media is browsed rather than searched.
             Picker(L10n.actionSearch, selection: $context.searchMode) {
                 ForEach(SearchScreenMode.allCases) { mode in
                     Text(mode.title).tag(mode)
@@ -84,6 +90,12 @@ struct SearchScreen: View {
             case .media:
                 SearchScreenMediaView(context: context)
             }
+            
+            // Dismissing the search field (the tab bar's close button) leaves the tab.
+            // Not on iOS 18: there's no close button and switching tabs mid-dismissal hides the tab bar.
+            if #available(iOS 26, *) {
+                SearchDismissalObserver { context.send(viewAction: .cancel) }
+            }
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Color.compound.bgCanvasDefault)
@@ -92,8 +104,10 @@ struct SearchScreen: View {
                                isEnabled: context.viewState.bindings.searchMode != .media)
         .searchFocused($isSearchFieldFocused)
         .autocorrectionDisabled(true)
+        .scrollDismissesKeyboard(.immediately)
         .background(tabShortcuts)
         .onSubmit(of: .search) {
+            context.send(viewAction: .submitQuery)
             // A software keyboard's submit/search button just dismisses; only a hardware return selects.
             if isHardwareKeyboardConnected, selectedID != nil {
                 selectCurrent()
@@ -104,13 +118,18 @@ struct SearchScreen: View {
         .searchResultsKeyboardNavigation(moveUp: { moveSelection(backwards: true) },
                                          moveDown: { moveSelection(backwards: false) },
                                          cancel: { context.send(viewAction: .cancel) })
-        // The TabView calls onAppear each time the search tab is selected, so the field re-focuses
-        // and the selection resets on every switch.
+        // The TabView calls onAppear/onDisappear each time the search tab is selected/deselected,
+        // so the field re-focuses, the query is cleared and the selection resets on every switch.
         .onAppear {
             context.send(viewAction: .appeared)
             isSearchFieldFocused = true
             selectedID = selectableIDs.first
             updateHardwareKeyboardConnected()
+        }
+        .onDisappear {
+            // Previews and snapshot tests mount and unmount the view, don't clear their fixed state.
+            guard !ProcessInfo.isXcodePreview, !ProcessInfo.isRunningTests else { return }
+            context.searchQuery = ""
         }
         .onReceive(NotificationCenter.default.publisher(for: .GCKeyboardDidConnect)) { _ in
             updateHardwareKeyboardConnected()
@@ -133,14 +152,16 @@ struct SearchScreen: View {
     private var emptyState: some View {
         if context.viewState.isSearching {
             TitleAndIcon(title: L10n.commonNoResults,
-                         subtitle: UntranslatedL10n.screenSearchNoResultsMessage(context.searchQuery),
+                         subtitle: L10n.screenSearchNoResultsMessage(context.searchQuery),
                          icon: \.search,
                          iconStyle: .defaultSolid)
                 .frame(maxWidth: .infinity)
                 .padding(40)
+        } else if !context.viewState.breadcrumbs.isEmpty {
+            breadcrumbsList
         } else {
-            TitleAndIcon(title: UntranslatedL10n.screenSearchEmptyStateTitle,
-                         subtitle: UntranslatedL10n.screenSearchEmptyStateMessage,
+            TitleAndIcon(title: L10n.screenSearchEmptyStateTitle,
+                         subtitle: L10n.screenSearchEmptyStateMessage,
                          icon: \.search,
                          iconStyle: .defaultSolid)
                 .frame(maxWidth: .infinity)
@@ -188,6 +209,40 @@ struct SearchScreen: View {
         .compoundList(.plain)
     }
     
+    private var breadcrumbsList: some View {
+        List {
+            Section {
+                ForEach(context.viewState.breadcrumbs) { breadcrumb in
+                    let isSelected = isHardwareKeyboardConnected && selectedID == breadcrumb.id
+                    
+                    let onRemove = { context.send(viewAction: .removeBreadcrumb(breadcrumb)) }
+                    
+                    switch breadcrumb {
+                    case .query(let query):
+                        SearchScreenQueryCell(query: query, isSelected: isSelected, onRemove: onRemove) { context.searchQuery = query }
+                    case .room(let room):
+                        SearchScreenRoomCell(room: room, context: context, isSelected: isSelected, avatarSize: .searchHistory, onRemove: onRemove)
+                    }
+                }
+            } header: {
+                HStack(spacing: 8) {
+                    Text(L10n.screenSearchRecentSearches)
+                        .compoundListSectionHeader()
+                    
+                    Spacer()
+                    
+                    // The compound text link style has no accent colour variant.
+                    Button { context.send(viewAction: .clearBreadcrumbs) } label: {
+                        Text(L10n.actionClearAll)
+                            .font(.compound.bodyMDSemibold)
+                            .foregroundStyle(.compound.textActionAccent)
+                    }
+                }
+            }
+        }
+        .compoundList(.plain)
+    }
+    
     /// Hidden buttons that switch tabs via ⌘1/⌘2, the common shortcut for jumping to tab N.
     private var tabShortcuts: some View {
         ForEach(Array(SearchScreenMode.allCases.enumerated()), id: \.element) { index, mode in
@@ -213,6 +268,20 @@ struct SearchScreen: View {
     
     private func selectCurrent() {
         guard let selectedID else { return }
+        
+        guard context.viewState.isSearching else {
+            let breadcrumb = context.viewState.breadcrumbs.first { $0.id == selectedID }
+            switch breadcrumb {
+            case .query(let query):
+                context.searchQuery = query
+            case .room(let room):
+                context.send(viewAction: .selectRoom(roomID: room.id))
+            case nil:
+                break
+            }
+            return
+        }
+        
         switch context.viewState.bindings.searchMode {
         case .messages:
             guard let message = context.viewState.messages.first(where: { $0.id == selectedID }) else { return }
@@ -231,10 +300,11 @@ struct SearchScreen: View {
 private extension View {
     /// Searchable makes the preview contents randomly appear lower
     @ViewBuilder func conditionalSearchable(searchQuery: Binding<String>, isEnabled: Bool) -> some View {
-        if isEnabled, !ProcessInfo.isXcodePreview, !ProcessInfo.isRunningTests {
-            searchable(text: searchQuery, placement: .toolbarPrincipal)
-        } else {
+        if !isEnabled || ProcessInfo.isXcodePreview || (ProcessInfo.isRunningTests && !ProcessInfo.isRunningIntegrationTests) {
             self
+        } else {
+            // On iPadOS 18 the floating tab bar takes the principal slot, hiding the field.
+            searchable(text: searchQuery, placement: Compound.supportsGlass ? .toolbarPrincipal : .navigationBarDrawer(displayMode: .always))
         }
     }
 }
@@ -243,6 +313,8 @@ private struct SearchScreenRoomCell: View {
     let room: SearchScreenRoom
     let context: SearchScreenViewModel.Context
     let isSelected: Bool
+    var avatarSize: RoomAvatarSizeOnScreen = .search
+    var onRemove: (() -> Void)?
     
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     
@@ -253,25 +325,34 @@ private struct SearchScreenRoomCell: View {
             HStack(spacing: 16) {
                 avatar
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(room.title)
-                        .font(.compound.bodyLGSemibold)
-                        .foregroundStyle(.compound.textPrimary)
-                        .lineLimit(1)
+                ZStack(alignment: .leading) {
+                    SearchScreenRowHeightPlaceholder()
                     
-                    if !room.description.isEmpty {
-                        Text(room.description)
-                            .font(.compound.bodyMD)
-                            .foregroundStyle(.compound.textSecondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(room.title)
+                            .font(.compound.bodyLGSemibold)
+                            .foregroundStyle(.compound.textPrimary)
                             .lineLimit(1)
+                        
+                        if !room.description.isEmpty {
+                            Text(room.description)
+                                .font(.compound.bodyMD)
+                                .foregroundStyle(.compound.textSecondary)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                
+                if let onRemove {
+                    SearchScreenRemoveBreadcrumbButton(action: onRemove)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
         .buttonStyle(SearchScreenRoomCellButtonStyle(isSelected: isSelected))
+        .accessibilityIdentifier(A11yIdentifiers.searchScreen.roomName(room.title))
         .listRowInsets(.init())
         .listRowSeparator(.hidden)
         .rowDivider()
@@ -281,11 +362,28 @@ private struct SearchScreenRoomCell: View {
     private var avatar: some View {
         if dynamicTypeSize < .accessibility3 {
             RoomAvatarImage(avatar: room.avatar,
-                            avatarSize: .room(on: .search),
+                            avatarSize: .room(on: avatarSize),
                             mediaProvider: context.mediaProvider)
                 .dynamicTypeSize(dynamicTypeSize < .accessibility1 ? dynamicTypeSize : .accessibility1)
                 .accessibilityHidden(true)
         }
+    }
+}
+
+/// Reports the search field being dismissed, which `isSearching` only exposes to the searchable view's children.
+private struct SearchDismissalObserver: View {
+    @Environment(\.isSearching) private var isSearching
+    
+    let action: () -> Void
+    
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onChange(of: isSearching) { _, isSearching in
+                if !isSearching {
+                    action()
+                }
+            }
     }
 }
 
@@ -297,6 +395,71 @@ private struct SearchScreenRoomCellButtonStyle: ButtonStyle {
             .background(isSelected || configuration.isPressed ? Color.compound.bgSubtleSecondary : Color.compound.bgCanvasDefault)
             .contentShape(Rectangle())
             .animation(isSelected ? .none : .easeOut(duration: 0.1).disabledDuringTests(), value: isSelected)
+    }
+}
+
+private struct SearchScreenQueryCell: View {
+    let query: String
+    let isSelected: Bool
+    let onRemove: () -> Void
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                CompoundIcon(\.history, size: .small, relativeTo: .compound.bodyLG)
+                    .foregroundStyle(.compound.iconPrimary)
+                    .scaledFrame(width: 32, height: 32)
+                    .background(.compound.bgSubtleSecondary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .accessibilityHidden(true)
+                
+                ZStack(alignment: .leading) {
+                    SearchScreenRowHeightPlaceholder()
+                    
+                    Text(query)
+                        .font(.compound.bodyLG)
+                        .foregroundStyle(.compound.textPrimary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                SearchScreenRemoveBreadcrumbButton(action: onRemove)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(SearchScreenRoomCellButtonStyle(isSelected: isSelected))
+        .listRowInsets(.init())
+        .listRowSeparator(.hidden)
+        .rowDivider()
+    }
+}
+
+/// Reserves the height of a title and subtitle so every row matches, scaling with dynamic type.
+private struct SearchScreenRowHeightPlaceholder: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: " ")
+                .font(.compound.bodyLGSemibold)
+            Text(verbatim: " ")
+                .font(.compound.bodyMD)
+        }
+        .hidden()
+        .accessibilityHidden(true)
+    }
+}
+
+private struct SearchScreenRemoveBreadcrumbButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            CompoundIcon(\.close)
+                .foregroundStyle(.compound.iconTertiary)
+                .accessibilityLabel(L10n.actionRemove)
+        }
+        // Borderless so the button handles its own taps instead of the row it's nested in.
+        .buttonStyle(.borderless)
     }
 }
 
@@ -331,7 +494,7 @@ private struct SearchScreenMessageCell: View {
                     if let mediaPreview = message.mediaPreview {
                         SearchScreenMediaPreviewView(preview: mediaPreview, mediaProvider: context.mediaProvider)
                     } else if let preview = message.preview {
-                        Text(preview.highlighting(context.viewState.bindings.searchQuery))
+                        Text(AttributedString(preview).highlighting(context.viewState.bindings.searchQuery))
                             .font(.compound.bodyMD)
                             .foregroundStyle(.compound.textSecondary)
                             .lineLimit(2)
@@ -482,74 +645,52 @@ private final class KeyNavigatingSearchTextField: UISearchTextField {
 
 struct SearchScreen_Previews: PreviewProvider, TestablePreview {
     static let emptyViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
-                                                      clientProxy: makeClientProxy(),
-                                                      mediaProvider: MediaProviderMock(.init()),
-                                                      searchIndexService: makeSearchIndexService(),
-                                                      historyDownloadManager: makeHistoryDownloadManager(),
+                                                      userSession: UserSessionMock(.init(clientProxy: makeClientProxy())),
                                                       userIndicatorController: UserIndicatorControllerMock())
     static let noResultsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
-                                                          clientProxy: makeClientProxy(),
-                                                          mediaProvider: MediaProviderMock(.init()),
-                                                          searchIndexService: makeSearchIndexService(),
-                                                          historyDownloadManager: makeHistoryDownloadManager(),
+                                                          userSession: UserSessionMock(.init(clientProxy: makeClientProxy())),
                                                           userIndicatorController: UserIndicatorControllerMock(),
                                                           initialSearchQuery: "John Doe")
     static let roomsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded(.mockRooms))),
-                                                      clientProxy: makeClientProxy(),
-                                                      mediaProvider: MediaProviderMock(.init()),
-                                                      searchIndexService: makeSearchIndexService(),
-                                                      historyDownloadManager: makeHistoryDownloadManager(),
+                                                      userSession: UserSessionMock(.init(clientProxy: makeClientProxy())),
                                                       userIndicatorController: UserIndicatorControllerMock(),
                                                       initialSearchQuery: "Foundation")
     static let messagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
-                                                         clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)),
-                                                         mediaProvider: MediaProviderMock(.init()),
-                                                         searchIndexService: makeSearchIndexService(),
-                                                         historyDownloadManager: makeHistoryDownloadManager(),
+                                                         userSession: UserSessionMock(.init(clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)))),
                                                          userIndicatorController: UserIndicatorControllerMock(),
                                                          initialSearchQuery: "Foundation",
                                                          initialSearchMode: .messages)
     static let loadingMessagesViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
-                                                                clientProxy: makeClientProxy(searchService: makeSearchService(paginationState: .loading)),
-                                                                mediaProvider: MediaProviderMock(.init()),
-                                                                searchIndexService: makeSearchIndexService(),
-                                                                historyDownloadManager: makeHistoryDownloadManager(),
+                                                                userSession: UserSessionMock(.init(clientProxy: makeClientProxy(searchService: makeSearchService(paginationState: .loading)))),
                                                                 userIndicatorController: UserIndicatorControllerMock(),
                                                                 initialSearchQuery: "Foundation",
                                                                 initialSearchMode: .messages)
     
+    static let breadcrumbsViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
+                                                            userSession: UserSessionMock(.init(clientProxy: makeClientProxy(),
+                                                                                               userSettings: makeUserSettings(breadcrumbs: [.room(roomID: "!room1:matrix.org"),
+                                                                                                                                            .query("Bob"),
+                                                                                                                                            .room(roomID: "!room5:matrix.org"),
+                                                                                                                                            .query("Element HR"),
+                                                                                                                                            .query("Alice")]))),
+                                                            userIndicatorController: UserIndicatorControllerMock())
+    
     static let downloadingHistoryViewModel = SearchScreenViewModel(roomSummaryProvider: RoomSummaryProviderMock(.init(state: .loaded([]))),
-                                                                   clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults)),
-                                                                   mediaProvider: MediaProviderMock(.init()),
-                                                                   searchIndexService: makeSearchIndexService(),
-                                                                   historyDownloadManager: makeHistoryDownloadManager(status: .downloading),
+                                                                   userSession: makeDownloadingHistoryUserSession(),
                                                                    userIndicatorController: UserIndicatorControllerMock(),
                                                                    initialSearchQuery: "Foundation",
                                                                    initialSearchMode: .messages)
-    
-    /// An empty index: previews exercise the SDK side, and un-configured mocks trap.
-    static func makeSearchIndexService() -> SearchIndexServiceProtocol {
-        let mock = SearchIndexServiceMock()
-        mock.searchReturnValue = []
-        mock.browseReturnValue = []
-        mock.roomsWithMediaInReturnValue = []
-        return mock
-    }
-    
-    /// Defaults to a finished download, so only the preview that wants the banner gets it.
-    /// The download's own progress UI is covered by the Sync & Storage screen.
-    static func makeHistoryDownloadManager(status: HistoryDownloadStatus = .completed) -> HistoryDownloadManagerProtocol {
-        let mock = HistoryDownloadManagerMock()
-        mock.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init(status: status)).asCurrentValuePublisher()
-        mock.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
-        return mock
-    }
     
     static var previews: some View {
         ElementNavigationStack {
             SearchScreen(context: emptyViewModel.context)
         }
         .previewDisplayName("Empty")
+        
+        ElementNavigationStack {
+            SearchScreen(context: breadcrumbsViewModel.context)
+        }
+        .previewDisplayName("Recent searches")
         
         ElementNavigationStack {
             SearchScreen(context: noResultsViewModel.context)
@@ -577,6 +718,15 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
         .previewDisplayName("Downloading history")
     }
     
+    private static func makeDownloadingHistoryUserSession() -> UserSessionMock {
+        let userSession = UserSessionMock(.init(clientProxy: makeClientProxy(searchService: makeSearchService(results: .mockResults))))
+        let historyDownloadManager = HistoryDownloadManagerMock()
+        historyDownloadManager.underlyingProgressPublisher = CurrentValueSubject<HistoryDownloadProgress, Never>(.init(status: .downloading)).asCurrentValuePublisher()
+        historyDownloadManager.underlyingRoomStatesPublisher = CurrentValueSubject<[String: RoomHistoryState], Never>([:]).asCurrentValuePublisher()
+        userSession.historyDownloadManager = historyDownloadManager
+        return userSession
+    }
+    
     private static func makeSearchService(results: [SearchServiceResult] = [], paginationState: SearchServicePaginationState = .idle(endReached: true)) -> SearchServiceProxyMock {
         let mock = SearchServiceProxyMock()
         mock.underlyingResultsPublisher = CurrentValueSubject<[SearchServiceResult], Never>(results).asCurrentValuePublisher()
@@ -585,13 +735,22 @@ struct SearchScreen_Previews: PreviewProvider, TestablePreview {
         return mock
     }
     
+    private static func makeUserSettings(breadcrumbs: [SearchBreadcrumb]) -> UserSettings {
+        let userSettings = UserSettings.mock()
+        userSettings.account.searchBreadcrumbs = breadcrumbs
+        return userSettings
+    }
+    
     private static func makeClientProxy(searchService: SearchServiceProxyMock = makeSearchService()) -> ClientProxyMock {
         let mock = ClientProxyMock(.init(userID: "@alice:matrix.org"))
         mock.searchService = searchService
         let names: [String: String] = ["!room1:matrix.org": "Alice", "!room2:matrix.org": "Bob", "!room3:matrix.org": "Coline",
                                        "!room4:matrix.org": "Bob", "!room5:matrix.org": "Office", "!room6:matrix.org": "Data analytics",
                                        "!room7:matrix.org": "Alice", "!room8:matrix.org": "Bob", "!room9:matrix.org": "Coline"]
-        mock.roomSummaryForIdentifierClosure = { id in .mock(id: id, name: names[id] ?? id) }
+        mock.roomSummaryForIdentifierClosure = { id in
+            let name = names[id] ?? id
+            return .mock(id: id, name: name, canonicalAlias: "#\(name.lowercased()):matrix.org")
+        }
         return mock
     }
 }

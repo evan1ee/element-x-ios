@@ -39,3 +39,5 @@ Components/Secrets/vendor/*
 
 # Local MCP server config (machine-specific paths)
 .mcp.json
+# Local SDK development override
+matrix-rust-components-swift

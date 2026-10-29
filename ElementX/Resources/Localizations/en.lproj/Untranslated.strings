@@ -65,7 +65,6 @@
 "screen_display_settings_tabs_header" = "Tabs";
 "screen_display_settings_title" = "Display";
 "screen_home_tab_photos" = "Photos";
-"screen_home_tab_search" = "Search";
 "screen_media_input_add_sticker" = "Add image or GIF";
 "screen_media_input_category_activity" = "Activity";
 "screen_media_input_category_flags" = "Flags";
@@ -101,8 +100,6 @@
 "screen_room_timeline_legacy_call_ios" = "Unsupported call. Ask if the caller can use the new %1$@ app.";
 "screen_saved_messages_empty_state_message" = "Everything syncs securely across your devices.";
 "screen_saved_messages_empty_state_title" = "Save messages, photos, videos, files and links here.";
-"screen_search_empty_state_message" = "Search for chats and messages";
-"screen_search_empty_state_title" = "Start searching...";
 "screen_search_incomplete_history" = "Older messages are still downloading. Results may be incomplete.";
 "screen_search_media_date_any_time" = "Any time";
 "screen_search_media_date_this_month" = "This month";
@@ -119,9 +116,7 @@
 "screen_search_media_type_photo" = "Photos";
 "screen_search_media_type_video" = "Videos";
 "screen_search_media_type_voice" = "Voice";
-"screen_search_no_results_message" = "There are no results for “%1$@.” Try a new search term.";
 "screen_search_tab_media" = "Media";
-"screen_search_tab_messages" = "Messages";
 "screen_search_view_download_progress" = "View download progress";
 "screen_sticker_discovery_add_to_my_stickers" = "Add to my stickers";
 "screen_sticker_discovery_empty" = "No stickers found";

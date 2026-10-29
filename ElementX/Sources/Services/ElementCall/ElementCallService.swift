@@ -6,417 +6,259 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
-import AVFoundation
-import CallKit
 import Combine
-import Foundation
+import ElementCall
 import MatrixRustSDK
-import PushKit
-import UIKit
 
-/// Keep this class testable
-struct TimeProvider {
-    var clock: any Clock<Duration>
-    var now: () -> Date
-}
-
-class ElementCallService: NSObject, ElementCallServiceProtocol, PKPushRegistryDelegate, CXProviderDelegate {
-    private struct CallID: Equatable {
-        let callKitID: UUID
+/// The account's side of its calls: the ringing call's room, its decline, the ongoing call and the
+/// native call stack. Relays what the call screens report up to the `ElementCallManager`.
+final class ElementCallService: ElementCallServiceProtocol {
+    private struct ObservedCall: Equatable {
         let roomID: String
         let rtcNotificationID: String?
-        let isVoiceCall: Bool
     }
     
-    private let pushRegistry: PKPushRegistry
-    private let callController = CXCallController()
-    private let callProvider: CXProviderProtocol
-    private let timeProvider: TimeProvider
+    private let appSettings: AppSettings
     
-    private weak var clientProxy: ClientProxyProtocol? {
-        didSet {
-            // There's a race condition where a call starts when the app has been killed and the
-            // observation set in `incomingCallID` occurs *before* the user session is restored.
-            // So observe when the client proxy is set to fix this (the method guards for the call).
-            Task { await observeIncomingCall() }
-        }
+    private weak var clientProxy: ClientProxyProtocol?
+    private var mediaProvider: MediaProviderProtocol?
+    
+    private let actionsSubject = PassthroughSubject<ElementCallServiceAction, Never>()
+    var actionsPublisher: AnyPublisher<ElementCallServiceAction, Never> {
+        actionsSubject.eraseToAnyPublisher()
     }
     
-    private var incomingCallRoomInfoCancellable: AnyCancellable?
-    private var incomingCallID: CallID? {
-        didSet {
-            Task { await observeIncomingCall() }
-        }
-    }
-    
-    private var endUnansweredCallTask: Task<Void, Never>?
-    
-    private var ongoingCallID: CallID? {
-        didSet { ongoingCallRoomIDSubject.send(ongoingCallID?.roomID) }
-    }
-    
-    let ongoingCallRoomIDSubject = CurrentValueSubject<String?, Never>(nil)
+    private let ongoingCallRoomIDSubject = CurrentValueSubject<String?, Never>(nil)
     var ongoingCallRoomIDPublisher: CurrentValuePublisher<String?, Never> {
         ongoingCallRoomIDSubject.asCurrentValuePublisher()
     }
     
-    private let actionsSubject: PassthroughSubject<ElementCallServiceAction, Never> = .init()
-    var actions: AnyPublisher<ElementCallServiceAction, Never> {
-        actionsSubject.eraseToAnyPublisher()
+    private let nativeCallEventsSubject = PassthroughSubject<NativeCallEvent, Never>()
+    var nativeCallEventsPublisher: AnyPublisher<NativeCallEvent, Never> {
+        nativeCallEventsSubject.eraseToAnyPublisher()
     }
     
+    private let nativeCallPresentationSubject = PassthroughSubject<NativeCallPresentation, Never>()
+    var nativeCallPresentationPublisher: AnyPublisher<NativeCallPresentation, Never> {
+        nativeCallPresentationSubject.eraseToAnyPublisher()
+    }
+    
+    /// The native call stack, for as long as there's a session running calls through it.
+    private var nativeCallStack: NativeCallStack?
+    private var nativeCallCancellable: AnyCancellable?
+    
+    var nativeCallController: ElementCallController? {
+        nativeCallStack?.controller
+    }
+    
+    /// Call screens waiting in `setupCallSession` for the manager's reply, by room.
+    private var callSessionSetUpContinuations: [String: CheckedContinuation<Void, Never>] = [:]
+    
+    private var observedCall: ObservedCall?
+    private var incomingCallRoomInfoCancellable: AnyCancellable?
     private var declineListenerHandle: TaskHandle?
     
-    init(callProvider: CXProviderProtocol? = nil, timeProvider: TimeProvider? = nil) {
-        pushRegistry = PKPushRegistry(queue: nil)
+    private var cancellables = Set<AnyCancellable>()
+    
+    init(appSettings: AppSettings) {
+        self.appSettings = appSettings
         
-        self.timeProvider = timeProvider ?? TimeProvider(clock: ContinuousClock(), now: Date.init)
+        appSettings.nativeCallEnabledPublisher
+            .sink { [weak self] _ in
+                self?.updateNativeCallStack()
+            }
+            .store(in: &cancellables)
+    }
+    
+    func setUserSession(_ userSession: UserSessionProtocol?) {
+        let isNewClient = userSession?.clientProxy !== clientProxy
         
-        if let callProvider {
-            self.callProvider = callProvider
-        } else {
-            let configuration = CXProviderConfiguration()
-            configuration.supportsVideo = true
-            configuration.includesCallsInRecents = true
-            
-            if let callKitIcon = UIImage(named: "images/app-logo") {
-                configuration.iconTemplateImageData = callKitIcon.pngData()
+        // A stack is built against one client proxy and can't be handed to another, which is what a
+        // soft logout or a cache clear brings: a new session without the sign out that drops this one.
+        if isNewClient {
+            stopNativeCallStack()
+            stopWatchingRoom()
+        }
+        
+        clientProxy = userSession?.clientProxy
+        mediaProvider = userSession?.mediaProvider
+        
+        if isNewClient {
+            resumeObservingIncomingCall()
+        }
+        
+        updateNativeCallStack()
+    }
+    
+    @discardableResult
+    func handleNativeCallRequest(roomProxy: JoinedRoomProxyProtocol, isVoiceCall: Bool) -> Bool {
+        guard let nativeCallStack else {
+            return false
+        }
+        
+        nativeCallStack.handleCallRequest(roomProxy: roomProxy, isVoiceCall: isVoiceCall)
+        return true
+    }
+    
+    func minimizeNativeCall() {
+        nativeCallStack?.minimize()
+    }
+    
+    func restoreNativeCall() {
+        nativeCallStack?.restore()
+    }
+    
+    func setupCallSession(roomID: String, roomDisplayName: String, isVideo: Bool, kind: ElementCallSessionKind) async {
+        await withCheckedContinuation { continuation in
+            if let staleContinuation = callSessionSetUpContinuations.removeValue(forKey: roomID) {
+                MXLog.warning("Releasing a call session set-up for room \(roomID) that the manager never answered")
+                staleContinuation.resume()
             }
             
-            // https://stackoverflow.com/a/46077628/730924
-            configuration.supportedHandleTypes = [.generic]
-            
-            self.callProvider = CXProvider(configuration: configuration)
+            // Registered before sending, as the manager can answer from within the send.
+            callSessionSetUpContinuations[roomID] = continuation
+            actionsSubject.send(.callSessionStarted(roomID: roomID, roomDisplayName: roomDisplayName, isVideo: isVideo, kind: kind))
         }
-        
-        super.init()
-        
-        pushRegistry.delegate = self
-        pushRegistry.desiredPushTypes = [.voIP]
-        
-        self.callProvider.setDelegate(self, queue: nil)
     }
     
-    func setClientProxy(_ clientProxy: any ClientProxyProtocol) {
-        self.clientProxy = clientProxy
+    func reportCallSessionConnected(roomID: String) {
+        actionsSubject.send(.callSessionConnected(roomID: roomID))
     }
     
-    func setupCallSession(roomID: String, roomDisplayName: String) async {
-        // Drop any ongoing calls when starting a new one
-        if ongoingCallID != nil {
-            tearDownCallSession()
-        }
-        
-        // If this starting from a ring reuse those identifiers
-        // Make sure the roomID matches
-        let callID = if let incomingCallID, incomingCallID.roomID == roomID {
-            incomingCallID
-        } else {
-            CallID(callKitID: UUID(), roomID: roomID, rtcNotificationID: nil, isVoiceCall: false)
-        }
-        
-        clearIncomingCallState()
-        ongoingCallID = callID
-        
-        // Don't bother starting another CallKit session as it won't work properly
-        // https://developer.apple.com/forums//thread/767949?answerId=812951022#812951022
-        
-        // let handle = CXHandle(type: .generic, value: roomDisplayName)
-        // let startCallAction = CXStartCallAction(call: callID.callKitID, handle: handle)
-        // startCallAction.isVideo = true
-        
-        // do {
-        //     try await callController.request(CXTransaction(action: startCallAction))
-        // } catch {
-        //     MXLog.error("Failed requesting start call action with error: \(error)")
-        // }
+    func tearDownCallSession(roomID: String) {
+        actionsSubject.send(.callSessionEnded(roomID: roomID, reason: nil))
     }
     
-    func tearDownCallSession() {
-        tearDownCallSession(sendEndCallAction: true)
+    func reportCallSessionEnded(roomID: String, reason: CallEndReason) {
+        actionsSubject.send(.callSessionEnded(roomID: roomID, reason: reason))
     }
     
     func setAudioEnabled(_ enabled: Bool, roomID: String) {
-        guard let ongoingCallID else {
-            MXLog.error("Failed toggling call microphone, no calls running")
-            return
-        }
-        
-        guard ongoingCallID.roomID == roomID else {
-            MXLog.error("Failed toggling call microphone, rooms don't match: \(ongoingCallID.roomID) != \(roomID)")
-            return
-        }
-        
-        let transaction = CXTransaction(action: CXSetMutedCallAction(call: ongoingCallID.callKitID, muted: !enabled))
-        callController.request(transaction) { error in
-            if let error {
-                MXLog.error("Failed toggling call microphone with error: \(error)")
-            }
-        }
+        actionsSubject.send(.audioEnabledChanged(enabled, roomID: roomID))
     }
     
-    // MARK: - PKPushRegistryDelegate
-    
-    func pushRegistry(_ registry: PKPushRegistry, didUpdate pushCredentials: PKPushCredentials, for type: PKPushType) { }
-    
-    func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
-        guard let roomID = payload.dictionaryPayload[ElementCallServiceNotificationKey.roomID.rawValue] as? String else {
-            MXLog.error("Something went wrong, missing room identifier for incoming voip call: \(payload)")
-            assertionFailure("Incoming voip push is missing the room identifier")
-            reportImmediatelyEndedCall(reason: .failed, completion: completion)
-            return
-        }
+    func observeIncomingCall(roomID: String, rtcNotificationID: String?) async {
+        stopObservingIncomingCall()
         
-        guard let rtcNotificationID = payload.dictionaryPayload[ElementCallServiceNotificationKey.rtcNotifyEventID.rawValue] as? String else {
-            MXLog.error("Something went wrong, missing rtc notification event identifier for incoming voip call: \(payload)")
-            assertionFailure("Incoming voip push is missing the rtc notification event identifier")
-            reportImmediatelyEndedCall(reason: .failed, completion: completion)
-            return
-        }
+        // Kept without a client too, as the push can come before the session does.
+        let call = ObservedCall(roomID: roomID, rtcNotificationID: rtcNotificationID)
+        observedCall = call
         
-        let roomDisplayName = payload.dictionaryPayload[ElementCallServiceNotificationKey.roomDisplayName.rawValue] as? String
-        
-        guard ongoingCallID?.roomID != roomID else {
-            MXLog.warning("Call already ongoing for room \(roomID), reporting the duplicate push as handled")
-            reportImmediatelyEndedCall(reason: .answeredElsewhere,
-                                       callerInfo: (roomID: roomID, roomDisplayName: roomDisplayName),
-                                       completion: completion)
-            return
-        }
-        
-        let isVoiceCall = payload.dictionaryPayload[ElementCallServiceNotificationKey.isVoiceCall.rawValue] as? Bool ?? false
-        
-        let callID = CallID(callKitID: UUID(), roomID: roomID, rtcNotificationID: rtcNotificationID, isVoiceCall: isVoiceCall)
-        incomingCallID = callID
-        
-        guard let expirationDate = (payload.dictionaryPayload[ElementCallServiceNotificationKey.expirationDate.rawValue] as? Date) else {
-            MXLog.error("Something went wrong, missing expiration timestamp for incoming voip call: \(payload)")
-            assertionFailure("Incoming voip push is missing the expiration timestamp")
-            clearIncomingCallState()
-            reportImmediatelyEndedCall(reason: .failed, completion: completion)
-            return
-        }
-        
-        let nowDate = timeProvider.now()
-        
-        guard nowDate < expirationDate else {
-            MXLog.warning("Call expired for room \(roomID), reporting it as missed")
-            clearIncomingCallState()
-            reportImmediatelyEndedCall(reason: .unanswered,
-                                       callerInfo: (roomID: roomID, roomDisplayName: roomDisplayName),
-                                       completion: completion)
-            return
-        }
-        
-        let ringDuration: Duration = .seconds(min(expirationDate.timeIntervalSince1970 - nowDate.timeIntervalSince1970, 90))
-        
-        let update = CXCallUpdate()
-        // Work Around: Always set video to true! https://github.com/element-hq/element-x-ios/issues/5335
-        // If not for audio call the app will not be put to foreground and the webview won't be able to handle the call...
-        // Consequence: The call will be presented to the user as a video call in CallKit UI,
-        // but once Element Call is launched it will correctly route to a voice-only call.
-        update.hasVideo = true
-        update.localizedCallerName = roomDisplayName
-        // https://stackoverflow.com/a/41230020/730924
-        update.remoteHandle = .init(type: .generic, value: roomID)
-        
-        // The push registry uses the main queue so the completion is main actor bound,
-        // whereas CallKit invokes its completion on a background queue.
-        let mainActorCompletion = { @MainActor @Sendable in completion() }
-        callProvider.reportNewIncomingCall(with: callID.callKitID, update: update) { [weak self] error in
-            if let error {
-                MXLog.error("Failed reporting new incoming call with error: \(error)")
-            }
-            
-            Task { @MainActor in
-                self?.actionsSubject.send(.receivedIncomingCallRequest)
-                
-                mainActorCompletion()
-            }
-        }
-        
-        endUnansweredCallTask = Task { [weak self] in
-            try? await self?.timeProvider.clock.sleep(for: ringDuration)
-            
-            guard let self, !Task.isCancelled else {
-                return
-            }
-            
-            if let incomingCallID, incomingCallID.callKitID == callID.callKitID {
-                callProvider.reportCall(with: incomingCallID.callKitID, endedAt: nil, reason: .unanswered)
-                clearIncomingCallState()
-            }
-        }
+        await watch(call)
     }
     
-    // MARK: - CXProviderDelegate
-    
-    func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-        MXLog.info("Call provider did activate audio session")
+    func stopObservingIncomingCall() {
+        observedCall = nil
+        stopWatchingRoom()
     }
     
-    func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-        MXLog.info("Call provider did deactivate audio session")
-    }
-    
-    func providerDidReset(_ provider: CXProvider) {
-        MXLog.info("Call provider did reset: \(provider)")
-    }
-    
-    func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
-        guard let incomingCallID else {
-            MXLog.error("Failed answering incoming call, missing incomingCallID")
-            return
-        }
-        
-        // Fixes broken videos on EC web when a CallKit session is established.
-        //
-        // Reporting an ongoing call through `reportNewIncomingCall` + `CXAnswerCallAction`
-        // or `reportOutgoingCall:connectedAt:` will give exclusive access for media to the
-        // ongoing process, which is different than the WKWebKit is running on, making EC
-        // unable to aquire media streams.
-        // Reporting the call as ended imediately after answering it works around that
-        // as EC gets access to media again and EX builds the right UI in `setupCallSession`
-        //
-        // https://developer.apple.com/forums//thread/767949?answerId=812951022#812951022
-        //
-        // https://github.com/element-hq/element-x-ios/issues/3041
-        // https://forums.developer.apple.com/forums/thread/685268
-        // https://stackoverflow.com/questions/71483732/webrtc-running-from-wkwebview-avaudiosession-development-roadblock
-        
-        // First fullfill the action
-        action.fulfill()
-        
-        // And delay ending the call so that the app has enough time
-        // to get deeplinked into
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            // Then end the and call rely on `setupCallSession` to create a new one
-            provider.reportCall(with: incomingCallID.callKitID, endedAt: nil, reason: .remoteEnded)
-            
-            self.actionsSubject.send(.startCall(roomID: incomingCallID.roomID, isVoiceCall: incomingCallID.isVoiceCall))
-            self.endUnansweredCallTask?.cancel()
-        }
-    }
-    
-    func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
-        if let ongoingCallID {
-            actionsSubject.send(.setAudioEnabled(!action.isMuted, roomID: ongoingCallID.roomID))
-        } else {
-            MXLog.error("Failed muting/unmuting call, missing ongoingCallID")
-        }
-        
-        action.fulfill()
-    }
-    
-    func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
-        #if targetEnvironment(simulator)
-        // This gets called for no reason on simulators, where CallKit
-        // isn't even supported, ignore it.
-        #else
-        if let ongoingCallID {
-            actionsSubject.send(.endCall(roomID: ongoingCallID.roomID))
-        }
-        
-        if let incomingCallID {
-            Task {
-                await sendDeclineCallEvent(incomingCallID)
-            }
-        }
-        
-        if incomingCallID?.callKitID == action.callUUID {
-            clearIncomingCallState()
-        }
-        
-        tearDownCallSession(sendEndCallAction: false)
-        
-        action.fulfill()
-        #endif
-    }
-    
-    // MARK: - Private
-    
-    private func tearDownCallSession(sendEndCallAction: Bool = true) {
-        if sendEndCallAction, let ongoingCallID {
-            let transaction = CXTransaction(action: CXEndCallAction(call: ongoingCallID.callKitID))
-            callController.request(transaction) { error in
-                if let error {
-                    MXLog.error("Failed transaction with error: \(error)")
-                }
-            }
-        }
-        
-        ongoingCallID = nil
-    }
-    
-    /// Every VoIP push must be reported to CallKit via `reportNewIncomingCall`, otherwise iOS
-    /// terminates the app with `NSInternalInconsistencyException`. On early-return paths we report
-    /// a call and immediately end it. `callerInfo` names the call after the room so the brief
-    /// system UI and the Recents entry show the room rather than "Unknown", and the entry can be
-    /// tapped to call back.
-    private func reportImmediatelyEndedCall(reason: CXCallEndedReason,
-                                            callerInfo: (roomID: String, roomDisplayName: String?)? = nil,
-                                            completion: @escaping () -> Void) {
-        let callID = UUID()
-        let update = CXCallUpdate()
-        // Never answered through CallKit, so the hasVideo workaround for #5335 isn't needed.
-        update.hasVideo = false
-        
-        if let callerInfo {
-            update.localizedCallerName = callerInfo.roomDisplayName
-            update.remoteHandle = .init(type: .generic, value: callerInfo.roomID)
-        }
-        
-        // CallKit invokes the completion on a background queue, so hop back to the main actor
-        // to report the ended call and to run the (main actor bound) completion.
-        let mainActorCompletion = { @MainActor @Sendable in completion() }
-        callProvider.reportNewIncomingCall(with: callID, update: update) { [weak self] error in
-            if let error {
-                MXLog.error("Failed reporting immediately ended call with error: \(error)")
-            }
-            
-            Task { @MainActor in
-                self?.callProvider.reportCall(with: callID, endedAt: nil, reason: reason)
-                mainActorCompletion()
-            }
-        }
-    }
-    
-    private func sendDeclineCallEvent(_ incomingCallID: CallID) async {
-        guard let rtcNotificationID = incomingCallID.rtcNotificationID else {
-            MXLog.info("No rtc notification event to decline.")
-            return
-        }
-        
+    func declineCall(roomID: String, rtcNotificationID: String) async {
         guard let clientProxy else {
             MXLog.warning("A ClientProxy is needed to fetch the room.")
             return
         }
         
-        guard case let .joined(roomProxy) = await clientProxy.roomForIdentifier(incomingCallID.roomID) else {
-            MXLog.warning("Failed to fetch a joined room for the incoming call.")
+        guard case let .joined(roomProxy) = await clientProxy.roomForIdentifier(roomID) else {
+            MXLog.warning("Failed to fetch a joined room to decline the incoming call.")
             return
         }
         
         _ = await roomProxy.declineCall(notificationID: rtcNotificationID)
     }
     
-    private func observeIncomingCall() async {
-        incomingCallRoomInfoCancellable = nil
-        
-        guard let incomingCallID else {
-            MXLog.info("No incoming call to observe for.")
+    func ongoingCallChanged(roomID: String?) {
+        ongoingCallRoomIDSubject.send(roomID)
+    }
+    
+    func callSessionSetUp(roomID: String, isAccepted: Bool) {
+        guard let continuation = callSessionSetUpContinuations.removeValue(forKey: roomID) else {
+            MXLog.info("No call session set-up waiting for room \(roomID)")
             return
         }
         
+        continuation.resume()
+    }
+    
+    func systemEventReceived(_ event: NativeCallEvent) {
+        nativeCallEventsSubject.send(event)
+    }
+    
+    // MARK: - Native calls
+    
+    /// Builds or releases the call stack to match the session and the setting.
+    private func updateNativeCallStack() {
+        guard appSettings.nativeCallEnabled, let clientProxy else {
+            stopNativeCallStack()
+            return
+        }
+        
+        guard nativeCallStack == nil else { return }
+        
+        guard let backend = clientProxy.makeNativeCallBackend() else {
+            MXLog.error("Cannot start the native call stack without a Matrix backend")
+            return
+        }
+        
+        let style = ElementCallStyle(theme: NativeCallTheme(),
+                                     icons: NativeCallIcons(),
+                                     avatars: NativeCallAvatars(mediaProvider: mediaProvider),
+                                     strings: .init(you: L10n.commonYou,
+                                                    error: L10n.commonError,
+                                                    stop: L10n.actionStop,
+                                                    back: L10n.actionBack))
+        
+        // The stats overlay is raw RTP counters, so it follows whatever already reveals developer
+        // surface. Screen sharing stays off until the broadcast extension that makes it work lands.
+        let options = ElementCallOptions(isDeveloperModeEnabled: appSettings.developerOptionsEnabled)
+        
+        let stack = NativeCallStack(backend: backend,
+                                    system: NativeCallSystem(service: self),
+                                    options: options,
+                                    style: style)
+        nativeCallStack = stack
+        
+        nativeCallCancellable = stack.actions
+            .sink { [weak self] presentation in
+                self?.nativeCallPresentationSubject.send(presentation)
+            }
+        
+        Task { await stack.start() }
+    }
+    
+    private func stopNativeCallStack() {
+        guard let nativeCallStack else { return }
+        self.nativeCallStack = nil
+        nativeCallCancellable = nil
+        
+        nativeCallStack.stop()
+        nativeCallPresentationSubject.send(.dismiss)
+    }
+    
+    // MARK: - Private
+    
+    /// Watches the ringing call with the new client, which also covers a call requested before any session.
+    private func resumeObservingIncomingCall() {
+        guard let call = observedCall, clientProxy != nil else { return }
+        
+        Task { [weak self] in
+            guard let self, observedCall == call else { return }
+            await watch(call)
+        }
+    }
+    
+    private func watch(_ call: ObservedCall) async {
         guard let clientProxy else {
-            MXLog.warning("A ClientProxy is needed to fetch the room.")
+            MXLog.info("No session yet to watch the incoming call with")
             return
         }
         
-        guard case let .joined(roomProxy) = await clientProxy.roomForIdentifier(incomingCallID.roomID) else {
+        guard case let .joined(roomProxy) = await clientProxy.roomForIdentifier(call.roomID) else {
             MXLog.warning("Failed to fetch a joined room for the incoming call.")
             return
         }
+        
+        // Stopped, another call started ringing, or the session changed while the room was being fetched.
+        guard observedCall == call, self.clientProxy === clientProxy else { return }
         
         roomProxy.subscribeToRoomInfoUpdates()
         
@@ -432,18 +274,16 @@ class ElementCallService: NSObject, ElementCallServiceProtocol, PKPushRegistryDe
             .sink { [weak self] hasOngoingCall, activeRoomCallParticipants in
                 guard let self else { return }
                 
-                let participants: [String] = activeRoomCallParticipants
-                
                 if !hasOngoingCall {
                     MXLog.info("Call cancelled by remote")
-                    reportEndedCall(incomingCallID: incomingCallID, reason: .remoteEnded)
-                } else if participants.contains(roomProxy.ownUserID) {
+                    incomingCallEnded(call, reason: .remoteEnded)
+                } else if activeRoomCallParticipants.contains(roomProxy.ownUserID) {
                     MXLog.info("Call answered elsewhere")
-                    reportEndedCall(incomingCallID: incomingCallID, reason: .answeredElsewhere)
+                    incomingCallEnded(call, reason: .answeredElsewhere)
                 }
             }
         
-        guard let rtcNotificationID = incomingCallID.rtcNotificationID else {
+        guard let rtcNotificationID = call.rtcNotificationID else {
             MXLog.warning("Decline: No RTC notification ID found for the incoming call.")
             return
         }
@@ -456,9 +296,8 @@ class ElementCallService: NSObject, ElementCallServiceProtocol, PKPushRegistryDe
             MXLog.debug("Call declined event received from \(senderID)")
             
             if senderID == roomProxy.ownUserID {
-                // Stop ringing!
                 MXLog.debug("Call declined elsewhere")
-                reportEndedCall(incomingCallID: incomingCallID, reason: .declinedElsewhere)
+                incomingCallEnded(call, reason: .declinedElsewhere)
             }
         }
         
@@ -470,21 +309,17 @@ class ElementCallService: NSObject, ElementCallServiceProtocol, PKPushRegistryDe
         declineListenerHandle = handle
     }
     
-    private func reportEndedCall(incomingCallID: CallID, reason: CXCallEndedReason) {
-        callProvider.reportCall(with: incomingCallID.callKitID, endedAt: nil, reason: reason)
-        clearIncomingCallState()
-    }
-    
-    /// Cancels every subscription and task tied to a ringing incoming call and nils `incomingCallID`.
-    /// Call this on every path that ends the incoming-call state (answered, declined, timed out,
-    /// cancelled by remote, answered/declined elsewhere) so that follow-up calls to the same room
-    /// start from a clean slate and the SDK decline-listener subscription doesn't leak.
-    private func clearIncomingCallState() {
-        endUnansweredCallTask?.cancel()
-        endUnansweredCallTask = nil
+    /// Drops the room subscriptions and keeps the ringing call, which a session can pick up again.
+    private func stopWatchingRoom() {
+        incomingCallRoomInfoCancellable = nil
         declineListenerHandle?.cancel()
         declineListenerHandle = nil
-        incomingCallRoomInfoCancellable = nil
-        incomingCallID = nil
+    }
+    
+    /// Reports the end once, as the room and the decline listener can both see it.
+    private func incomingCallEnded(_ call: ObservedCall, reason: CallEndReason) {
+        guard observedCall == call else { return }
+        stopObservingIncomingCall()
+        actionsSubject.send(.incomingCallEnded(roomID: call.roomID, reason: reason))
     }
 }

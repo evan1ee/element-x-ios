@@ -41,6 +41,7 @@ struct JoinRoomScreen: View {
         .background()
         .backgroundStyle(.compound.bgCanvasDefault)
         .toolbarRole(RoomHeaderView.toolbarRole)
+        .fixesTitleViewOnCancelledPop()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         .shouldScrollOnKeyboardDidShow(focus == .knockMessage, to: Focus.knockMessage)
@@ -402,8 +403,6 @@ struct JoinRoomScreenPreviewWrapper: Identifiable {
         self.isSpace = isSpace
         self.customPreviewName = customPreviewName
         
-        let appSettings = AppSettings.volatile()
-        
         let clientProxy = ClientProxyMock(.init(hideInviteAvatars: hideInviteAvatars))
         clientProxy.canJoinRoomWithReturnValue = canJoinRoom
         
@@ -455,7 +454,6 @@ struct JoinRoomScreenPreviewWrapper: Identifiable {
         }
         
         viewModel = JoinRoomScreenViewModel(source: source,
-                                            appSettings: appSettings,
                                             userSession: UserSessionMock(.init(clientProxy: clientProxy)),
                                             userIndicatorController: UserIndicatorControllerMock())
     }

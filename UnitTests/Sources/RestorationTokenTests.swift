@@ -23,7 +23,7 @@ struct RestorationTokenTests {
                                                                   oidcData: "data-from-mas",
                                                                   slidingSyncVersion: .proxy(url: "https://sync.example.com")),
                                                sessionDirectory: .sessionsBaseDirectory.appending(component: UUID().uuidString),
-                                               passphrase: "passphrase",
+                                               passphrase: RestorationTokenFixtures.base64Passphrase,
                                                pusherNotificationClientIdentifier: "pusher-identifier")
         let data = try JSONEncoder().encode(originalToken)
         
@@ -46,7 +46,7 @@ struct RestorationTokenTests {
                                                                   oidcData: "data-from-mas",
                                                                   slidingSyncVersion: .native),
                                                sessionDirectory: .sessionsBaseDirectory.appending(component: sessionDirectoryName),
-                                               passphrase: "passphrase",
+                                               passphrase: RestorationTokenFixtures.base64Passphrase,
                                                pusherNotificationClientIdentifier: "pusher-identifier")
         let data = try JSONEncoder().encode(originalToken)
         
@@ -55,7 +55,7 @@ struct RestorationTokenTests {
         
         // Then the output should be a valid token with the expected store directories.
         assertEqual(session: decodedToken.session, originalSession: originalToken.session)
-        #expect(decodedToken.passphrase == originalToken.passphrase, "The passphrase should not be changed.")
+        #expect(decodedToken.passphrase.base64EncodedString() == originalToken.passphrase, "The passphrase should not be changed.")
         #expect(decodedToken.pusherNotificationClientIdentifier == originalToken.pusherNotificationClientIdentifier,
                 "The push notification client identifier should not be changed.")
         #expect(decodedToken.sessionDirectories.dataDirectory == originalToken.sessionDirectory,
@@ -77,7 +77,7 @@ struct RestorationTokenTests {
                                                                   slidingSyncVersion: .native),
                                                sessionDirectory: .sessionsBaseDirectory.appending(component: sessionDirectoryName),
                                                cacheDirectory: .sessionCachesBaseDirectory.appending(component: sessionDirectoryName),
-                                               passphrase: "passphrase",
+                                               passphrase: RestorationTokenFixtures.base64Passphrase,
                                                pusherNotificationClientIdentifier: "pusher-identifier")
         let data = try JSONEncoder().encode(originalToken)
         
@@ -86,7 +86,7 @@ struct RestorationTokenTests {
         
         // Then the output should be a valid token.
         assertEqual(session: decodedToken.session, originalSession: originalToken.session)
-        #expect(decodedToken.passphrase == originalToken.passphrase, "The passphrase should not be changed.")
+        #expect(decodedToken.passphrase.base64EncodedString() == originalToken.passphrase, "The passphrase should not be changed.")
         #expect(decodedToken.pusherNotificationClientIdentifier == originalToken.pusherNotificationClientIdentifier,
                 "The push notification client identifier should not be changed.")
         #expect(decodedToken.sessionDirectories.dataDirectory == originalToken.sessionDirectory,
@@ -106,7 +106,7 @@ struct RestorationTokenTests {
                                                               oauthData: "data-from-mas",
                                                               slidingSyncVersion: .native),
                                              sessionDirectories: .init(),
-                                             passphrase: "passphrase",
+                                             passphrase: RestorationTokenFixtures.passphrase,
                                              pusherNotificationClientIdentifier: "pusher-identifier")
         let data = try JSONEncoder().encode(originalToken)
         
@@ -128,6 +128,11 @@ struct RestorationTokenTests {
 }
 
 // MARK: - Token formats
+
+enum RestorationTokenFixtures {
+    static let passphrase = Data("passphrase".utf8)
+    static let base64Passphrase = passphrase.base64EncodedString()
+}
 
 struct RestorationTokenV4: Equatable, Codable {
     let session: SessionV1

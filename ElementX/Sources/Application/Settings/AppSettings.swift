@@ -15,25 +15,6 @@ import Foundation
 import Macros
 import SwiftUI
 
-/// Common settings between app and NSE
-nonisolated protocol CommonSettingsProtocol: AnyObject, Sendable {
-    var lastNotificationBootTime: TimeInterval? { get set }
-    var selectedNotificationTone: NotificationTone? { get set }
-    var lastKnownBadgeCount: Int { get set }
-    
-    var logLevel: LogLevel { get }
-    var traceLogPacks: Set<TraceLogPack> { get }
-    var bugReportRageshakeURL: RemotePreference<RageshakeConfiguration> { get }
-    var contentScannerURL: RemotePreference<URL?> { get }
-    var forceDisableE2EE: RemotePreference<Bool> { get }
-    var mapTilerConfiguration: RemotePreference<MapTilerConfiguration> { get }
-    
-    var enableOnlySignedDeviceIsolationMode: Bool { get }
-    var threadsEnabled: Bool { get }
-    var hideQuietNotificationAlerts: Bool { get }
-    var roomListNotificationCountEnabled: Bool { get }
-}
-
 nonisolated enum AppBuildType {
     case debug
     case nightly
@@ -70,15 +51,10 @@ final nonisolated class AppSettings: @unchecked Sendable {
         store.reset()
     }
     
-    func resetSessionSpecificSettings() {
-        MXLog.warning("Resetting the user session specific AppSettings.")
-        resetHasRunIdentityConfirmationOnboarding()
-    }
-    
     // MARK: - Hooks
     
     // swiftlint:disable:next function_parameter_count
-    func override(accountProviders: [String],
+    func override(accountProviders: [AccountProvider],
                   allowOtherAccountProviders: Bool,
                   hideBrandChrome: Bool,
                   pushGatewayBaseURL: URL,
@@ -98,7 +74,7 @@ final nonisolated class AppSettings: @unchecked Sendable {
                   accountProvisioningHost: String,
                   bugReportApplicationID: String,
                   analyticsTermsURL: URL?,
-                  mapTilerConfiguration: MapTilerConfiguration) {
+                  bundledMapTilerConfiguration: MapTilerConfiguration) {
         self.accountProviders = accountProviders
         self.allowOtherAccountProviders = allowOtherAccountProviders
         self.hideBrandChrome = hideBrandChrome
@@ -119,7 +95,7 @@ final nonisolated class AppSettings: @unchecked Sendable {
         self.accountProvisioningHost = accountProvisioningHost
         self.bugReportApplicationID = bugReportApplicationID
         self.analyticsTermsURL = analyticsTermsURL
-        self.mapTilerConfiguration = RemotePreference(mapTilerConfiguration)
+        self.bundledMapTilerConfiguration = bundledMapTilerConfiguration
     }
     
     // MARK: - Application
@@ -130,20 +106,19 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference
     var lastVersionLaunched: String?
     
-    /// The Set of room identifiers of invites that the user already saw in the invites list.
-    /// This Set is being used to implement badges for unread invites.
-    @UserPreference(defaultValue: Set<String>())
-    var seenInvites: Set<String>
-    
     /// Defaults to `true` for new users, and we use a migration to set it to `false` for existing users.
     @UserPreference(defaultValue: true)
     var hasSeenNewSoundBanner: Bool
+    
+    /// Defaults to `true` so new users never see it. Developer options arms it for now, an upgrade migration will at launch.
+    @UserPreference(defaultValue: true)
+    var hasSeenMultiAccountAnnouncement: Bool
     
     /// The initial set of account providers shown to the user in the authentication flow.
     ///
     /// Account provider is the friendly term for the server name. It should not contain an `https` prefix and should
     /// match the last part of the user ID. For example `example.com` and not `https://matrix.example.com`.
-    private(set) var accountProviders = ["matrix.org"]
+    private(set) var accountProviders: [AccountProvider] = [.managed(serverName: "matrix.org", baseURL: "https://matrix-client.matrix.org")]
     /// Whether or not the user is allowed to manually enter their own account provider or must select from one of `defaultAccountProviders`.
     private(set) var allowOtherAccountProviders = true
     /// Whether the components surrounding the app brand/logo should be hidden or not
@@ -151,6 +126,8 @@ final nonisolated class AppSettings: @unchecked Sendable {
     
     /// The task identifier used for background app refresh. Also used in main target's the Info.plist
     let backgroundAppRefreshTaskIdentifier = "io.element.elementx.background.refresh"
+    /// The task identifier used for the search index backfill. Also used in main target's the Info.plist
+    let searchBackfillTaskIdentifier = "io.element.elementx.background.search-backfill"
     
     /// A URL where users can go read more about the app.
     private(set) var websiteURL: URL = "https://element.io"
@@ -188,8 +165,12 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(key: "previousServers", defaultValue: [])
     var previousServers: [String]
     
-    var defaultServer: String {
-        previousServers.first ?? accountProviders[0]
+    var defaultAccountProvider: AccountProvider {
+        if allowOtherAccountProviders {
+            previousServers.first.map { .generic($0) } ?? accountProviders[0]
+        } else {
+            accountProviders[0]
+        }
     }
     
     // MARK: - Security
@@ -248,12 +229,6 @@ final nonisolated class AppSettings: @unchecked Sendable {
         pushGatewayBaseURL.appending(path: "_matrix/push/v1/notify")
     }
     
-    @UserPreference(defaultValue: true)
-    var enableNotifications: Bool
-    
-    @UserPreference(defaultValue: true)
-    var enableInAppNotifications: Bool
-    
     @UserPreference(defaultValue: false)
     var hideQuietNotificationAlerts: Bool
     
@@ -268,10 +243,6 @@ final nonisolated class AppSettings: @unchecked Sendable {
     /// The app icon badge value the app last computed from the SDK's unread notification counts.
     @UserPreference(defaultValue: 0)
     var lastKnownBadgeCount: Int
-    
-    /// The sound played when delivering noisy notifications. If nil, use the ElementX default
-    @UserPreference
-    var selectedNotificationTone: NotificationTone?
     
     // MARK: - Logging
     
@@ -294,12 +265,6 @@ final nonisolated class AppSettings: @unchecked Sendable {
     /// The base URL of the content scanner server used to scan media before it is downloaded.
     /// `nil` when content scanning is disabled.
     let contentScannerURL: RemotePreference<URL?> = .init(nil)
-    
-    // MARK: - Encryption
-    
-    /// Whether the server forbids the use of E2EE: new rooms are created unencrypted and
-    /// enabling encryption on existing rooms is not offered.
-    let forceDisableE2EE: RemotePreference<Bool> = .init(false)
     
     // MARK: - Analytics
     
@@ -331,9 +296,6 @@ final nonisolated class AppSettings: @unchecked Sendable {
     var hasRunNotificationPermissionsOnboarding: Bool
     
     @UserPreference(defaultValue: false)
-    var hasRunIdentityConfirmationOnboarding: Bool
-    
-    @UserPreference(defaultValue: false)
     var hasRequestedLocationAlwaysLocationAuthorization: Bool
     
     @UserPreference(defaultValue: [FrequentlyUsedEmoji]())
@@ -341,22 +303,11 @@ final nonisolated class AppSettings: @unchecked Sendable {
     
     // MARK: - Live Location
     
-    @UserPreference(key: "liveLocationSharingTimeoutDatesByRoomID", defaultValue: [String: LiveLocationSession]())
-    var liveLocationSharingSessionsByRoomID: [String: LiveLocationSession]
-    
     @UserPreference(defaultValue: 10)
     var liveLocationMinimumDistanceUpdate: Int
     
     @UserPreference(defaultValue: false)
     var liveLocationDisclaimerDisplayed: Bool
-    
-    // MARK: - Home Screen
-    
-    @UserPreference(defaultValue: RoomListActivityVisibility.current)
-    var roomListActivityVisibility: RoomListActivityVisibility
-    
-    @UserPreference(defaultValue: false)
-    var roomListNotificationCountEnabled: Bool
     
     // MARK: - Tabs
     
@@ -457,18 +408,10 @@ final nonisolated class AppSettings: @unchecked Sendable {
     // MARK: - Maps
     
     /// The locally-bundled MapTiler configuration.
-    static let bundledMapTilerConfiguration = MapTilerConfiguration(baseURL: "https://api.maptiler.com/maps",
-                                                                    apiKey: Secrets.mapLibreAPIKey,
-                                                                    lightStyleID: "9bc819c8-e627-474a-a348-ec144fe3d810",
-                                                                    darkStyleID: "dea61faf-292b-4774-9660-58fcef89a7f3")
-    
-    /// The MapTiler configuration used to build map URLs, which defaults to the bundled one.
-    private(set) var mapTilerConfiguration = RemotePreference(AppSettings.bundledMapTilerConfiguration)
-    
-    // MARK: - Presence
-    
-    @UserPreference(defaultValue: true)
-    var sharePresence: Bool
+    private(set) var bundledMapTilerConfiguration = MapTilerConfiguration(baseURL: "https://api.maptiler.com/maps",
+                                                                          apiKey: Secrets.mapLibreAPIKey,
+                                                                          lightStyleID: "9bc819c8-e627-474a-a348-ec144fe3d810",
+                                                                          darkStyleID: "dea61faf-292b-4774-9660-58fcef89a7f3")
     
     // MARK: - Feature Flags
     
@@ -493,9 +436,6 @@ final nonisolated class AppSettings: @unchecked Sendable {
     var threadsEnabled: Bool
     
     @UserPreference(defaultValue: false)
-    var messageMultiSelectEnabled: Bool
-    
-    @UserPreference(defaultValue: false)
     var focusEventOnNotificationTap: Bool
     
     @UserPreference(defaultValue: false)
@@ -512,25 +452,37 @@ final nonisolated class AppSettings: @unchecked Sendable {
     @UserPreference(defaultValue: false)
     var linkNewDeviceEnabled: Bool
     
-    @UserPreference(defaultValue: false)
-    var automaticBackPaginationEnabled: Bool
-    
     @UserPreference(key: "clientPausingAndResumingEnabledV2", defaultValue: false, volatile: true)
     var clientPausingAndResumingEnabled: Bool
     
     @UserPreference(defaultValue: AppBuildType.current != .release)
     var developerOptionsEnabled: Bool
     
+    /// Runs calls through the native matrix-rust-rtc stack instead of the Element Call web view.
+    @UserPreference(defaultValue: false)
+    var nativeCallEnabled: Bool
+    
+    @UserPreference(defaultValue: false)
+    var multiAccountEnabled: Bool
+    
+    /// Lets the add account flow start once `multiAccountEnabled` shows its entry points. Not a user preference, so testers
+    /// can't add a second account while signing out of one isn't safe yet. Only set it to `true` locally, for development.
+    let addAccountFlowEnabled = false
+    
     init(store: UserDefaultsProtocol) {
         self.store = store
+    }
+    
+    func userSettings(for userID: String) -> UserSettings {
+        UserSettings(appSettings: self, accountSettings: .init(userID: userID,
+                                                               store: store,
+                                                               bundledMapTilerConfiguration: bundledMapTilerConfiguration))
     }
     
     static func volatile() -> AppSettings {
         AppSettings(store: VolatileUserDefaults())
     }
 }
-
-nonisolated extension AppSettings: CommonSettingsProtocol { }
 
 /// Secrets that only count once they've been filled in.
 ///

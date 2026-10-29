@@ -22,7 +22,6 @@ struct UserProfileScreenViewModelTests {
         let viewModel = UserProfileScreenViewModel(userID: profile.id,
                                                    isPresentedModally: false,
                                                    userSession: UserSessionMock(.init(clientProxy: clientProxy)),
-                                                   appHooks: AppHooks(),
                                                    analytics: AnalyticsServiceMock(.init()),
                                                    userIndicatorController: userIndicatorController)
         let context = viewModel.context
@@ -46,7 +45,6 @@ struct UserProfileScreenViewModelTests {
         let viewModel = UserProfileScreenViewModel(userID: profile.id,
                                                    isPresentedModally: false,
                                                    userSession: UserSessionMock(.init(clientProxy: clientProxy)),
-                                                   appHooks: AppHooks(),
                                                    analytics: AnalyticsServiceMock(.init()),
                                                    userIndicatorController: userIndicatorController)
         let context = viewModel.context
@@ -72,7 +70,6 @@ struct UserProfileScreenViewModelTests {
         let viewModel = UserProfileScreenViewModel(userID: profile.id,
                                                    isPresentedModally: false,
                                                    userSession: UserSessionMock(.init(clientProxy: clientProxy)),
-                                                   appHooks: AppHooks(),
                                                    analytics: AnalyticsServiceMock(.init()),
                                                    userIndicatorController: userIndicatorController)
         
@@ -81,7 +78,7 @@ struct UserProfileScreenViewModelTests {
         let waitForMemberToLoad = deferFulfillment(context.observe(\.viewState.userProfile)) { $0 != nil }
         try await waitForMemberToLoad.fulfill()
         
-        let deferred = deferFulfillment(context.observe(\.viewState.bindings).compactMap(\.inviteConfirmationUser), timeout: .seconds(5)) { $0.isUnknown }
+        let deferred = deferFulfillment(context.observe(\.viewState.bindings.inviteConfirmationUser), timeout: .seconds(5)) { $0?.isUnknown == true }
         
         context.send(viewAction: .openDirectChat)
         try await deferred.fulfill()

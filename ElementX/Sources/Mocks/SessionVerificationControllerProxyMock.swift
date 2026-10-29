@@ -9,13 +9,13 @@
 import Combine
 
 extension SessionVerificationControllerProxyMock {
-    static let emojis = [SessionVerificationEmoji(symbol: "🦋", description: "Butterfly"),
-                         SessionVerificationEmoji(symbol: "🐘", description: "Elephant"),
-                         SessionVerificationEmoji(symbol: "🦋", description: "Butterfly"),
-                         SessionVerificationEmoji(symbol: "🎂", description: "Cake"),
-                         SessionVerificationEmoji(symbol: "🎂", description: "Cake"),
-                         SessionVerificationEmoji(symbol: "🏁", description: "Flag"),
-                         SessionVerificationEmoji(symbol: "🌏", description: "Globe")]
+    static let emojis = [SessionVerificationEmoji(index: 14, symbol: "🦋", description: "Butterfly"),
+                         SessionVerificationEmoji(index: 6, symbol: "🐘", description: "Elephant"),
+                         SessionVerificationEmoji(index: 14, symbol: "🦋", description: "Butterfly"),
+                         SessionVerificationEmoji(index: 28, symbol: "🎂", description: "Cake"),
+                         SessionVerificationEmoji(index: 28, symbol: "🎂", description: "Cake"),
+                         SessionVerificationEmoji(index: 50, symbol: "🏁", description: "Flag"),
+                         SessionVerificationEmoji(index: 19, symbol: "🌏", description: "Globe")]
     
     static func configureMock(actions: PassthroughSubject<SessionVerificationControllerProxyAction, Never> = .init(),
                               isVerified: Bool = false,
@@ -30,14 +30,14 @@ extension SessionVerificationControllerProxyMock {
             Task {
                 guard let mock else { return }
                 
-                try await Task.sleep(for: requestDelay)
+                try? await Task.sleep(for: requestDelay)
                 
                 mock.actions.send(.acceptedVerificationRequest)
                 
                 if otherDeviceStartsSasVerification {
-                    try await Task.sleep(for: requestDelay)
+                    try? await Task.sleep(for: requestDelay)
                     mock.actions.send(.startedSasVerification)
-                    try await Task.sleep(for: requestDelay)
+                    try? await Task.sleep(for: requestDelay)
                     mock.actions.send(.receivedVerificationData(emojis))
                 }
             }
@@ -49,11 +49,11 @@ extension SessionVerificationControllerProxyMock {
             Task {
                 guard let mock else { return }
                 
-                try await Task.sleep(for: requestDelay)
+                try? await Task.sleep(for: requestDelay)
                 mock.actions.send(.startedSasVerification)
                 
                 Task {
-                    try await Task.sleep(for: requestDelay)
+                    try? await Task.sleep(for: requestDelay)
                     mock.actions.send(.receivedVerificationData(emojis))
                 }
             }
@@ -65,7 +65,7 @@ extension SessionVerificationControllerProxyMock {
             Task {
                 guard let mock else { return }
                 
-                try await Task.sleep(for: requestDelay)
+                try? await Task.sleep(for: requestDelay)
                 mock.actions.send(.finished)
             }
             
@@ -76,7 +76,7 @@ extension SessionVerificationControllerProxyMock {
             Task {
                 guard let mock else { return }
                 
-                try await Task.sleep(for: requestDelay)
+                try? await Task.sleep(for: requestDelay)
                 mock.actions.send(.cancelled)
             }
             
@@ -87,7 +87,7 @@ extension SessionVerificationControllerProxyMock {
             Task {
                 guard let mock else { return }
                 
-                try await Task.sleep(for: requestDelay)
+                try? await Task.sleep(for: requestDelay)
                 mock.actions.send(.cancelled)
             }
             

@@ -69,7 +69,6 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
     case replyInThread
     case forward(itemID: TimelineItemIdentifier)
     case saveToSavedMessages(itemID: TimelineItemIdentifier)
-    case selectMessages
     case viewSource
     case report
     case react
@@ -174,8 +173,6 @@ enum TimelineItemMenuAction: Identifiable, Hashable {
             Label(L10n.actionForward, icon: \.forward)
         case .saveToSavedMessages:
             Label(UntranslatedL10n.actionSaveToSavedMessages, icon: \.save)
-        case .selectMessages:
-            Label(L10n.actionSelect, icon: \.check)
         case .redact(let isMedia):
             Label(isMedia ? L10n.actionDeleteFile : L10n.actionRemoveMessage, icon: \.delete)
         case .viewSource:

@@ -148,8 +148,6 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenDisplaySettingsTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_display_settings_title") }
   /// Photos
   internal static var screenHomeTabPhotos: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_photos") }
-  /// Search
-  internal static var screenHomeTabSearch: String { return UntranslatedL10n.tr("Untranslated", "screen_home_tab_search") }
   /// Add image or GIF
   internal static var screenMediaInputAddSticker: String { return UntranslatedL10n.tr("Untranslated", "screen_media_input_add_sticker") }
   /// Activity
@@ -228,10 +226,6 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSavedMessagesEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_saved_messages_empty_state_message") }
   /// Save messages, photos, videos, files and links here.
   internal static var screenSavedMessagesEmptyStateTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_saved_messages_empty_state_title") }
-  /// Search for chats and messages
-  internal static var screenSearchEmptyStateMessage: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_message") }
-  /// Start searching...
-  internal static var screenSearchEmptyStateTitle: String { return UntranslatedL10n.tr("Untranslated", "screen_search_empty_state_title") }
   /// Older messages are still downloading. Results may be incomplete.
   internal static var screenSearchIncompleteHistory: String { return UntranslatedL10n.tr("Untranslated", "screen_search_incomplete_history") }
   /// Any time
@@ -264,14 +258,8 @@ internal nonisolated enum UntranslatedL10n {
   internal static var screenSearchMediaTypeVideo: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_video") }
   /// Voice
   internal static var screenSearchMediaTypeVoice: String { return UntranslatedL10n.tr("Untranslated", "screen_search_media_type_voice") }
-  /// There are no results for “%1$@.” Try a new search term.
-  internal static func screenSearchNoResultsMessage(_ p1: Any) -> String {
-    return UntranslatedL10n.tr("Untranslated", "screen_search_no_results_message", String(describing: p1))
-  }
   /// Media
   internal static var screenSearchTabMedia: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_media") }
-  /// Messages
-  internal static var screenSearchTabMessages: String { return UntranslatedL10n.tr("Untranslated", "screen_search_tab_messages") }
   /// View download progress
   internal static var screenSearchViewDownloadProgress: String { return UntranslatedL10n.tr("Untranslated", "screen_search_view_download_progress") }
   /// Add to my stickers

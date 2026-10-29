@@ -24,6 +24,7 @@ final class ComposerToolbarViewModelTests {
     private var stickerServiceMock: StickerServiceMock!
     private var gifServiceMock: KlipyServiceMock!
     private var timelineControllerMock: TimelineControllerMock!
+    private var cancellables = Set<AnyCancellable>()
     
     init() {
         setUpViewModel()
@@ -389,14 +390,14 @@ final class ComposerToolbarViewModelTests {
                                              .init(suggestionType: .user(.init(id: "@user_mention_2:matrix.org", displayName: "User 2", avatarURL: nil)), range: .init(), rawSuggestionText: "")]
         let mockCompletionSuggestionService = CompletionSuggestionServiceMock(configuration: .init(suggestions: suggestions))
         
-        let appSettings = AppSettings.volatile()
+        let userSettings = UserSettings.mock()
         
         viewModel = ComposerToolbarViewModel(roomProxy: JoinedRoomProxyMock(.init()),
                                              wysiwygViewModel: wysiwygViewModel,
                                              completionSuggestionService: mockCompletionSuggestionService,
                                              mediaProvider: MediaProviderMock(.init()),
                                              mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
-                                             appSettings: appSettings,
+                                             userSettings: userSettings,
                                              analyticsService: AnalyticsServiceMock(.init()),
                                              composerDraftService: draftServiceMock)
         
@@ -853,6 +854,106 @@ final class ComposerToolbarViewModelTests {
     }
     
     @Test
+    func sendingUnchangedPlainTextEditCancelsTheEdit() {
+        viewModel.context.composerFormattingEnabled = false
+        let mode: ComposerMode = .edit(originalEventOrTransactionID: .eventID("mock"), type: .default)
+        viewModel.process(timelineAction: .setMode(mode: mode))
+        viewModel.process(timelineAction: .setText(plainText: "Hello world!", htmlText: nil))
+        
+        let sentMessages = collectSentMessages()
+        viewModel.process(viewAction: .sendMessage)
+        
+        #expect(sentMessages.value.isEmpty)
+        #expect(viewModel.state.composerMode == .default)
+        #expect(viewModel.context.plainComposerText.string.isEmpty)
+    }
+    
+    @Test
+    func sendingUnchangedRichTextEditCancelsTheEdit() {
+        viewModel.context.composerFormattingEnabled = true
+        let mode: ComposerMode = .edit(originalEventOrTransactionID: .eventID("mock"), type: .default)
+        viewModel.process(timelineAction: .setMode(mode: mode))
+        viewModel.process(timelineAction: .setText(plainText: "Hello **world**!", htmlText: "Hello <strong>world</strong>!"))
+        viewModel.state.composerEmpty = false
+        
+        let sentMessages = collectSentMessages()
+        viewModel.process(viewAction: .sendMessage)
+        
+        #expect(sentMessages.value.isEmpty)
+        #expect(viewModel.state.composerMode == .default)
+        #expect(wysiwygViewModel.content.markdown.isEmpty)
+    }
+    
+    @Test
+    func sendingUnchangedEditRestoresTheVolatileDraft() {
+        viewModel.context.composerFormattingEnabled = false
+        viewModel.context.plainComposerText = .init(string: "Work in progress")
+        let mode: ComposerMode = .edit(originalEventOrTransactionID: .eventID("mock"), type: .default)
+        viewModel.process(timelineAction: .setMode(mode: mode))
+        viewModel.process(timelineAction: .setText(plainText: "Hello world!", htmlText: nil))
+        draftServiceMock.loadVolatileDraftReturnValue = .init(plainText: "Work in progress", htmlText: nil, draftType: .newMessage)
+        
+        let sentMessages = collectSentMessages()
+        viewModel.process(viewAction: .sendMessage)
+        
+        #expect(sentMessages.value.isEmpty)
+        #expect(viewModel.state.composerMode == .default)
+        #expect(viewModel.context.plainComposerText.string == "Work in progress")
+        #expect(draftServiceMock.clearVolatileDraftCallsCount == 1)
+    }
+    
+    @Test
+    func sendingUnchangedCaptionEditCancelsTheEdit() {
+        viewModel.context.composerFormattingEnabled = false
+        let mode: ComposerMode = .edit(originalEventOrTransactionID: .eventID("mock"), type: .editCaption)
+        viewModel.process(timelineAction: .setMode(mode: mode))
+        viewModel.process(timelineAction: .setText(plainText: "A caption", htmlText: nil))
+        
+        let sentMessages = collectSentMessages()
+        viewModel.process(viewAction: .sendMessage)
+        
+        #expect(sentMessages.value.isEmpty)
+        #expect(viewModel.state.composerMode == .default)
+    }
+    
+    @Test
+    func sendingChangedEditSendsTheEdit() async throws {
+        viewModel.context.composerFormattingEnabled = false
+        let mode: ComposerMode = .edit(originalEventOrTransactionID: .eventID("mock"), type: .default)
+        viewModel.process(timelineAction: .setMode(mode: mode))
+        viewModel.process(timelineAction: .setText(plainText: "Hello world!", htmlText: nil))
+        viewModel.context.plainComposerText = .init(string: "Hello world, edited!")
+        
+        let deferred = deferFulfillment(viewModel.actions) { action in
+            guard case let .sendMessage(plainText, _, sentMode, _) = action else { return false }
+            return plainText == "Hello world, edited!" && sentMode == mode
+        }
+        viewModel.process(viewAction: .sendMessage)
+        try await deferred.fulfill()
+    }
+    
+    @Test
+    func sendingUnchangedEditAfterCancellingAndEditingAgainSendsTheEdit() async throws {
+        // Editing a different message must reset the remembered original content.
+        viewModel.context.composerFormattingEnabled = false
+        viewModel.process(timelineAction: .setMode(mode: .edit(originalEventOrTransactionID: .eventID("first"), type: .default)))
+        viewModel.process(timelineAction: .setText(plainText: "Hello world!", htmlText: nil))
+        viewModel.process(viewAction: .cancelEdit)
+        
+        let mode: ComposerMode = .edit(originalEventOrTransactionID: .eventID("second"), type: .default)
+        viewModel.process(timelineAction: .setMode(mode: mode))
+        viewModel.process(timelineAction: .setText(plainText: "Something else", htmlText: nil))
+        viewModel.context.plainComposerText = .init(string: "Hello world!")
+        
+        let deferred = deferFulfillment(viewModel.actions) { action in
+            guard case let .sendMessage(plainText, _, sentMode, _) = action else { return false }
+            return plainText == "Hello world!" && sentMode == mode
+        }
+        viewModel.process(viewAction: .sendMessage)
+        try await deferred.fulfill()
+    }
+    
+    @Test
     func restoreVolatileDraftWhenClearing() async {
         await waitForConfirmation("Volatile draft loaded and cleared", expectedCount: 2) { confirmation in
             draftServiceMock.loadVolatileDraftClosure = {
@@ -1008,14 +1109,14 @@ final class ComposerToolbarViewModelTests {
         let mockSubject = CurrentValueSubject<[IdentityStatusChange], Never>([])
         roomProxyMock.identityStatusChangesPublisher = mockSubject.asCurrentValuePublisher()
         
-        let appSettings = AppSettings.volatile()
+        let userSettings = UserSettings.mock()
         
         viewModel = ComposerToolbarViewModel(roomProxy: roomProxyMock,
                                              wysiwygViewModel: wysiwygViewModel,
                                              completionSuggestionService: mockCompletionSuggestionService,
                                              mediaProvider: MediaProviderMock(.init()),
                                              mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
-                                             appSettings: appSettings,
+                                             userSettings: userSettings,
                                              analyticsService: AnalyticsServiceMock(.init()),
                                              composerDraftService: draftServiceMock)
         
@@ -1051,14 +1152,14 @@ final class ComposerToolbarViewModelTests {
         
         roomProxyMock.identityStatusChangesPublisher = mockSubject.asCurrentValuePublisher()
         
-        let appSettings = AppSettings.volatile()
+        let userSettings = UserSettings.mock()
         
         viewModel = ComposerToolbarViewModel(roomProxy: roomProxyMock,
                                              wysiwygViewModel: wysiwygViewModel,
                                              completionSuggestionService: mockCompletionSuggestionService,
                                              mediaProvider: MediaProviderMock(.init()),
                                              mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
-                                             appSettings: appSettings,
+                                             userSettings: userSettings,
                                              analyticsService: AnalyticsServiceMock(.init()),
                                              composerDraftService: draftServiceMock)
         
@@ -1091,14 +1192,14 @@ final class ComposerToolbarViewModelTests {
         }
         
         roomProxyMock.identityStatusChangesPublisher = CurrentValueSubject([IdentityStatusChange(userId: "@alice:localhost", changedTo: .pinViolation)]).asCurrentValuePublisher()
-        let appSettings = AppSettings.volatile()
+        let userSettings = UserSettings.mock()
         
         viewModel = ComposerToolbarViewModel(roomProxy: roomProxyMock,
                                              wysiwygViewModel: wysiwygViewModel,
                                              completionSuggestionService: mockCompletionSuggestionService,
                                              mediaProvider: MediaProviderMock(.init()),
                                              mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
-                                             appSettings: appSettings,
+                                             userSettings: userSettings,
                                              analyticsService: AnalyticsServiceMock(.init()),
                                              composerDraftService: draftServiceMock)
         
@@ -1107,6 +1208,18 @@ final class ComposerToolbarViewModelTests {
     }
     
     // MARK: - Helpers
+    
+    private func collectSentMessages() -> CurrentValueSubject<[ComposerToolbarViewModelAction], Never> {
+        let subject = CurrentValueSubject<[ComposerToolbarViewModelAction], Never>([])
+        viewModel.actions
+            .filter { action in
+                guard case .sendMessage = action else { return false }
+                return true
+            }
+            .sink { subject.value.append($0) }
+            .store(in: &cancellables)
+        return subject
+    }
     
     private func setUpViewModel(initialText: String? = nil, loadDraftClosure: (() async -> Result<ComposerDraftProxy?, ComposerDraftServiceError>)? = nil) {
         wysiwygViewModel = WysiwygComposerViewModel()
@@ -1128,7 +1241,7 @@ final class ComposerToolbarViewModelTests {
         gifServiceMock.downloadImageFromReturnValue = .success(Data("gif".utf8))
         timelineControllerMock = TimelineControllerMock(.init())
         
-        let appSettings = AppSettings.volatile()
+        let userSettings = UserSettings.mock()
         
         viewModel = ComposerToolbarViewModel(initialText: initialText,
                                              roomProxy: JoinedRoomProxyMock(.init()),
@@ -1136,7 +1249,7 @@ final class ComposerToolbarViewModelTests {
                                              completionSuggestionService: completionSuggestionServiceMock,
                                              mediaProvider: MediaProviderMock(.init()),
                                              mentionDisplayHelper: ComposerMentionDisplayHelper.mock,
-                                             appSettings: appSettings,
+                                             userSettings: userSettings,
                                              analyticsService: AnalyticsServiceMock(.init()),
                                              composerDraftService: draftServiceMock,
                                              emojiProvider: emojiProviderSpy,

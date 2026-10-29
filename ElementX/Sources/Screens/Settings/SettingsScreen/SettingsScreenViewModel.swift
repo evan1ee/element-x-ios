@@ -12,7 +12,7 @@ import SwiftUI
 typealias SettingsScreenViewModelType = StateStoreViewModelV2<SettingsScreenViewState, SettingsScreenViewAction>
 
 class SettingsScreenViewModel: SettingsScreenViewModelType, SettingsScreenViewModelProtocol {
-    private let appSettings: AppSettings
+    private let userSettings: UserSettings
     private let clientProxy: ClientProxyProtocol
     private let userIndicatorController: UserIndicatorControllerProtocol
     
@@ -22,27 +22,33 @@ class SettingsScreenViewModel: SettingsScreenViewModelType, SettingsScreenViewMo
         actionsSubject.eraseToAnyPublisher()
     }
     
-    init(userSession: UserSessionProtocol, appSettings: AppSettings, isBugReportServiceEnabled: Bool, isInSecondaryWindow: Bool, userIndicatorController: UserIndicatorControllerProtocol) {
-        self.appSettings = appSettings
+    init(userSession: UserSessionProtocol, isBugReportServiceEnabled: Bool, isInSecondaryWindow: Bool, userIndicatorController: UserIndicatorControllerProtocol) {
+        userSettings = userSession.userSettings
         clientProxy = userSession.clientProxy
         self.userIndicatorController = userIndicatorController
         
         super.init(initialViewState: .init(deviceID: userSession.clientProxy.deviceID,
                                            userProfile: userSession.clientProxy.userProfilePublisher.value,
-                                           showLinkNewDeviceButton: appSettings.linkNewDeviceEnabled,
+                                           showLinkNewDeviceButton: userSettings.app.linkNewDeviceEnabled,
+                                           showAddAccountButton: userSettings.app.multiAccountEnabled,
                                            showAccountDeactivation: userSession.clientProxy.canDeactivateAccount,
-                                           showDeveloperOptions: appSettings.developerOptionsEnabled,
-                                           showAnalyticsSettings: appSettings.canPromptForAnalytics,
+                                           showDeveloperOptions: userSettings.app.developerOptionsEnabled,
+                                           showAnalyticsSettings: userSettings.app.canPromptForAnalytics,
                                            isBugReportServiceEnabled: isBugReportServiceEnabled,
-                                           navigationBarVisibility: isInSecondaryWindow ? .hidden : .automatic),
+                                           navigationBarVisibility: isInSecondaryWindow ? .hidden : .automatic,
+                                           bindings: .init(userSettings: userSettings)),
                    mediaProvider: userSession.mediaProvider)
         
-        appSettings.developerOptionsEnabledPublisher
+        userSettings.app.developerOptionsEnabledPublisher
             .weakAssign(to: \.state.showDeveloperOptions, on: self)
             .store(in: &cancellables)
         
-        appSettings.linkNewDeviceEnabledPublisher
+        userSettings.app.linkNewDeviceEnabledPublisher
             .weakAssign(to: \.state.showLinkNewDeviceButton, on: self)
+            .store(in: &cancellables)
+        
+        userSettings.app.multiAccountEnabledPublisher
+            .weakAssign(to: \.state.showAddAccountButton, on: self)
             .store(in: &cancellables)
         
         userSession.clientProxy.userProfilePublisher
@@ -72,18 +78,6 @@ class SettingsScreenViewModel: SettingsScreenViewModelType, SettingsScreenViewMo
             }
             .store(in: &cancellables)
         
-        userSession.clientProxy.ignoredUsersPublisher
-            .receive(on: DispatchQueue.main)
-            .map {
-                guard let blockedUsers = $0 else {
-                    return false
-                }
-                
-                return !blockedUsers.isEmpty
-            }
-            .weakAssign(to: \.state.showBlockedUsers, on: self)
-            .store(in: &cancellables)
-        
         Task {
             if case .success(true) = await userSession.clientProxy.isUserStatusSupported() {
                 state.showUserStatusInput = true
@@ -97,6 +91,7 @@ class SettingsScreenViewModel: SettingsScreenViewModelType, SettingsScreenViewMo
         switch viewAction {
         case .close:
             actionsSubject.send(.close)
+            
         case .userDetails:
             actionsSubject.send(.userDetails)
         case .userStatus(.pickStatus):
@@ -113,28 +108,40 @@ class SettingsScreenViewModel: SettingsScreenViewModelType, SettingsScreenViewMo
         case .userStatus(.cancel):
             state.bindings.isPresentingStatusPicker = false
             state.bindings.isShowingCustomStatusField = false
-        case .linkNewDevice:
-            actionsSubject.send(.linkNewDevice)
+            
+        case .addAccount:
+            actionsSubject.send(.addAccount)
+            
         case let .manageAccount(url):
             actionsSubject.send(.manageAccount(url: url))
-        case .analytics:
-            actionsSubject.send(.analytics)
-        case .appLock:
-            actionsSubject.send(.appLock)
-        case .reportBug:
-            actionsSubject.send(.reportBug)
-        case .about:
-            actionsSubject.send(.about)
-        case .blockedUsers:
-            actionsSubject.send(.blockedUsers)
-        case .logout:
-            actionsSubject.send(.logout)
-        case .secureBackup:
-            actionsSubject.send(.secureBackup)
+        case .linkNewDevice:
+            actionsSubject.send(.linkNewDevice)
         case .notifications:
             actionsSubject.send(.notifications)
-        case .advancedSettings:
-            actionsSubject.send(.advancedSettings)
+        case .secureBackup:
+            actionsSubject.send(.secureBackup)
+        case .moderationAndSafety:
+            actionsSubject.send(.moderationAndSafety)
+        case .reportBug:
+            actionsSubject.send(.reportBug)
+            
+        case .logout:
+            actionsSubject.send(.logout)
+        case .deactivateAccount:
+            actionsSubject.send(.deactivateAccount)
+            
+        case .mediaUploadQuality:
+            actionsSubject.send(.mediaUploadQuality)
+        case .appLock:
+            actionsSubject.send(.appLock)
+        case .locationSharing:
+            actionsSubject.send(.locationSharing)
+        case .analytics:
+            actionsSubject.send(.analytics)
+        case .labs:
+            actionsSubject.send(.labs)
+        case .about:
+            actionsSubject.send(.about)
         case .displaySettings:
             actionsSubject.send(.displaySettings)
         case .stickers:
@@ -143,14 +150,11 @@ class SettingsScreenViewModel: SettingsScreenViewModelType, SettingsScreenViewMo
             actionsSubject.send(.syncStorage)
         case .backup:
             actionsSubject.send(.backup)
-        case .labs:
-            actionsSubject.send(.labs)
+            
         case .enableDeveloperOptions:
-            appSettings.developerOptionsEnabled.toggle()
+            userSettings.app.developerOptionsEnabled.toggle()
         case .developerOptions:
             actionsSubject.send(.developerOptions)
-        case .deactivateAccount:
-            actionsSubject.send(.deactivateAccount)
         }
     }
     

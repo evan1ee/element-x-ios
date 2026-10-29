@@ -12,7 +12,11 @@ import SwiftUI
 typealias SearchScreenViewModelType = StateStoreViewModelV2<SearchScreenViewState, SearchScreenViewAction>
 
 class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelProtocol {
+    /// The number of entries kept in the search history.
+    private static let maximumBreadcrumbCount = 25
+    
     private let roomSummaryProvider: RoomSummaryProviderProtocol
+    private let clientProxy: ClientProxyProtocol
     private let searchService: SearchServiceProxyProtocol
     /// Attachments and links. The SDK's search covers message bodies but takes text
     /// messages alone, so filenames and URLs would otherwise be unreachable.
@@ -20,6 +24,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     private let clientProxy: ClientProxyProtocol
     private let userIndicatorController: UserIndicatorControllerProtocol
     private var localSearchTask: Task<Void, Never>?
+    private let userSettings: UserSettings
     private var searchQueryObservationTask: Task<Void, Never>?
     private var searchModeObservationTask: Task<Void, Never>?
     private var loadingObservationTask: Task<Void, Never>?
@@ -33,21 +38,19 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     }
     
     init(roomSummaryProvider: RoomSummaryProviderProtocol,
-         clientProxy: ClientProxyProtocol,
-         mediaProvider: MediaProviderProtocol,
-         searchIndexService: SearchIndexServiceProtocol,
-         historyDownloadManager: HistoryDownloadManagerProtocol,
+         userSession: UserSessionProtocol,
          userIndicatorController: UserIndicatorControllerProtocol,
          initialSearchQuery: String = "",
          initialSearchMode: SearchScreenMode = .messages) {
         self.roomSummaryProvider = roomSummaryProvider
-        self.searchIndexService = searchIndexService
-        self.clientProxy = clientProxy
-        searchService = clientProxy.searchService
+        searchIndexService = userSession.searchIndexService
+        clientProxy = userSession.clientProxy
+        searchService = userSession.clientProxy.searchService
         self.userIndicatorController = userIndicatorController
+        userSettings = userSession.userSettings
         
         super.init(initialViewState: SearchScreenViewState(bindings: .init(searchQuery: initialSearchQuery, searchMode: initialSearchMode)),
-                   mediaProvider: mediaProvider)
+                   mediaProvider: userSession.mediaProvider)
         
         roomSummaryProvider.roomListPublisher
             .receive(on: DispatchQueue.main)
@@ -56,7 +59,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             }
             .store(in: &cancellables)
         
-        historyDownloadManager.progressPublisher
+        userSession.historyDownloadManager.progressPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] progress in
                 switch progress.status {
@@ -86,6 +89,18 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             }
             .store(in: &cancellables)
         
+        // The room list is empty on a cold start, so the room breadcrumbs are re-resolved as it loads.
+        userSettings.account.searchBreadcrumbsPublisher
+            .combineLatest(clientProxy.staticRoomSummaryProvider.roomListPublisher)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] storedBreadcrumbs, _ in
+                guard let self else { return }
+                let breadcrumbs = makeBreadcrumbs(from: storedBreadcrumbs)
+                guard breadcrumbs != state.breadcrumbs else { return }
+                state.breadcrumbs = breadcrumbs
+            }
+            .store(in: &cancellables)
+        
         searchService.paginationStatePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] paginationState in
@@ -104,8 +119,12 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
         // Re-run the search when switching tabs so the newly active tab reflects the current query.
         let searchModeStream = context.observe(\.viewState.bindings.searchMode).removeDuplicates()
         searchModeObservationTask = Task { [weak self] in
-            for await _ in searchModeStream {
+            for await searchMode in searchModeStream {
                 guard let self else { return }
+                // Opening the messages tab signals the user actually wants history to be searchable.
+                if searchMode == .messages {
+                    clientProxy.startSearchBackfill(strategy: .foreground)
+                }
                 updateFilter(for: state.bindings.searchQuery)
             }
         }
@@ -120,6 +139,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
         }
         
         updateRooms(with: roomSummaryProvider.roomListPublisher.value)
+        state.breadcrumbs = makeBreadcrumbs(from: userSettings.account.searchBreadcrumbs)
     }
     
     isolated deinit {
@@ -140,10 +160,19 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
             // Re-apply ours on every appearance to keep the displayed results in sync with the query.
             updateFilter(for: state.bindings.searchQuery, forced: true)
             loadMedia(reset: true)
+        case .submitQuery:
+            guard !state.bindings.searchQuery.isEmpty else { return }
+            recordBreadcrumb(.query(state.bindings.searchQuery))
         case .selectRoom(let roomID):
+            recordBreadcrumb(.room(roomID: roomID))
             actionsSubject.send(.presentRoom(roomID: roomID, eventID: nil))
         case .selectMessage(let roomID, let eventID):
+            recordBreadcrumb(.room(roomID: roomID))
             actionsSubject.send(.presentRoom(roomID: roomID, eventID: eventID))
+        case .removeBreadcrumb(let breadcrumb):
+            removeBreadcrumb(breadcrumb)
+        case .clearBreadcrumbs:
+            userSettings.account.searchBreadcrumbs = []
         case .reachedTop:
             break // Only the room list paged upwards, and it no longer has a tab.
         case .reachedBottom:
@@ -288,6 +317,36 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
         searchLocalIndex(for: searchQuery)
     }
     
+    private func makeBreadcrumbs(from storedBreadcrumbs: [SearchBreadcrumb]) -> [SearchScreenBreadcrumb] {
+        storedBreadcrumbs.compactMap { breadcrumb in
+            switch breadcrumb {
+            case .query(let query):
+                return .query(query)
+            case .room(let roomID):
+                // Drop rooms the user has since left or is only invited to, we've got nothing to show for them.
+                guard let summary = clientProxy.roomSummaryForIdentifier(roomID), summary.isJoined else { return nil }
+                return .room(SearchScreenRoom(summary))
+            }
+        }
+    }
+    
+    /// Moves the breadcrumb to the top of the history, adding it if needed.
+    private func recordBreadcrumb(_ breadcrumb: SearchBreadcrumb) {
+        var breadcrumbs = userSettings.account.searchBreadcrumbs
+        breadcrumbs.removeAll { $0 == breadcrumb }
+        breadcrumbs.insert(breadcrumb, at: 0)
+        
+        userSettings.account.searchBreadcrumbs = Array(breadcrumbs.prefix(Self.maximumBreadcrumbCount))
+    }
+    
+    private func removeBreadcrumb(_ breadcrumb: SearchScreenBreadcrumb) {
+        let storedBreadcrumb: SearchBreadcrumb = switch breadcrumb {
+        case .query(let query): .query(query)
+        case .room(let room): .room(roomID: room.id)
+        }
+        userSettings.account.searchBreadcrumbs.removeAll { $0 == storedBreadcrumb }
+    }
+    
     private func setActiveTabLoading(_ isLoading: Bool) {
         switch state.bindings.searchMode {
         case .messages:
@@ -300,18 +359,7 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     private func updateRooms(with summaries: [RoomSummary]) {
         // The list has caught up with the current filter, so we're no longer waiting on results.
         state.isLoadingRooms = false
-        state.rooms = summaries.map { summary in
-            let identifier = if summary.isDirect {
-                summary.heroes.first?.id ?? summary.canonicalAlias
-            } else {
-                summary.canonicalAlias
-            }
-            
-            return SearchScreenRoom(id: summary.id,
-                                    title: summary.name,
-                                    description: identifier ?? "",
-                                    avatar: summary.avatar)
-        }
+        state.rooms = summaries.map(SearchScreenRoom.init)
     }
     
     /// The actual range values don't matter as long as they contain the lower

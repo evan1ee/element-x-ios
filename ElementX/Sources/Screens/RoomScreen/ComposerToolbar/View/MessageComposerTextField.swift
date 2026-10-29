@@ -222,7 +222,6 @@ private protocol ElementTextViewDelegate: AnyObject {
 
 private class ElementTextView: UITextView, PillAttachmentViewProviderDelegate {
     private(set) var timelineContext: TimelineViewModel.Context?
-    private var pillViews = NSHashTable<UIView>.weakObjects()
     
     weak var elementDelegate: ElementTextViewDelegate?
     
@@ -233,7 +232,7 @@ private class ElementTextView: UITextView, PillAttachmentViewProviderDelegate {
         super.init(frame: .zero, textContainer: nil)
         
         // Avoid `Publishing changes from within view update` warnings
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [self] in
             presendCallback.wrappedValue = { [weak self] in
                 self?.acceptCurrentSuggestion()
             }
@@ -325,9 +324,8 @@ private class ElementTextView: UITextView, PillAttachmentViewProviderDelegate {
         }
     }
     
-    func registerPillView(_ pillView: UIView) {
-        pillViews.add(pillView)
-    }
+    /// UIKit removes old pill views from this text view when its text changes, so there's nothing to track.
+    func registerPillView(_ pillView: UIView) { }
     
     // MARK: - Private
     

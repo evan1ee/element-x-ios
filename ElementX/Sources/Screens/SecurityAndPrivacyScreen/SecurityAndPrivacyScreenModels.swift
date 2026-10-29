@@ -21,12 +21,10 @@ struct SecurityAndPrivacyScreenViewState: BindableState {
     
     var canonicalAlias: String?
     var isKnockingEnabled: Bool
+    var isPublicAccessAllowed = true
     var isSpace: Bool
     
-    var canEditAddress = false
-    var canEditJoinRule = false
-    var canEnableEncryption = false
-    var canEditHistoryVisibility = false
+    var permissions = SecurityAndPrivacyScreenPermissions()
     
     /// The union of joined parent spaces and the joined spaces in the current access type
     var selectableJoinedSpaces: [SpaceServiceRoom] = []
@@ -55,6 +53,11 @@ struct SecurityAndPrivacyScreenViewState: BindableState {
             options.append(.invited)
         }
         return options.sorted()
+    }
+    
+    /// Keeps the option visible on rooms that are already public so the current state is shown.
+    var isAnyoneOptionAvailable: Bool {
+        currentSettings.accessType == .anyone || isPublicAccessAllowed
     }
     
     var isSpaceMembersOptionAvailable: Bool {
@@ -179,6 +182,13 @@ struct SecurityAndPrivacySettings: Equatable {
     var isEncryptionEnabled: Bool
     var historyVisibility: SecurityAndPrivacyHistoryVisibility
     var isVisibileInRoomDirectory: Bool?
+}
+
+struct SecurityAndPrivacyScreenPermissions: Equatable {
+    var canEditAddress = false
+    var canEditJoinRule = false
+    var canEnableEncryption = false
+    var canEditHistoryVisibility = false
 }
 
 enum SecurityAndPrivacyRoomAccessType: Equatable {

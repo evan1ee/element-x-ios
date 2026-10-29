@@ -32,6 +32,7 @@ enum DisplaySettingsScreenViewAction { }
 protocol DisplaySettingsProtocol: AnyObject {
     var showSpacesTab: Bool { get set }
     var showPhotosTab: Bool { get set }
+    var showSavedMessages: Bool { get set }
 }
 
 extension AppSettings: DisplaySettingsProtocol { }

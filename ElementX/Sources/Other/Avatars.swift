@@ -90,6 +90,8 @@ enum UserAvatarSizeOnScreen {
     case map
     case classicAppAccount
     case search
+    /// The native call's large avatar: a one-to-one call, the spotlight and the ringing screen.
+    case call
     
     var value: CGFloat {
         switch self {
@@ -122,6 +124,8 @@ enum UserAvatarSizeOnScreen {
             75
         case .memberDetails, .editUserDetails, .classicAppAccount:
             96
+        case .call:
+            140
         }
     }
 }
@@ -136,6 +140,7 @@ enum RoomAvatarSizeOnScreen {
     case leaveSpace
     case messageForwarding
     case search
+    case searchHistory
     case roomSelection
     case details
     case editRoomDetails
@@ -153,7 +158,7 @@ enum RoomAvatarSizeOnScreen {
         switch self {
         case .timeline, .leaveSpace, .notificationSettings, .roomDirectorySearch,
              .completionSuggestions, .authorizedSpaces, .createRoomSelectSpace,
-             .spaceFilters:
+             .spaceFilters, .searchHistory:
             32
         case .messageForwarding, .roomSelection,
              .spaceAddRooms:

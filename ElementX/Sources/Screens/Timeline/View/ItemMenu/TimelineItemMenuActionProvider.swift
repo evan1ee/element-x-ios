@@ -17,7 +17,6 @@ struct TimelineItemMenuActionProvider {
     let pinnedEventIDs: Set<String>
     let isViewSourceEnabled: Bool
     let areThreadsEnabled: Bool
-    let isMultiSelectEnabled: Bool
     let timelineKind: TimelineKind
     let emojiProvider: EmojiProviderProtocol
     /// False inside Saved Messages itself, where saving would only duplicate the message, and
@@ -72,10 +71,6 @@ struct TimelineItemMenuActionProvider {
         // the server first, since the pack stores its `mxc://` URI.
         if item.isRemoteMessage, timelineItem is StickerRoomTimelineItem || (timelineItem as? ImageRoomTimelineItem)?.content.isGIF == true {
             actions.append(.collectSticker)
-        }
-        
-        if isMultiSelectEnabled, item.isBulkSelectable {
-            actions.append(.selectMessages)
         }
         
         if item.isEditable, canCurrentUserSendMessage {

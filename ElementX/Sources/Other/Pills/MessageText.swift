@@ -9,10 +9,9 @@
 import MatrixRustSDK
 import SwiftUI
 
-final class MessageTextView: UITextView, PillAttachmentViewProviderDelegate, UIGestureRecognizerDelegate {
+final class MessageTextView: UITextView, PillAttachmentViewProviderDelegate, UIGestureRecognizerDelegate, NSLayoutManagerDelegate {
     var timelineContext: TimelineViewModel.Context?
     var updateClosure: (() -> Void)?
-    private var pillViews = NSHashTable<UIView>.weakObjects()
     
     override func addGestureRecognizer(_ gestureRecognizer: UIGestureRecognizer) {
         // We don't need to change the behaviour on MacOS
@@ -42,16 +41,19 @@ final class MessageTextView: UITextView, PillAttachmentViewProviderDelegate, UIG
         }
     }
     
-    func registerPillView(_ pillView: UIView) {
-        pillViews.add(pillView)
-    }
+    /// UIKit removes old pill views from this text view when its text changes, so there's nothing to track.
+    func registerPillView(_ pillView: UIView) { }
     
-    func flushPills() {
-        for view in pillViews.allObjects {
-            view.alpha = 0.0
-            view.removeFromSuperview()
+    /// Stops TextKit from hyphenating code when a word doesn't fit on a line, wrapping it by
+    /// character instead. Code is meant to be verbatim, so an inserted hyphen would corrupt it.
+    nonisolated func layoutManager(_ layoutManager: NSLayoutManager, shouldBreakLineByHyphenatingBeforeCharacterAt charIndex: Int) -> Bool {
+        guard let textStorage = layoutManager.textStorage, charIndex < textStorage.length else {
+            return true
         }
-        pillViews.removeAllObjects()
+        
+        let isCode = textStorage.attribute(.InlineCode, at: charIndex, effectiveRange: nil) != nil
+            || textStorage.attribute(.CodeBlock, at: charIndex, effectiveRange: nil) != nil
+        return !isCode
     }
 }
 
@@ -84,13 +86,17 @@ struct MessageText: UIViewRepresentable {
         let reservedSize: CGSize
     }
     
+    /// The inputs the text view's text was built from. Compared instead of the text itself, which UIKit
+    /// normalises and which gets a new trailing spacer attachment on every build, so it never matches.
+    fileprivate struct TextInputs: Equatable {
+        let attributedString: AttributedString
+        let trailingReservedSize: CGSize
+        let layoutDirection: LayoutDirection
+    }
+    
     @State private var computedSizes = [SizeCacheKey: CGSize]()
     
-    @State var attributedString: AttributedString {
-        didSet {
-            computedSizes.removeAll()
-        }
-    }
+    let attributedString: AttributedString
     
     /// Reserves an invisible inline area of this size at the very end of the rendered
     /// text. Used so that the message bubble's natural size accommodates the timestamp
@@ -98,6 +104,12 @@ struct MessageText: UIViewRepresentable {
     /// the reserved region fits on the last line (timestamp tucks) or wraps to a new
     /// line (timestamp drops below the text).
     var trailingReservedSize: CGSize = .zero
+    
+    private var textInputs: TextInputs {
+        TextInputs(attributedString: attributedString,
+                   trailingReservedSize: trailingReservedSize,
+                   layoutDirection: layoutDirection)
+    }
     
     private func makeAttributedText() -> NSAttributedString? {
         guard let baseText = try? NSAttributedString(attributedString, including: \.elementX) else {
@@ -163,13 +175,9 @@ struct MessageText: UIViewRepresentable {
         // Need to use TextKit 1 for mentions
         let textView = MessageTextView(usingTextLayoutManager: false)
         textView.timelineContext = viewModel
-        textView.updateClosure = { [weak textView] in
-            guard let textView else { return }
-            do {
-                attributedString = try AttributedString(textView.attributedText, including: \.elementX)
-            } catch {
-                MXLog.error("Failed to update attributedString: \(error)]")
-                return
+        textView.updateClosure = {
+            DispatchQueue.main.async {
+                computedSizes.removeAll()
             }
         }
         textView.isEditable = false
@@ -194,19 +202,21 @@ struct MessageText: UIViewRepresentable {
         textView.textContainerInset = .zero
         textView.textContainer.lineFragmentPadding = 0
         textView.layoutManager.usesFontLeading = false
+        textView.layoutManager.delegate = textView
         textView.backgroundColor = .clear
         if let attributedText = makeAttributedText() {
             textView.attributedText = attributedText
+            context.coordinator.textInputs = textInputs
         }
         textView.delegate = context.coordinator
         return textView
     }
     
     func updateUIView(_ uiView: MessageTextView, context: Context) {
-        if let newAttributedText = makeAttributedText(),
-           uiView.attributedText != newAttributedText {
-            uiView.flushPills()
+        if context.coordinator.textInputs != textInputs,
+           let newAttributedText = makeAttributedText() {
             uiView.attributedText = newAttributedText
+            context.coordinator.textInputs = textInputs
             computedSizes.removeAll()
         }
         context.coordinator.openURLAction = openURLAction
@@ -233,6 +243,7 @@ struct MessageText: UIViewRepresentable {
     
     final class Coordinator: NSObject, UITextViewDelegate {
         var openURLAction: OpenURLAction
+        fileprivate var textInputs: TextInputs?
         
         init(openURLAction: OpenURLAction) {
             self.openURLAction = openURLAction

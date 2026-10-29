@@ -34,6 +34,7 @@ struct SpaceScreen: View {
         .environment(\.editMode, .constant(context.viewState.editMode))
         .background(Color.compound.bgCanvasDefault.ignoresSafeArea())
         .toolbarRole(RoomHeaderView.toolbarRole)
+        .fixesTitleViewOnCancelledPop()
         .navigationTitle(context.viewState.space.name)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(isEditModeActive)
@@ -128,13 +129,11 @@ struct SpaceScreen: View {
                         Section {
                             Button { context.send(viewAction: .createChildRoom) } label: {
                                 Label(L10n.actionCreateRoom, icon: \.plus)
-                                    .accessibilityIdentifier(A11yIdentifiers.spaceScreen.createRoom)
                             }
                             
                             Button { context.send(viewAction: .addExistingRooms) } label: {
                                 Label(L10n.actionAddExistingRooms, icon: \.room)
                             }
-                            .accessibilityIdentifier(A11yIdentifiers.spaceScreen.addExistingRooms)
                             
                             if !context.viewState.rooms.isEmpty {
                                 Button { context.send(viewAction: .manageChildren) } label: {
@@ -149,7 +148,6 @@ struct SpaceScreen: View {
                             Button { context.send(viewAction: .displayMembers(roomProxy: roomProxy)) } label: {
                                 Label(L10n.screenSpaceMenuActionMembers, icon: \.user)
                             }
-                            .accessibilityIdentifier(A11yIdentifiers.spaceScreen.viewMembers)
                         }
                         
                         if let permalink = context.viewState.permalink {
@@ -163,7 +161,6 @@ struct SpaceScreen: View {
                             Button { context.send(viewAction: .spaceSettings(roomProxy: roomProxy)) } label: {
                                 Label(L10n.commonSettings, icon: \.settings)
                             }
-                            .accessibilityIdentifier(A11yIdentifiers.spaceScreen.settings)
                         }
                     }
                     

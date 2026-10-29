@@ -13,33 +13,19 @@ import SwiftUI
 struct SettingsScreen: View {
     @Bindable var context: SettingsScreenViewModel.Context
     
-    private var shouldHideManageAccountSection: Bool {
-        context.viewState.accountProfileURL == nil &&
-            !context.viewState.showBlockedUsers &&
-            !context.viewState.showLinkNewDeviceButton
-    }
-    
     var body: some View {
         Form {
             userSection
             
-            if context.viewState.showUserStatusInput {
-                userStatusSection
+            if context.viewState.showAddAccountButton {
+                addAccountSection
             }
             
-            if !shouldHideManageAccountSection {
-                manageAccountSection
-            }
-            
-            manageMyAppSection
-            
-            generalSection
+            accountSettingsSection
             
             signOutSection
             
-            if context.viewState.showDeveloperOptions {
-                developerOptionsSection
-            }
+            appSettingsSection
         }
         .compoundList()
         .navigationTitle(L10n.commonSettings)
@@ -70,15 +56,9 @@ struct SettingsScreen: View {
                             .accessibilityHidden(true)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(context.viewState.userProfile.displayName ?? "")
-                                
-                                if let statusEmoji = context.viewState.userProfile.status.displayed?.emoji {
-                                    Text(String(statusEmoji))
-                                }
-                            }
-                            .font(.compound.headingMD)
-                            .foregroundColor(.compound.textPrimary)
+                            Text(context.viewState.userProfile.displayName ?? "")
+                                .font(.compound.headingMD)
+                                .foregroundColor(.compound.textPrimary)
                             
                             Text(context.viewState.userProfile.id)
                                 .font(.compound.bodySM)
@@ -93,47 +73,27 @@ struct SettingsScreen: View {
                     .padding(.vertical, 8)
                 }
             })
-        }
-    }
-    
-    private var userStatusSection: some View {
-        Section {
-            SettingsScreenUserStatusRow(mode: context.viewState.userStatusRowMode) { action in
-                context.send(viewAction: .userStatus(action))
+            
+            if context.viewState.showUserStatusInput {
+                SettingsScreenUserStatusRow(mode: context.viewState.userStatusRowMode) { action in
+                    context.send(viewAction: .userStatus(action))
+                }
             }
         }
     }
     
-    private var manageMyAppSection: some View {
+    private var addAccountSection: some View {
         Section {
-            ListRow(label: .default(title: L10n.screenNotificationSettingsTitle,
-                                    icon: \.notifications),
+            ListRow(label: .default(title: L10n.screenSettingsAddAccount,
+                                    icon: \.plus),
                     kind: .navigationLink {
-                        context.send(viewAction: .notifications)
+                        context.send(viewAction: .addAccount)
                     })
-                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.notifications)
-            
-            ListRow(label: .default(title: L10n.commonScreenLock,
-                                    icon: \.lock),
-                    kind: .navigationLink {
-                        context.send(viewAction: .appLock)
-                    })
-                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.screenLock)
-            
-            switch context.viewState.securitySectionMode {
-            case .secureBackup:
-                ListRow(label: .default(title: L10n.commonEncryption,
-                                        icon: \.key),
-                        details: context.viewState.showSecuritySectionBadge ? .icon(securitySectionBadge) : nil,
-                        kind: .navigationLink { context.send(viewAction: .secureBackup) })
-                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.secureBackup)
-            default:
-                EmptyView()
-            }
+                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.addAccount)
         }
     }
     
-    private var manageAccountSection: some View {
+    private var accountSettingsSection: some View {
         Section {
             if let url = context.viewState.accountProfileURL {
                 ListRow(label: .default(title: L10n.actionManageAccountAndDevices,
@@ -152,31 +112,105 @@ struct SettingsScreen: View {
                         })
             }
             
-            if context.viewState.showBlockedUsers {
-                ListRow(label: .default(title: L10n.commonBlockedUsers,
-                                        icon: \.block),
+            ListRow(label: .default(title: L10n.screenNotificationSettingsTitle,
+                                    icon: \.notifications),
+                    kind: .navigationLink {
+                        context.send(viewAction: .notifications)
+                    })
+                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.notifications)
+            
+            switch context.viewState.securitySectionMode {
+            case .secureBackup:
+                ListRow(label: .default(title: L10n.commonEncryption,
+                                        icon: \.key),
+                        details: context.viewState.showSecuritySectionBadge ? .icon(securitySectionBadge) : nil,
+                        kind: .navigationLink { context.send(viewAction: .secureBackup) })
+                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.secureBackup)
+            default:
+                EmptyView()
+            }
+            
+            ListRow(label: .default(title: L10n.commonModerationAndSafety,
+                                    icon: \.admin),
+                    kind: .navigationLink {
+                        context.send(viewAction: .moderationAndSafety)
+                    })
+            
+            if context.viewState.isBugReportServiceEnabled {
+                ListRow(label: .default(title: L10n.commonReportAProblem,
+                                        icon: \.chatProblem),
                         kind: .navigationLink {
-                            context.send(viewAction: .blockedUsers)
+                            context.send(viewAction: .reportBug)
                         })
-                        .accessibilityIdentifier(A11yIdentifiers.settingsScreen.blockedUsers)
+                        .accessibilityIdentifier(A11yIdentifiers.settingsScreen.reportBug)
+            }
+        } header: {
+            Text(L10n.commonAccountSettings)
+                .compoundListSectionHeader()
+        }
+    }
+    
+    private var signOutSection: some View {
+        Section {
+            ListRow(label: .action(title: L10n.screenSignoutPreferenceItem,
+                                   icon: \.close,
+                                   role: .destructive),
+                    kind: .button {
+                        context.send(viewAction: .logout)
+                    })
+                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.logout)
+            
+            if context.viewState.showAccountDeactivation {
+                ListRow(label: .action(title: L10n.actionDeleteAccount,
+                                       icon: \.delete,
+                                       role: .destructive),
+                        kind: .navigationLink {
+                            context.send(viewAction: .deactivateAccount)
+                        })
             }
         }
     }
     
-    private var generalSection: some View {
+    private var appSettingsSection: some View {
         Section {
+            ListRow(label: .default(title: L10n.commonAppearance,
+                                    icon: \.darkMode),
+                    kind: .picker(selection: $context.appAppearance,
+                                  items: AppAppearance.allCases.map { (title: $0.name, tag: $0) }))
+            
+            ListRow(label: .default(title: L10n.commonMediaUploadQuality,
+                                    icon: \.image),
+                    kind: .navigationLink {
+                        context.send(viewAction: .mediaUploadQuality)
+                    })
+            
+            ListRow(label: .default(title: L10n.commonScreenLock,
+                                    icon: \.lock),
+                    kind: .navigationLink {
+                        context.send(viewAction: .appLock)
+                    })
+                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.screenLock)
+            
+            ListRow(label: .default(title: L10n.commonLocationSharing,
+                                    icon: \.locationPin),
+                    kind: .navigationLink {
+                        context.send(viewAction: .locationSharing)
+                    })
+            
+            if context.viewState.showAnalyticsSettings {
+                ListRow(label: .default(title: L10n.commonAnalytics,
+                                        icon: \.chart),
+                        kind: .navigationLink {
+                            context.send(viewAction: .analytics)
+                        })
+                        .accessibilityIdentifier(A11yIdentifiers.settingsScreen.analytics)
+            }
+            
             ListRow(label: .default(title: UntranslatedL10n.screenDisplaySettingsTitle,
                                     icon: \.image),
                     kind: .navigationLink {
                         context.send(viewAction: .displaySettings)
                     })
-            
-            ListRow(label: .default(title: L10n.commonAdvancedSettings,
-                                    icon: \.settings),
-                    kind: .navigationLink {
-                        context.send(viewAction: .advancedSettings)
-                    })
-                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.advancedSettings)
             
             ListRow(label: .default(title: UntranslatedL10n.screenSyncStorageTitle,
                                     icon: \.download),
@@ -209,59 +243,17 @@ struct SettingsScreen: View {
                     })
                     .accessibilityIdentifier(A11yIdentifiers.settingsScreen.about)
             
-            if context.viewState.isBugReportServiceEnabled {
-                ListRow(label: .default(title: L10n.commonReportAProblem,
-                                        icon: \.chatProblem),
+            if context.viewState.showDeveloperOptions {
+                ListRow(label: .default(title: L10n.commonDeveloperOptions,
+                                        icon: \.code),
                         kind: .navigationLink {
-                            context.send(viewAction: .reportBug)
+                            context.send(viewAction: .developerOptions)
                         })
-                        .accessibilityIdentifier(A11yIdentifiers.settingsScreen.reportBug)
+                        .accessibilityIdentifier(A11yIdentifiers.settingsScreen.developerOptions)
             }
-            
-            if context.viewState.showAnalyticsSettings {
-                ListRow(label: .default(title: L10n.commonAnalytics,
-                                        icon: \.chart),
-                        kind: .navigationLink {
-                            context.send(viewAction: .analytics)
-                        })
-                        .accessibilityIdentifier(A11yIdentifiers.settingsScreen.analytics)
-            }
-        }
-    }
-    
-    private var signOutSection: some View {
-        Section {
-            ListRow(label: .action(title: L10n.screenSignoutPreferenceItem,
-                                   icon: \.close,
-                                   role: .destructive),
-                    kind: .button {
-                        context.send(viewAction: .logout)
-                    })
-                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.logout)
-            
-            if context.viewState.showAccountDeactivation {
-                ListRow(label: .action(title: L10n.actionDeleteAccount,
-                                       icon: \.delete,
-                                       role: .destructive),
-                        kind: .navigationLink {
-                            context.send(viewAction: .deactivateAccount)
-                        })
-            }
-        } footer: {
-            if !context.viewState.showDeveloperOptions {
-                versionSection
-            }
-        }
-    }
-    
-    private var developerOptionsSection: some View {
-        Section {
-            ListRow(label: .default(title: L10n.commonDeveloperOptions,
-                                    icon: \.code),
-                    kind: .navigationLink {
-                        context.send(viewAction: .developerOptions)
-                    })
-                    .accessibilityIdentifier(A11yIdentifiers.settingsScreen.developerOptions)
+        } header: {
+            Text(L10n.commonAppSettings)
+                .compoundListSectionHeader()
         } footer: {
             versionSection
         }
@@ -306,6 +298,19 @@ struct SettingsScreen: View {
     }
 }
 
+private extension AppAppearance {
+    var name: String {
+        switch self {
+        case .system:
+            L10n.themeSystem
+        case .light:
+            L10n.themeLight
+        case .dark:
+            L10n.themeDark
+        }
+    }
+}
+
 // MARK: - Previews
 
 @available(iOS 26.0, *)
@@ -318,7 +323,7 @@ struct SettingsScreen_Previews: PreviewProvider, TestablePreview {
             SettingsScreen(context: viewModel.context)
         }
         .snapshotPreferences(expect: viewModel.context.observe(\.viewState.accountProfileURL).map { $0 != nil })
-        .frame(height: 1100)
+        .frame(height: 1300)
         .previewLayout(.sizeThatFits)
         .previewDisplayName("Default")
         
@@ -326,18 +331,21 @@ struct SettingsScreen_Previews: PreviewProvider, TestablePreview {
             SettingsScreen(context: bugReportDisabledViewModel.context)
         }
         .snapshotPreferences(expect: bugReportDisabledViewModel.context.observe(\.viewState.accountProfileURL).map { $0 != nil })
-        .frame(height: 1050)
+        .frame(height: 1250)
         .previewLayout(.sizeThatFits)
         .previewDisplayName("Bug report disabled")
     }
     
     static func makeViewModel(isBugReportServiceEnabled: Bool = true) -> SettingsScreenViewModel {
+        let userSettings = UserSettings.mock()
+        userSettings.app.multiAccountEnabled = true
+        userSettings.app.linkNewDeviceEnabled = true
         let userSession = UserSessionMock(.init(clientProxy: ClientProxyMock(.init(userID: "@alice:example.com",
                                                                                    deviceID: "AAAAAAAAAAA",
                                                                                    displayName: "Alice Liddell",
-                                                                                   status: .mockFocussing))))
+                                                                                   status: .mockFocussing)),
+                                                userSettings: userSettings))
         return SettingsScreenViewModel(userSession: userSession,
-                                       appSettings: .volatile(),
                                        isBugReportServiceEnabled: isBugReportServiceEnabled,
                                        isInSecondaryWindow: false,
                                        userIndicatorController: UserIndicatorControllerMock())

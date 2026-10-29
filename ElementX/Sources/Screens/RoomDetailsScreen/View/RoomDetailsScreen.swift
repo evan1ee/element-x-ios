@@ -7,6 +7,7 @@
 //
 
 import Compound
+import MatrixRustSDK
 import SwiftUI
 
 struct RoomDetailsScreen: View {
@@ -368,8 +369,6 @@ struct RoomDetailsScreen: View {
 
 // MARK: - Previews
 
-import MatrixRustSDK
-
 @available(iOS 26.0, *)
 struct RoomDetailsScreen_Previews: PreviewProvider, TestablePreview {
     static let genericWorldReadableRoomViewModel = makeGenericRoomViewModel(historyVisibility: .worldReadable)
@@ -452,7 +451,6 @@ struct RoomDetailsScreen_Previews: PreviewProvider, TestablePreview {
         
         return .init(roomProxy: roomProxy,
                      userSession: UserSessionMock(.init()),
-                     appHooks: AppHooks(),
                      analyticsService: AnalyticsServiceMock(.init()),
                      userIndicatorController: UserIndicatorControllerMock(),
                      notificationSettingsProxy: notificationSettingsProxy,
@@ -480,7 +478,6 @@ struct RoomDetailsScreen_Previews: PreviewProvider, TestablePreview {
         
         return .init(roomProxy: roomProxy,
                      userSession: UserSessionMock(.init()),
-                     appHooks: AppHooks(),
                      analyticsService: AnalyticsServiceMock(.init()),
                      userIndicatorController: UserIndicatorControllerMock(),
                      notificationSettingsProxy: notificationSettingsProxy,
@@ -518,7 +515,6 @@ struct RoomDetailsScreen_Previews: PreviewProvider, TestablePreview {
         
         return .init(roomProxy: roomProxy,
                      userSession: UserSessionMock(.init(clientProxy: clientProxyMock)),
-                     appHooks: AppHooks(),
                      analyticsService: AnalyticsServiceMock(.init()),
                      userIndicatorController: UserIndicatorControllerMock(),
                      notificationSettingsProxy: notificationSettingsProxy,

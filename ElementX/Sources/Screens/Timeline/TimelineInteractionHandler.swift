@@ -40,7 +40,7 @@ class TimelineInteractionHandler {
     private let voiceMessageRecorder: VoiceMessageRecorderProtocol
     private let userIndicatorController: UserIndicatorControllerProtocol
     private let appMediator: AppMediatorProtocol
-    private let appSettings: AppSettings
+    private let userSettings: UserSettings
     private let analyticsService: AnalyticsServiceProtocol
     private let emojiProvider: EmojiProviderProtocol
     private let linkMetadataProvider: LinkMetadataProviderProtocol
@@ -79,7 +79,6 @@ class TimelineInteractionHandler {
          voiceMessageRecorder: VoiceMessageRecorderProtocol,
          userIndicatorController: UserIndicatorControllerProtocol,
          appMediator: AppMediatorProtocol,
-         appSettings: AppSettings,
          analyticsService: AnalyticsServiceProtocol,
          emojiProvider: EmojiProviderProtocol,
          linkMetadataProvider: LinkMetadataProviderProtocol,
@@ -92,7 +91,7 @@ class TimelineInteractionHandler {
         self.voiceMessageRecorder = voiceMessageRecorder
         self.userIndicatorController = userIndicatorController
         self.appMediator = appMediator
-        self.appSettings = appSettings
+        userSettings = userSession.userSettings
         self.analyticsService = analyticsService
         self.emojiProvider = emojiProvider
         self.linkMetadataProvider = linkMetadataProvider
@@ -217,8 +216,8 @@ class TimelineInteractionHandler {
             analyticsService.trackInteraction(name: .PinnedMessageListViewTimeline)
             guard let eventID = itemID.eventID else { return }
             actionsSubject.send(.viewInRoomTimeline(eventID: eventID))
-        case .downloadMedia, .selectMessages:
-            break // Handled by the media preview screen and the TimelineViewModel respectively.
+        case .downloadMedia:
+            break // Handled inline in the media preview screen.
         case .collectSticker:
             collectSticker(from: timelineItem)
         case .translate:
@@ -507,19 +506,17 @@ class TimelineInteractionHandler {
                 resumeVoiceMessagePlaybackAfterScrubbing = true
                 pausePlayingRecordedVoiceMessage()
             }
-        } else {
-            if resumeVoiceMessagePlaybackAfterScrubbing {
-                resumeVoiceMessagePlaybackAfterScrubbing = false
-                await startPlayingRecordedVoiceMessage()
-            }
+        } else if resumeVoiceMessagePlaybackAfterScrubbing {
+            resumeVoiceMessagePlaybackAfterScrubbing = false
+            await startPlayingRecordedVoiceMessage()
         }
     }
     
     // MARK: Audio Playback
     
     func changePlaybackSpeed(for itemID: TimelineItemIdentifier) {
-        let nextSpeed = appSettings.voiceMessagePlaybackSpeed.next
-        appSettings.voiceMessagePlaybackSpeed = nextSpeed
+        let nextSpeed = userSettings.app.voiceMessagePlaybackSpeed.next
+        userSettings.app.voiceMessagePlaybackSpeed = nextSpeed
         audioPlayerState(for: itemID)?.setPlaybackSpeed(nextSpeed)
     }
     
@@ -651,8 +648,8 @@ class TimelineInteractionHandler {
                                            title: L10n.commonVoiceMessage,
                                            duration: voiceMessageRoomTimelineItem.content.duration,
                                            waveform: voiceMessageRoomTimelineItem.content.waveform,
-                                           playbackSpeed: appSettings.voiceMessagePlaybackSpeed,
-                                           playbackSpeedPublisher: appSettings.voiceMessagePlaybackSpeedPublisher)
+                                           playbackSpeed: userSettings.app.voiceMessagePlaybackSpeed,
+                                           playbackSpeedPublisher: userSettings.app.voiceMessagePlaybackSpeedPublisher)
         mediaPlayerProvider.register(audioPlayerState: playerState)
         return playerState
     }
@@ -776,7 +773,6 @@ class TimelineInteractionHandler {
                                                       mediaPlayerProvider: mediaPlayerProvider,
                                                       userIndicatorController: userIndicatorController,
                                                       appMediator: appMediator,
-                                                      appSettings: appSettings,
                                                       analyticsService: analyticsService,
                                                       emojiProvider: emojiProvider,
                                                       linkMetadataProvider: linkMetadataProvider,

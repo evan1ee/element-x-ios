@@ -42,6 +42,11 @@ struct HomeScreen: View {
                     .navigationTransition(.zoom(sourceID: NavigationTransitionSourceID.spaceFilters,
                                                 in: navigationTransitionNamespace))
             }
+            .sheet(isPresented: $context.isPresentingMultiAccountAnnouncement) {
+                MultiAccountAnnouncementView(context: context)
+                    .onAppear { context.send(viewAction: .multiAccountAnnouncementAppeared) }
+            }
+            .onAppear { context.send(viewAction: .screenAppeared) }
     }
     
     // MARK: - Private
@@ -98,14 +103,10 @@ struct HomeScreen: View {
     }
     
     private var settingsButton: some View {
-        Button {
+        AvatarSettingsButton(userProfile: context.viewState.userProfile,
+                             mediaProvider: context.mediaProvider) {
             context.send(viewAction: .showSettings)
-        } label: {
-            AvatarSettingsButtonLabel(userProfile: context.viewState.userProfile,
-                                      mediaProvider: context.mediaProvider)
         }
-        .accessibilityLabel(L10n.commonSettings)
-        .accessibilityIdentifier(A11yIdentifiers.homeScreen.userAvatar)
     }
     
     @ViewBuilder
@@ -219,7 +220,7 @@ struct HomeScreen_Previews: PreviewProvider, TestablePreview {
         let userID = "@alice:example.com"
         
         let roomSummaryProviderState: RoomSummaryProviderMockConfigurationState = switch mode {
-        case .skeletons:
+        case .awaitingCachedRooms, .skeletons:
             .loading
         case .empty:
             .loaded([])
@@ -233,11 +234,10 @@ struct HomeScreen_Previews: PreviewProvider, TestablePreview {
         let userSession = UserSessionMock(.init(clientProxy: clientProxy))
         
         return HomeScreenViewModel(userSession: userSession,
+                                   availableSessionsPublisher: .init([.init(userSession: userSession)]),
                                    selectedRoomPublisher: CurrentValueSubject<String?, Never>(nil).asCurrentValuePublisher(),
-                                   appSettings: .volatile(),
                                    analyticsService: AnalyticsServiceMock(.init()),
                                    bugReportService: BugReportServiceMock(.init()),
-                                   notificationManager: NotificationManagerMock(),
                                    userIndicatorController: UserIndicatorControllerMock())
     }
 }

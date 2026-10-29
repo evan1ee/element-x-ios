@@ -27,9 +27,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Gallery, %1$d more media</string>
+			<string>Galéria, %1$d további médiatartalom</string>
 			<key>other</key>
-			<string>Gallery, %1$d more medias</string>
+			<string>Galéria, %1$d további médiatartalom</string>
 		</dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@COUNT@</string>
@@ -62,6 +62,22 @@
 			<string>Az előző üzenetet olvasta: %1$@ és még %2$d felhasználó</string>
 			<key>other</key>
 			<string>Az előző üzenetet olvasta: %1$@ és még %2$d felhasználó</string>
+		</dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@COUNT@</string>
+	</dict>
+	<key>action_forward_messages</key>
+	<dict>
+		<key>COUNT</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d üzenet továbbítása</string>
+			<key>other</key>
+			<string>%1$d üzenet továbbítása</string>
 		</dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@COUNT@</string>
@@ -265,9 +281,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Shared %1$d attachment</string>
+			<string>Megosztott %1$d melléklet</string>
 			<key>other</key>
-			<string>Shared %1$d attachments</string>
+			<string>Megosztott %1$d melléklet</string>
 		</dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@COUNT@</string>
@@ -528,6 +544,22 @@
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@COUNT@</string>
 	</dict>
+	<key>screen_room_messages_forwarded</key>
+	<dict>
+		<key>COUNT</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%1$d üzenet továbbítva</string>
+			<key>other</key>
+			<string>%1$d üzenet továbbítva</string>
+		</dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@COUNT@</string>
+	</dict>
 	<key>screen_room_multiple_knock_requests_title</key>
 	<dict>
 		<key>COUNT</key>
@@ -553,9 +585,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>%1$d message selected</string>
+			<string>%1$d üzenet kijelölve</string>
 			<key>other</key>
-			<string>%1$d messages selected</string>
+			<string>%1$d üzenet kijelölve</string>
 		</dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@COUNT@</string>

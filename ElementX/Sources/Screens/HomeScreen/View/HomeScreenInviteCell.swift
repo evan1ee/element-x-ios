@@ -8,6 +8,7 @@
 
 import Combine
 import Compound
+import MatrixRustSDKMocks
 import SwiftUI
 
 struct HomeScreenInviteCell: View {
@@ -147,14 +148,12 @@ struct HomeScreenInviteCell: View {
         if room.badges.isDotShown {
             Circle()
                 .scaledFrame(size: 12)
-                .foregroundColor(.compound.iconAccentTertiary) // The badge is always green, no need to check isHighlighted here.
+                .foregroundColor(.compound.iconAccentPrimary) // The badge is always green, no need to check isHighlighted here.
         }
     }
 }
 
 // MARK: - Previews
-
-import MatrixRustSDKMocks
 
 struct HomeScreenInviteCell_Previews: PreviewProvider, TestablePreview {
     static var previews: some View {
@@ -200,11 +199,10 @@ struct HomeScreenInviteCell_Previews: PreviewProvider, TestablePreview {
         let userSession = UserSessionMock(.init(clientProxy: clientProxy))
         
         return HomeScreenViewModel(userSession: userSession,
+                                   availableSessionsPublisher: .init([.init(userSession: userSession)]),
                                    selectedRoomPublisher: CurrentValueSubject<String?, Never>(nil).asCurrentValuePublisher(),
-                                   appSettings: .volatile(),
                                    analyticsService: AnalyticsServiceMock(.init()),
                                    bugReportService: BugReportServiceMock(.init()),
-                                   notificationManager: NotificationManagerMock(),
                                    userIndicatorController: UserIndicatorControllerMock())
     }
 }
@@ -218,6 +216,7 @@ private extension HomeScreenRoom {
         let summary = RoomSummary(room: RoomSDKMock(),
                                   id: "@someone:somewhere.com",
                                   joinRequestType: .invite(inviter: inviter),
+                                  isJoined: false,
                                   name: "Some Guy",
                                   isDirect: true,
                                   isSpace: false,
@@ -254,6 +253,7 @@ private extension HomeScreenRoom {
         let summary = RoomSummary(room: RoomSDKMock(),
                                   id: "@someone:somewhere.com",
                                   joinRequestType: .invite(inviter: inviter),
+                                  isJoined: false,
                                   name: name,
                                   isDirect: false,
                                   isSpace: isSpace,

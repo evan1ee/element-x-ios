@@ -11,7 +11,11 @@ import Foundation
 
 struct UserSessionMockConfiguration {
     var clientProxy: ClientProxyProtocol = ClientProxyMock(.init())
+    var userSettings: UserSettings = .mock()
+    var userHooks = UserHooks()
     var contentScannerService: ContentScannerServiceProtocol?
+    var liveLocationService: LiveLocationServiceProtocol = LiveLocationServiceMock(.init())
+    var notificationService: NotificationServiceProtocol = NotificationServiceMock(.init())
 }
 
 @MainActor extension UserSessionMock {
@@ -19,13 +23,18 @@ struct UserSessionMockConfiguration {
         self.init()
         
         clientProxy = configuration.clientProxy
+        userSettings = configuration.userSettings
+        userHooks = configuration.userHooks
+        callbacks = .init()
+        
         mediaProvider = MediaProviderMock(.init())
         voiceMessageMediaManager = VoiceMessageMediaManagerMock()
         contentScannerService = configuration.contentScannerService
         
         sessionSecurityStatePublisher = CurrentValueSubject<SessionSecurityState, Never>(.init(verificationState: .verified, recoveryState: .enabled)).asCurrentValuePublisher()
         
-        liveLocationManager = LiveLocationManagerMock(.init())
+        liveLocationService = configuration.liveLocationService
+        notificationService = configuration.notificationService
         
         // No per-room state, so screens reading it show nothing rather than trapping on
         // an un-configured mock. Tests wanting the download visible replace this.
@@ -47,6 +56,7 @@ struct UserSessionMockConfiguration {
         // An empty index. The Photos tab reads this as the session starts, so leaving it
         // un-configured traps before any test gets going.
         let searchIndexServiceMock = SearchIndexServiceMock()
+        searchIndexServiceMock.searchReturnValue = []
         searchIndexServiceMock.browseReturnValue = []
         searchIndexServiceMock.roomsWithMediaInReturnValue = []
         searchIndexService = searchIndexServiceMock

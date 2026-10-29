@@ -13,15 +13,18 @@ import MatrixRustSDK
 class AuthenticationService: AuthenticationServiceProtocol {
     private var client: ClientProtocol?
     private var sessionDirectories: SessionDirectories
-    private let passphrase: String
+    private let passphrase: Data
     
-    private let userSessionStore: UserSessionStoreProtocol
+    private let userSessionManager: UserSessionManagerProtocol
     private let classicAppManager: ClassicAppManagerProtocol?
     private let clientFactory: ClientFactoryProtocol
     private let appSettings: AppSettings
     private let appHooks: AppHooks
     
     private let homeserverSubject: CurrentValueSubject<LoginHomeserver, Never>
+    /// The currently configured homeserver.
+    ///
+    /// **Note:** The value's `accountProvider` will always be `.generic` after calling `configure(for:flow:)`.
     var homeserver: CurrentValuePublisher<LoginHomeserver, Never> {
         homeserverSubject.asCurrentValuePublisher()
     }
@@ -30,16 +33,16 @@ class AuthenticationService: AuthenticationServiceProtocol {
     
     let classicAppAccount: ClassicAppAccount?
     
-    init(userSessionStore: UserSessionStoreProtocol,
+    init(userSessionManager: UserSessionManagerProtocol,
          encryptionKeyProvider: EncryptionKeyProviderProtocol,
          classicAppManager: ClassicAppManagerProtocol?,
          clientFactory: ClientFactoryProtocol = ClientFactory(),
          appSettings: AppSettings,
          appHooks: AppHooks) {
         sessionDirectories = .init()
-        passphrase = encryptionKeyProvider.generateKey().base64EncodedString()
+        passphrase = encryptionKeyProvider.generateKey()
         
-        self.userSessionStore = userSessionStore
+        self.userSessionManager = userSessionManager
         self.classicAppManager = classicAppManager
         self.clientFactory = clientFactory
         self.appSettings = appSettings
@@ -64,17 +67,17 @@ class AuthenticationService: AuthenticationServiceProtocol {
         }
         
         // When updating these, don't forget to update the reset method too.
-        homeserverSubject = .init(LoginHomeserver(address: appSettings.defaultServer, loginMode: .unknown))
+        homeserverSubject = .init(LoginHomeserver(accountProvider: appSettings.defaultAccountProvider, loginMode: .unknown))
         flow = .login
     }
     
     // MARK: - Public
     
-    func configure(for homeserverAddress: String, flow: AuthenticationFlow) async -> Result<Void, AuthenticationServiceError> {
+    func configure(for serverNameOrBaseURL: String, flow: AuthenticationFlow) async -> Result<Void, AuthenticationServiceError> {
         do {
-            var homeserver = LoginHomeserver(address: homeserverAddress, loginMode: .unknown)
+            var homeserver = LoginHomeserver(accountProvider: .generic(serverNameOrBaseURL), loginMode: .unknown)
             
-            let client = try await makeClient(homeserverAddress: homeserverAddress)
+            let client = try await makeClient(serverNameOrBaseURL: serverNameOrBaseURL)
             let loginDetails = await client.homeserverLoginDetails()
             
             homeserver.loginMode = if loginDetails.supportsOauthLogin() {
@@ -106,21 +109,21 @@ class AuthenticationService: AuthenticationServiceProtocol {
             return .failure(.elementProRequired(serverName: serverName))
         } catch {
             MXLog.error("Failed configuring a server: \(error)")
-            return .failure(.invalidHomeserverAddress)
+            return .failure(.invalidServerNameOrBaseURL)
         }
     }
     
     func urlForOAuthLogin(loginHint: String?) async -> Result<OAuthAuthorizationDataProxy, AuthenticationServiceError> {
         guard let client else { return .failure(.oAuthError(.urlFailure)) }
         do {
-            // The create prompt is broken: https://github.com/element-hq/matrix-authentication-service/issues/3429
-            // let prompt: OAuthPrompt = flow == .register ? .create : .consent
+            let supportsCreatePrompt = homeserverSubject.value.loginMode == .oAuth(supportsCreatePrompt: true)
+            let prompt: OAuthPrompt = flow == .register && supportsCreatePrompt ? .create : .consent
             let oAuthData = try await client.urlForOauth(oauthConfiguration: appSettings.oAuthConfiguration.rustValue,
-                                                         prompt: .consent,
+                                                         prompt: prompt,
                                                          loginHint: loginHint,
                                                          deviceId: nil,
                                                          additionalScopes: nil)
-            return .success(OAuthAuthorizationDataProxy(underlyingData: oAuthData))
+            return .success(OAuthAuthorizationDataProxy(underlyingData: oAuthData, homeserver: client.homeserver()))
         } catch {
             MXLog.error("Failed to get URL for OAuth login: \(error)")
             return .failure(.oAuthError(.urlFailure))
@@ -178,7 +181,7 @@ class AuthenticationService: AuthenticationServiceProtocol {
         }
     }
     
-    func loginWithQRCode(data: Data) -> QRLoginProgressPublisher {
+    func loginWithQRCode(data: Data) -> QRLoginOperation {
         let progressSubject = CurrentValueSubject<QRLoginProgress, AuthenticationServiceError>(.starting)
         
         let qrData: QrCodeData
@@ -187,21 +190,34 @@ class AuthenticationService: AuthenticationServiceProtocol {
         } catch {
             MXLog.error("QRCode decode error: \(error)")
             progressSubject.send(completion: .failure(.qrCodeError(.invalidQRCode)))
-            return progressSubject.asCurrentValuePublisher()
+            return QRLoginOperation(progressPublisher: progressSubject.asCurrentValuePublisher())
         }
         
         // n.b. We rely on the SDK checking that the intent of the QR is suitable for us to login with.
         
-        // Future versions of the QR should always give us the baseUrl
-        guard let scannedServerNameOrBaseUrl = qrData.baseUrl() ?? qrData.serverName() else {
+        // Future versions of the QR should always give us the baseURL
+        guard let scannedServerNameOrBaseURL = qrData.baseUrl() ?? qrData.serverName() else {
             // With the older version of QR we treat the presence of serverName as meaning that the other device
             // is not signed in.
             MXLog.error("The QR code is from a device that is not yet signed in.")
             progressSubject.send(completion: .failure(.qrCodeError(.deviceNotSignedIn)))
-            return progressSubject.asCurrentValuePublisher()
+            return QRLoginOperation(progressPublisher: progressSubject.asCurrentValuePublisher())
         }
         
-        // n.b. We deliberatley don't check whether the received server is in our appSettings.accountProviders
+        // When account provider selection is restricted, make sure the scanned server is allowed.
+        // However, generic providers aren't detailed enough, so continue if one is present.
+        if !appSettings.allowOtherAccountProviders, !appSettings.accountProviders.contains(where: \.isGeneric) {
+            // A base URL from the QR code is expected to be a valid URL when present.
+            let scannedBaseURL = qrData.baseUrl().flatMap(URL.init(string:))
+            
+            guard appSettings.accountProviders.contains(serverName: qrData.serverName(), orBaseURL: scannedBaseURL) else {
+                MXLog.error("The scanned QR code is for an account provider that isn't allowed.")
+                let error = QRCodeLoginError.providerNotAllowed(scannedProvider: scannedServerNameOrBaseURL,
+                                                                allowedProviders: appSettings.accountProviders.map(\.serverNameOrBaseURL))
+                progressSubject.send(completion: .failure(.qrCodeError(error)))
+                return QRLoginOperation(progressPublisher: progressSubject.asCurrentValuePublisher())
+            }
+        }
         
         // The SDK calls the listener from arbitrary threads; onMainActor forwards the progress
         // updates on the main actor in FIFO order.
@@ -210,17 +226,17 @@ class AuthenticationService: AuthenticationServiceProtocol {
             progressSubject.send(progress)
         }
         
-        Task {
+        let task = Task {
             do {
-                let client = try await makeClient(homeserverAddress: scannedServerNameOrBaseUrl)
+                let client = try await makeClient(serverNameOrBaseURL: scannedServerNameOrBaseURL)
                 let qrCodeHandler = client.newLoginWithQrCodeHandler(oauthConfiguration: appSettings.oAuthConfiguration.rustValue)
-                try await qrCodeHandler.scan(qrCodeData: qrData, progressListener: listener)
-                
-                // Since the QR code login flow includes verification.
-                appSettings.hasRunIdentityConfirmationOnboarding = true
+                let sdkTask = try qrCodeHandler.scan(qrCodeData: qrData, progressListener: listener)
+                try await withTaskCancellationHandler(operation: sdkTask.wait, onCancel: sdkTask.cancel)
                 
                 switch await userSession(for: client) {
                 case .success(let userSession):
+                    // Since the QR code login flow includes verification.
+                    userSession.userSettings.account.hasRunIdentityConfirmationOnboarding = true
                     progressSubject.send(.signedIn(userSession))
                 case .failure(let error):
                     progressSubject.send(completion: .failure(error))
@@ -236,26 +252,26 @@ class AuthenticationService: AuthenticationServiceProtocol {
             }
         }
         
-        return progressSubject.asCurrentValuePublisher()
+        return QRLoginOperation(progressPublisher: progressSubject.asCurrentValuePublisher(), task: task)
     }
     
     func reset() {
-        homeserverSubject.send(LoginHomeserver(address: appSettings.defaultServer, loginMode: .unknown))
+        homeserverSubject.send(LoginHomeserver(accountProvider: appSettings.defaultAccountProvider, loginMode: .unknown))
         flow = .login
         client = nil
     }
     
     // MARK: - Private
     
-    private func makeClient(homeserverAddress: String) async throws -> ClientProtocol {
+    private func makeClient(serverNameOrBaseURL: String) async throws -> ClientProtocol {
         // Use a fresh session directory each time the user enters a different server
         // so that caches (e.g. server versions) are always fresh for the new server.
         rotateSessionDirectory()
         
-        let client = try await clientFactory.makeAuthenticationClient(homeserverAddress: homeserverAddress,
+        let client = try await clientFactory.makeAuthenticationClient(serverNameOrBaseURL: serverNameOrBaseURL,
                                                                       sessionDirectories: sessionDirectories,
                                                                       passphrase: passphrase,
-                                                                      clientSessionDelegate: userSessionStore.clientSessionDelegate,
+                                                                      clientSessionDelegate: userSessionManager.clientSessionDelegate,
                                                                       appSettings: appSettings,
                                                                       appHooks: appHooks)
         try await appHooks.remoteSettingsHook.initializeCache(using: client, applyingTo: appSettings).get()
@@ -264,12 +280,12 @@ class AuthenticationService: AuthenticationServiceProtocol {
     }
     
     private func rotateSessionDirectory() {
-        sessionDirectories.delete()
+        try? sessionDirectories.delete()
         sessionDirectories = .init()
     }
     
     private func userSession(for client: ClientProtocol) async -> Result<UserSessionProtocol, AuthenticationServiceError> {
-        switch await userSessionStore.userSession(for: client, sessionDirectories: sessionDirectories, passphrase: passphrase) {
+        switch await userSessionManager.userSession(for: client, sessionDirectories: sessionDirectories, passphrase: passphrase) {
         case .success(let clientProxy):
             return .success(clientProxy)
         case .failure:
@@ -286,8 +302,8 @@ class AuthenticationService: AuthenticationServiceProtocol {
         MXLog.info("Checking Classic app account: \(classicAppAccount)")
         
         do {
-            let client = try await clientFactory.makeInMemoryClient(homeserverAddress: classicAppAccount.homeserverURL.absoluteString,
-                                                                    clientSessionDelegate: userSessionStore.clientSessionDelegate,
+            let client = try await clientFactory.makeInMemoryClient(serverNameOrBaseURL: classicAppAccount.homeserverURL.absoluteString,
+                                                                    clientSessionDelegate: userSessionManager.clientSessionDelegate,
                                                                     appSettings: appSettings,
                                                                     appHooks: appHooks)
             let loginDetails = await client.homeserverLoginDetails()
@@ -351,7 +367,7 @@ class AuthenticationService: AuthenticationServiceProtocol {
             MXLog.info("Classic app account secrets imported.")
             
             // Importing the secrets automatically verifies the session.
-            appSettings.hasRunIdentityConfirmationOnboarding = true
+            appSettings.userSettings(for: classicAppAccount.userID).account.hasRunIdentityConfirmationOnboarding = true
         } catch {
             MXLog.error("Failed to import secrets for Classic app account: \(error)")
         }
@@ -391,7 +407,7 @@ extension AuthenticationService {
     }
     
     static func mock(classicAppManager: ClassicAppManagerProtocol?) -> AuthenticationService {
-        AuthenticationService(userSessionStore: UserSessionStoreMock(.init()),
+        AuthenticationService(userSessionManager: UserSessionManagerMock(.init()),
                               encryptionKeyProvider: EncryptionKeyProvider(),
                               classicAppManager: classicAppManager,
                               clientFactory: ClientFactoryMock(.init()),

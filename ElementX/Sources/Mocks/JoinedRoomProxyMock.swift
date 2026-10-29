@@ -50,8 +50,8 @@ struct JoinedRoomProxyMockConfiguration {
     var powerLevelsConfiguration = RoomPowerLevelsProxyMock.Configuration()
 }
 
+@MainActor
 extension JoinedRoomProxyMock {
-    @MainActor
     convenience init(_ configuration: JoinedRoomProxyMockConfiguration) {
         self.init()
         
@@ -116,6 +116,7 @@ extension JoinedRoomProxyMock {
         unbanUserReturnValue = .success(())
         
         let widgetDriver = ElementCallWidgetDriverMock()
+        widgetDriver.widgetID = UUID().uuidString
         widgetDriver.messagePublisher = .init()
         widgetDriver.actions = PassthroughSubject().eraseToAnyPublisher()
         
@@ -143,8 +144,9 @@ extension JoinedRoomProxyMock {
     }
 }
 
+@MainActor
 extension RoomInfoProxyMock {
-    @MainActor convenience init(_ configuration: JoinedRoomProxyMockConfiguration) {
+    convenience init(_ configuration: JoinedRoomProxyMockConfiguration) {
         self.init()
         
         id = configuration.id

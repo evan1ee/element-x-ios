@@ -11,7 +11,6 @@ import SwiftUI
 
 struct SettingsScreenCoordinatorParameters {
     let userSession: UserSessionProtocol
-    let appSettings: AppSettings
     let isBugReportServiceEnabled: Bool
     let isInSecondaryWindow: Bool
     let userIndicatorController: UserIndicatorControllerProtocol
@@ -19,26 +18,34 @@ struct SettingsScreenCoordinatorParameters {
 
 enum SettingsScreenCoordinatorAction {
     case dismiss
-    case logout
-    case secureBackup
+    
     case userDetails
     case userStatusEmojiPicker(EmojiPickerScreenContinuation)
-    case analytics
-    case appLock
-    case bugReport
-    case about
-    case blockedUsers
-    case linkNewDevice
+    
+    case addAccount
+    
     case manageAccount(url: URL)
+    case linkNewDevice
     case notifications
-    case advancedSettings
+    case secureBackup
+    case moderationAndSafety
+    case bugReport
+    
+    case logout
+    case deactivateAccount
+    
+    case mediaUploadQuality
+    case appLock
+    case locationSharing
+    case analytics
+    case labs
+    case about
     case displaySettings
     case stickers
     case syncStorage
     case backup
-    case labs
+    
     case developerOptions
-    case deactivateAccount
 }
 
 final class SettingsScreenCoordinator: CoordinatorProtocol {
@@ -55,7 +62,6 @@ final class SettingsScreenCoordinator: CoordinatorProtocol {
     
     init(parameters: SettingsScreenCoordinatorParameters) {
         viewModel = SettingsScreenViewModel(userSession: parameters.userSession,
-                                            appSettings: parameters.appSettings,
                                             isBugReportServiceEnabled: parameters.isBugReportServiceEnabled,
                                             isInSecondaryWindow: parameters.isInSecondaryWindow,
                                             userIndicatorController: parameters.userIndicatorController)
@@ -67,30 +73,45 @@ final class SettingsScreenCoordinator: CoordinatorProtocol {
                 switch action {
                 case .close:
                     actionsSubject.send(.dismiss)
+                    
                 case .userDetails:
                     actionsSubject.send(.userDetails)
                 case let .userStatusEmojiPicker(continuation):
                     actionsSubject.send(.userStatusEmojiPicker(continuation))
-                case .linkNewDevice:
-                    actionsSubject.send(.linkNewDevice)
+                    
+                case .addAccount:
+                    actionsSubject.send(.addAccount)
+                    
                 case let .manageAccount(url):
                     actionsSubject.send(.manageAccount(url: url))
-                case .analytics:
-                    actionsSubject.send(.analytics)
-                case .appLock:
-                    actionsSubject.send(.appLock)
-                case .reportBug:
-                    actionsSubject.send(.bugReport)
-                case .about:
-                    actionsSubject.send(.about)
-                case .blockedUsers:
-                    actionsSubject.send(.blockedUsers)
-                case .secureBackup:
-                    actionsSubject.send(.secureBackup)
+                case .linkNewDevice:
+                    actionsSubject.send(.linkNewDevice)
                 case .notifications:
                     actionsSubject.send(.notifications)
-                case .advancedSettings:
-                    actionsSubject.send(.advancedSettings)
+                case .secureBackup:
+                    actionsSubject.send(.secureBackup)
+                case .moderationAndSafety:
+                    actionsSubject.send(.moderationAndSafety)
+                case .reportBug:
+                    actionsSubject.send(.bugReport)
+                    
+                case .logout:
+                    actionsSubject.send(.logout)
+                case .deactivateAccount:
+                    actionsSubject.send(.deactivateAccount)
+                    
+                case .mediaUploadQuality:
+                    actionsSubject.send(.mediaUploadQuality)
+                case .appLock:
+                    actionsSubject.send(.appLock)
+                case .locationSharing:
+                    actionsSubject.send(.locationSharing)
+                case .analytics:
+                    actionsSubject.send(.analytics)
+                case .labs:
+                    actionsSubject.send(.labs)
+                case .about:
+                    actionsSubject.send(.about)
                 case .displaySettings:
                     actionsSubject.send(.displaySettings)
                 case .stickers:
@@ -99,14 +120,9 @@ final class SettingsScreenCoordinator: CoordinatorProtocol {
                     actionsSubject.send(.syncStorage)
                 case .backup:
                     actionsSubject.send(.backup)
-                case .labs:
-                    actionsSubject.send(.labs)
+                    
                 case .developerOptions:
                     actionsSubject.send(.developerOptions)
-                case .logout:
-                    actionsSubject.send(.logout)
-                case .deactivateAccount:
-                    actionsSubject.send(.deactivateAccount)
                 }
             }
             .store(in: &cancellables)

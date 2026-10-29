@@ -28,7 +28,6 @@ class RoomMemberDetailsScreenViewModel: RoomMemberDetailsScreenViewModelType, Ro
     init(userID: String,
          roomProxy: JoinedRoomProxyProtocol,
          userSession: UserSessionProtocol,
-         appHooks: AppHooks,
          analytics: AnalyticsServiceProtocol,
          userIndicatorController: UserIndicatorControllerProtocol) {
         self.roomProxy = roomProxy
@@ -38,7 +37,7 @@ class RoomMemberDetailsScreenViewModel: RoomMemberDetailsScreenViewModelType, Ro
         
         let initialViewState = RoomMemberDetailsScreenViewState(userID: userID, bindings: .init())
         
-        super.init(initialViewState: appHooks.roomMemberDetailsScreenHook.update(initialViewState),
+        super.init(initialViewState: userSession.userHooks.roomMemberDetailsScreenHook.update(initialViewState),
                    mediaProvider: userSession.mediaProvider)
         
         showMemberLoadingIndicator()
@@ -224,7 +223,8 @@ class RoomMemberDetailsScreenViewModel: RoomMemberDetailsScreenViewModelType, Ro
                                                 delay: .milliseconds(200))
         defer { userIndicatorController.retractIndicatorWithId(loadingIndicatorIdentifier) }
         
-        switch await userSession.clientProxy.createDirectRoom(with: roomMemberProxy.userID, expectedRoomName: roomMemberProxy.displayName) {
+        let parameters = userSession.userHooks.roomMemberDetailsScreenHook.update(.directRoom(userID: roomMemberProxy.userID))
+        switch await userSession.clientProxy.createRoom(parameters) {
         case .success(let roomID):
             analytics.trackCreatedRoom(isDM: true)
             actionsSubject.send(.openDirectChat(roomID: roomID))

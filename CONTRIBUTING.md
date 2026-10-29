@@ -32,6 +32,8 @@ Only once all of the above is met should you open a PR with your proposed change
 	* If you would like our opinion/direction on unfinished code please link your branch or idea in the ticket
 	* Please limit the number of commits in a single PR. We are perfectly happy with splitting work across multiple sessions as long as they're logically independent and show promise of progress (ideally expressed through a ticket)
 	* Each and every commit should stand on its own, clearly explaining what it does and why
+* External contributors can only have a limited number of PRs open at once.
+	* Please focus on getting your open PRs merged before starting new ones, it's up to you to follow up on them to unblock yourself.
 * Once a PR goes into review please don't rewrite the history unless agreed so with the reviewer.
 	* Tweaks and fixes following review can be directly committed (to be interactively rebased later) or as fixups
 
@@ -97,7 +99,7 @@ If you make changes to the UI you may cause existing UI and Preview test snapsho
 
 To run the preview tests:
 
-1. Use an iPhone SE (3rd generation) simulator running iOS 26.5.
+1. Use an iPhone SE (3rd generation) simulator running iOS 27.0.
 2. On that simulator, go to Settings -> General -> Language & Region and select United States as the region, with English (US) as the only preferred language. This is a one time setup, as long as you keep using the same simulator.
 3. Select the `PreviewTests` scheme and run the tests.
 

@@ -25,7 +25,7 @@ class ThreadTimelineScreenViewModel: ThreadTimelineScreenViewModelType, ThreadTi
         self.roomProxy = roomProxy
         self.userSession = userSession
         
-        super.init(initialViewState: ThreadTimelineScreenViewState(roomTitle: roomProxy.infoPublisher.value.displayName ?? roomProxy.id,
+        super.init(initialViewState: ThreadTimelineScreenViewState(roomTitle: roomProxy.infoPublisher.value.displayNameOrID,
                                                                    roomAvatar: roomProxy.infoPublisher.value.avatar), mediaProvider: userSession.mediaProvider)
         
         roomProxy.infoPublisher
@@ -66,11 +66,11 @@ class ThreadTimelineScreenViewModel: ThreadTimelineScreenViewModelType, ThreadTi
             switch action {
             case .viewInRoomTimeline:
                 fatalError("\(action) should not be visible on a thread preview.")
-            case .displayMessageForwarding(let forwardingItem):
+            case .displayMessageForwarding(let forwardingPayload):
                 state.bindings.mediaPreviewViewModel = nil
                 // We need a small delay because we need to wait for the media preview to be fully dismissed.
                 DispatchQueue.main.asyncAfter(deadline: .now() + TimelineMediaPreviewViewModel.displayMessageForwardingDelay) {
-                    self.actionsSubject.send(.displayMessageForwarding(forwardingItem))
+                    self.actionsSubject.send(.displayMessageForwarding(forwardingPayload))
                 }
             case .dismiss:
                 state.bindings.mediaPreviewViewModel = nil
@@ -101,7 +101,7 @@ class ThreadTimelineScreenViewModel: ThreadTimelineScreenViewModelType, ThreadTi
     }
     
     private func updateRoomInfo(_ roomInfo: RoomInfoProxyProtocol) {
-        state.roomTitle = roomInfo.displayName ?? roomProxy.id
+        state.roomTitle = roomInfo.displayNameOrID
         state.roomAvatar = roomInfo.avatar
         state.dmRecipientDetails.statusEmoji = roomInfo.statusEmoji
         

@@ -16,12 +16,6 @@ import Testing
 
 @MainActor
 final class RoomScreenViewModelTests {
-    private let appSettings: AppSettings
-    
-    init() async throws {
-        appSettings = AppSettings.volatile()
-    }
-    
     @Test
     func pinnedEventsBanner() async throws {
         var configuration = JoinedRoomProxyMockConfiguration()
@@ -42,8 +36,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -122,8 +114,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: "test1",
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -161,7 +151,9 @@ final class RoomScreenViewModelTests {
     
     @Test
     func pinnedEventsBannerThreadedSelection() async throws {
-        appSettings.threadsEnabled = true
+        let userSettings = UserSettings.mock()
+        userSettings.app.threadsEnabled = true
+        let userSession = UserSessionMock(.init(userSettings: userSettings))
         
         let roomProxyMock = JoinedRoomProxyMock(.init())
         let eventMock = TimelineEventSDKMock()
@@ -178,12 +170,10 @@ final class RoomScreenViewModelTests {
                                                       .event(.init(item: EventTimelineItem(configuration: .init(eventID: "test3")), uniqueID: .init("3")))]
         roomProxyMock.pinnedEventsTimelineReturnValue = .success(pinnedTimelineMock)
         
-        let viewModel = RoomScreenViewModel(userSession: UserSessionMock(.init()),
+        let viewModel = RoomScreenViewModel(userSession: userSession,
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: "test1",
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -238,8 +228,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -273,8 +261,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: ongoingCallRoomIDSubject.asCurrentValuePublisher(),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         #expect(viewModel.state.shouldShowCallButton)
@@ -320,8 +306,6 @@ final class RoomScreenViewModelTests {
                                                 roomProxy: roomProxyMock,
                                                 initialSelectedPinnedEventID: nil,
                                                 ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                                appSettings: appSettings,
-                                                appHooks: AppHooks(),
                                                 analyticsService: AnalyticsServiceMock(.init()),
                                                 userIndicatorController: UserIndicatorControllerMock())
             viewModel.stop()
@@ -342,8 +326,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -375,8 +357,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -403,8 +383,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -422,8 +400,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         
@@ -448,8 +424,6 @@ final class RoomScreenViewModelTests {
                                             roomProxy: roomProxyMock,
                                             initialSelectedPinnedEventID: nil,
                                             ongoingCallRoomIDPublisher: .init(.init(nil)),
-                                            appSettings: appSettings,
-                                            appHooks: AppHooks(),
                                             analyticsService: AnalyticsServiceMock(.init()),
                                             userIndicatorController: UserIndicatorControllerMock())
         

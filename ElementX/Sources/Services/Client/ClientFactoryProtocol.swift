@@ -5,6 +5,7 @@
 // Please see LICENSE files in the repository root for full details.
 //
 
+import Foundation
 import MatrixRustSDK
 
 // sourcery: AutoMockable
@@ -12,14 +13,14 @@ nonisolated protocol ClientFactoryProtocol {
     // MARK: Authentication
     
     #if IS_MAIN_APP
-    func makeAuthenticationClient(homeserverAddress: String,
+    func makeAuthenticationClient(serverNameOrBaseURL: String,
                                   sessionDirectories: SessionDirectories,
-                                  passphrase: String,
+                                  passphrase: Data,
                                   clientSessionDelegate: ClientSessionDelegate,
                                   appSettings: AppSettings,
                                   appHooks: AppHooks) async throws -> ClientProtocol
     
-    func makeInMemoryClient(homeserverAddress: String,
+    func makeInMemoryClient(serverNameOrBaseURL: String,
                             clientSessionDelegate: ClientSessionDelegate,
                             appSettings: AppSettings,
                             appHooks: AppHooks) async throws -> ClientProtocol
@@ -35,6 +36,6 @@ nonisolated protocol ClientFactoryProtocol {
     func makeNSEClient(credentials: KeychainCredentials,
                        roomID: String,
                        clientSessionDelegate: ClientSessionDelegate,
-                       appSettings: CommonSettingsProtocol,
+                       userSettings: UserSettings,
                        appHooks: AppHooks) async throws -> ClientProtocol
 }

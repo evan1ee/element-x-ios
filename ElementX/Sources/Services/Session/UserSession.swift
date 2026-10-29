@@ -16,13 +16,15 @@ class UserSession: UserSessionProtocol {
     private var authErrorCancellable: AnyCancellable?
     
     let clientProxy: ClientProxyProtocol
+    let userSettings: UserSettings
+    let userHooks: UserHooks
+    
     let mediaProvider: MediaProviderProtocol
-    
     let voiceMessageMediaManager: VoiceMessageMediaManagerProtocol
-    let liveLocationManager: LiveLocationManagerProtocol
-    
+    let liveLocationService: LiveLocationServiceProtocol
     /// Scans media content, `nil` when no content scanner is configured for the server.
     let contentScannerService: ContentScannerServiceProtocol?
+    let notificationService: NotificationServiceProtocol
     
     /// The local search index and the two things that fill it: a light pass over what
     /// the event cache already holds, and the optional full history download.
@@ -45,15 +47,21 @@ class UserSession: UserSessionProtocol {
     }
     
     init(clientProxy: ClientProxyProtocol,
+         userSettings: UserSettings,
+         userHooks: UserHooks,
          mediaProvider: MediaProviderProtocol,
          voiceMessageMediaManager: VoiceMessageMediaManagerProtocol,
-         liveLocationManager: LiveLocationManagerProtocol,
-         sessionDirectories: SessionDirectories?,
-         appSettings: AppSettings) {
+         liveLocationService: LiveLocationServiceProtocol,
+         notificationService: NotificationServiceProtocol,
+         sessionDirectories: SessionDirectories?) {
         self.clientProxy = clientProxy
+        self.userSettings = userSettings
+        self.userHooks = userHooks
+        
         self.mediaProvider = mediaProvider
         self.voiceMessageMediaManager = voiceMessageMediaManager
-        self.liveLocationManager = liveLocationManager
+        self.liveLocationService = liveLocationService
+        self.notificationService = notificationService
         contentScannerService = clientProxy.contentScanner.map(ContentScannerService.init)
         
         let searchIndexService = SearchIndexService(databaseURL: .searchIndexURL(for: clientProxy.userID))
@@ -74,7 +82,7 @@ class UserSession: UserSessionProtocol {
                                                             roomSummaryProvider: clientProxy.roomSummaryProvider,
                                                             timelineItemFactory: timelineItemFactory,
                                                             indexService: searchIndexService,
-                                                            appSettings: appSettings)
+                                                            appSettings: userSettings.app)
         self.historyDownloadManager = historyDownloadManager
         historyDownloadManager.start()
         
@@ -88,7 +96,7 @@ class UserSession: UserSessionProtocol {
                                                                           userID: clientProxy.userID),
                                       passphraseStore: BackupPassphraseStore(service: InfoPlistReader.main.baseBundleIdentifier + ".backup",
                                                                              accessGroup: InfoPlistReader.main.keychainAccessGroupIdentifier),
-                                      appSettings: appSettings,
+                                      appSettings: userSettings.app,
                                       userID: clientProxy.userID,
                                       deviceName: UIDevice.current.name,
                                       appVersion: InfoPlistReader.main.bundleShortVersionString)

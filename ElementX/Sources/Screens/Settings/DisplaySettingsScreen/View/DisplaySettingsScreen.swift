@@ -31,6 +31,12 @@ struct DisplaySettingsScreen: View {
                 Text(UntranslatedL10n.screenDisplaySettingsTabsFooter)
                     .compoundListSectionFooter()
             }
+            
+            Section {
+                ListRow(label: .plain(title: UntranslatedL10n.screenAdvancedSettingsShowSavedMessagesTitle,
+                                      description: UntranslatedL10n.screenAdvancedSettingsShowSavedMessagesDescription),
+                        kind: .toggle($context.showSavedMessages))
+            }
         }
         .compoundList()
         .navigationTitle(UntranslatedL10n.screenDisplaySettingsTitle)
