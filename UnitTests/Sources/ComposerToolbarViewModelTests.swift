@@ -15,6 +15,7 @@ import UIKit
 import WysiwygComposer
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class ComposerToolbarViewModelTests {
     private var wysiwygViewModel: WysiwygComposerViewModel!
     private var viewModel: ComposerToolbarViewModel!

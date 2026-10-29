@@ -1235,7 +1235,7 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
     private func presentStickerPicker(timelineController: TimelineControllerProtocol) {
         let stackCoordinator = NavigationStackCoordinator()
         let stickerService = StickerService(clientProxy: userSession.clientProxy,
-                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: flowParameters.appSettings))
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(userSettings: userSession.userSettings))
         let coordinator = StickerPickerScreenCoordinator(parameters: .init(stickerService: stickerService,
                                                                            timelineController: timelineController,
                                                                            mediaProvider: userSession.mediaProvider,
@@ -1265,7 +1265,7 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
     private func presentStickerDiscovery(on stackCoordinator: NavigationStackCoordinator,
                                          stickerService: StickerServiceProtocol,
                                          timelineController: TimelineControllerProtocol) {
-        let appSettings = flowParameters.appSettings
+        let appSettings = userSession.userSettings.app
         let klipyService = KlipyService(apiKey: { appSettings.klipyAPIKey },
                                         customerID: userSession.clientProxy.userID)
         let coordinator = StickerDiscoveryScreenCoordinator(parameters: .init(klipyService: klipyService,

@@ -194,7 +194,7 @@ struct StickerPickerScreen_Previews: PreviewProvider, TestablePreview {
         clientProxy.accountDataEventTypeReturnValue = .success(nil)
         
         let stickerService = StickerService(clientProxy: clientProxy,
-                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: AppSettings.volatile()))
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(userSettings: .mock()))
         
         return StickerPickerScreenViewModel(stickerService: stickerService,
                                             timelineController: TimelineControllerMock(.init()),

@@ -127,13 +127,19 @@ class SavedMessagesService: SavedMessagesServiceProtocol {
         // `.private` already means encrypted, invite-only and unlisted, which is the whole
         // requirement. The name is only ever seen by other Matrix clients — we render our
         // own localised title — so it's a best-effort fallback rather than the source of truth.
-        let result = await clientProxy.createRoom(name: UntranslatedL10n.commonSavedMessages,
-                                                  topic: nil,
-                                                  accessType: .private,
-                                                  isSpace: false,
-                                                  userIDs: [],
-                                                  avatarURL: nil,
-                                                  aliasLocalPart: nil)
+        let result = await clientProxy.createRoom(.init(name: UntranslatedL10n.commonSavedMessages,
+                                                        topic: nil,
+                                                        isEncrypted: true,
+                                                        isDirect: false,
+                                                        visibility: .private,
+                                                        preset: .privateChat,
+                                                        userIDs: [],
+                                                        avatarURL: nil,
+                                                        powerLevelContentOverride: nil,
+                                                        joinRuleOverride: nil,
+                                                        historyVisibilityOverride: nil,
+                                                        aliasLocalPart: nil,
+                                                        isSpace: false))
         
         guard case let .success(roomID) = result else {
             MXLog.error("Failed creating the Saved Messages room")

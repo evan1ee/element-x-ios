@@ -97,9 +97,9 @@ final class RoomScreenCoordinator: CoordinatorProtocol {
                                                         maxExpandedHeight: ComposerConstant.maxHeight,
                                                         parserStyle: .elementX)
         
-        let appSettings = parameters.appSettings
+        let appSettings = parameters.userSession.userSettings.app
         let stickerService = StickerService(clientProxy: parameters.userSession.clientProxy,
-                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: appSettings))
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(userSettings: parameters.userSession.userSettings))
         let gifService = KlipyService(apiKey: { appSettings.klipyAPIKey },
                                       customerID: parameters.userSession.clientProxy.userID,
                                       mediaType: "gifs")

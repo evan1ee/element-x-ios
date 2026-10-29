@@ -322,13 +322,13 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
     }
     
     private func presentDisplaySettings() {
-        let coordinator = DisplaySettingsScreenCoordinator(parameters: .init(appSettings: flowParameters.appSettings))
+        let coordinator = DisplaySettingsScreenCoordinator(parameters: .init(appSettings: flowParameters.userSession.userSettings.app))
         navigationStackCoordinator.push(coordinator)
     }
     
     private func presentSyncStorage() {
         let coordinator = SyncStorageScreenCoordinator(parameters: .init(historyDownloadManager: flowParameters.userSession.historyDownloadManager,
-                                                                         appSettings: flowParameters.appSettings))
+                                                                         appSettings: flowParameters.userSession.userSettings.app))
         navigationStackCoordinator.push(coordinator)
     }
     
@@ -339,7 +339,7 @@ class SettingsFlowCoordinator: FlowCoordinatorProtocol {
     }
     
     private func presentStickerSettings() {
-        let coordinator = StickerSettingsScreenCoordinator(parameters: .init(appSettings: flowParameters.appSettings))
+        let coordinator = StickerSettingsScreenCoordinator(parameters: .init(appSettings: flowParameters.userSession.userSettings.app))
         navigationStackCoordinator.push(coordinator)
     }
     

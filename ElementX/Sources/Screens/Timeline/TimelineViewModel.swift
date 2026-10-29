@@ -74,7 +74,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
         let voiceMessageRecorder = VoiceMessageRecorder(audioRecorder: AudioRecorder(), mediaPlayerProvider: mediaPlayerProvider)
         
         let stickerService = StickerService(clientProxy: userSession.clientProxy,
-                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: appSettings))
+                                            mediaUploadingPreprocessor: MediaUploadingPreprocessor(userSettings: userSettings))
         
         timelineInteractionHandler = TimelineInteractionHandler(roomProxy: roomProxy,
                                                                 timelineController: timelineController,
@@ -102,7 +102,7 @@ class TimelineViewModel: TimelineViewModelType, TimelineViewModelProtocol {
                                                        roomID: roomProxy.id,
                                                        isDM: roomProxy.infoPublisher.value.isDM,
                                                        isSavedMessagesRoom: userSession.savedMessagesService.isSavedMessagesRoom(roomProxy.id),
-                                                       isSavedMessagesEnabled: appSettings.showSavedMessages,
+                                                       isSavedMessagesEnabled: userSettings.app.showSavedMessages,
                                                        timelineState: TimelineState(focussedEvent: focussedEventID.map { .init(eventID: $0, appearance: .immediate) }),
                                                        ownUserID: roomProxy.ownUserID,
                                                        hideTimelineMedia: hideTimelineMedia,
@@ -1305,7 +1305,7 @@ private extension TimelineViewModel {
             .weakAssign(to: \.state.isSavedMessagesRoom, on: self)
             .store(in: &cancellables)
         
-        appSettings.showSavedMessagesPublisher
+        userSettings.app.showSavedMessagesPublisher
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .weakAssign(to: \.state.isSavedMessagesEnabled, on: self)

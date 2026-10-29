@@ -477,7 +477,7 @@ struct StickerServiceTests {
         
         let bundle = try #require(Bundle(path: bundleDirectory.path(percentEncoded: false)))
         service = StickerService(clientProxy: clientProxy,
-                                 mediaUploadingPreprocessor: MediaUploadingPreprocessor(appSettings: AppSettings.volatile()),
+                                 mediaUploadingPreprocessor: MediaUploadingPreprocessor(userSettings: .mock()),
                                  bundle: bundle,
                                  userDefaults: userDefaults,
                                  // Its own cache, so a pack written by one test can't leak into the next.

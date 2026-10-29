@@ -85,7 +85,7 @@ final class ComposerToolbarViewModel: ComposerToolbarViewModelType, ComposerTool
         self.analyticsService = analyticsService
         self.roomProxy = roomProxy
         draftService = composerDraftService
-        self.emojiProvider = emojiProvider ?? EmojiProvider(appSettings: appSettings)
+        self.emojiProvider = emojiProvider ?? EmojiProvider(userSettings: userSettings)
         stickerService = mediaServices?.stickerService
         gifService = mediaServices?.gifService
         timelineController = mediaServices?.timelineController

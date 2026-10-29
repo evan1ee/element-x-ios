@@ -21,7 +21,6 @@ class SearchScreenViewModel: SearchScreenViewModelType, SearchScreenViewModelPro
     /// Attachments and links. The SDK's search covers message bodies but takes text
     /// messages alone, so filenames and URLs would otherwise be unreachable.
     private let searchIndexService: SearchIndexServiceProtocol
-    private let clientProxy: ClientProxyProtocol
     private let userIndicatorController: UserIndicatorControllerProtocol
     private var localSearchTask: Task<Void, Never>?
     private let userSettings: UserSettings

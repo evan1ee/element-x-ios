@@ -499,7 +499,7 @@ final class HomeScreenViewModelTests {
         
         // Switching off takes the room out of the list entirely.
         let hidden = deferFulfillment(context.$viewState) { state in !state.rooms.contains { $0.roomID == "2" } }
-        appSettings.showSavedMessages = false
+        userSettings.app.showSavedMessages = false
         try await hidden.fulfill()
         
         // Every other room is untouched.
@@ -507,7 +507,7 @@ final class HomeScreenViewModelTests {
         
         // Switching back on restores it, pinned as before.
         let restored = deferFulfillment(context.$viewState) { $0.rooms.first?.isSavedMessages == true }
-        appSettings.showSavedMessages = true
+        userSettings.app.showSavedMessages = true
         try await restored.fulfill()
         
         #expect(context.viewState.rooms.first?.roomID == "2")
